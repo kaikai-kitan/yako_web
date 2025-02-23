@@ -237,3 +237,102 @@ footer{
         filter: blur(0);
     }
 }
+
+/* レスポンシブ設定 */
+@media screen and (max-width: 768px) {
+    /* ハンバーガーメニュー */
+    .hamburger {
+        display: block;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 30px;
+        height: 24px;
+        z-index: 10000;
+        cursor: pointer;
+    }
+
+    .hamburger span {
+        display: block;
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        background-color: #26201a;
+        transition: 0.3s ease-in-out;
+    }
+
+    .hamburger span:nth-child(1) {
+        top: 0;
+    }
+    .hamburger span:nth-child(2) {
+        top: 11px;
+    }
+    .hamburger span:nth-child(3) {
+        bottom: 0;
+    }
+
+    /* ハンバーガーメニューがアクティブ時 */
+    .hamburger.active span:nth-child(1) {
+        transform: translateY(11px) rotate(-45deg);
+    }
+    .hamburger.active span:nth-child(2) {
+        opacity: 0;
+    }
+    .hamburger.active span:nth-child(3) {
+        transform: translateY(-11px) rotate(45deg);
+    }
+
+    /* ナビゲーションメニュー */
+    .nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 70%;
+        height: 100vh;
+        background-color: #fbf3ea;
+        transition: 0.3s ease-in-out;
+        z-index: 9999;
+        padding-top: 60px;
+    }
+
+    .nav.active {
+        right: 0;
+    }
+
+    .nav ul {
+        display: flex;
+        flex-direction: column;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .nav li {
+        width: 100%;
+        padding: 10px 20px;
+        border-bottom: 1px solid #26201a;
+    }
+
+    .navbutton {
+        text-align: left;
+    }
+
+    .btn {
+        display: block;
+        padding: 10px;
+        text-decoration: none;
+        color: #26201a;
+    }
+
+    /* スプラッシュ画面のレスポンシブ対応 */
+    .catch_phrase1, .catch_phrase2 {
+        font-size: 1.5em;
+    }
+}
+
+/* PCサイズでハンバーガーメニューを非表示 */
+@media screen and (min-width: 769px) {
+    .hamburger {
+        display: none;
+    }
+}

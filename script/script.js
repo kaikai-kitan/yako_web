@@ -46,4 +46,21 @@ document.addEventListener('DOMContentLoaded', () => {
             splash.style.display = 'none';
         }, 1000); // フェードアウトのアニメーション時間後に非表示
     }, 4000);
+
+    // ハンバーガーメニューの制御
+    const hamburger = document.querySelector('.hamburger');
+    const nav = document.querySelector('.nav');
+    
+    hamburger.addEventListener('click', () => {
+        hamburger.classList.toggle('active');
+        nav.classList.toggle('active');
+    });
+
+    // メニューリンクをクリックしたらメニューを閉じる
+    document.querySelectorAll('.nav a').forEach(link => {
+        link.addEventListener('click', () => {
+            hamburger.classList.remove('active');
+            nav.classList.remove('active');
+        });
+    });
 });
