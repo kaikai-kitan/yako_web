@@ -3,7 +3,10 @@
 body {
     font-family: "Yu Gothic", YuGothic, "MS Pゴシック", Meiryo;
     font-size: 16px;
-    background: linear-gradient(-135deg,#2C3E50, #8E6B4D, #D9915D)fixed;
+    background-color: #fbf3ea;
+    color: #26201a;
+    margin: 0;
+    padding: 0;
 }
 
 h1,h2,h3,h4,p,ul,li {
@@ -11,6 +14,7 @@ h1,h2,h3,h4,p,ul,li {
     padding: 0;
 }
 
+/*headerデザイン*/
 header{
     margin: 20px;
 }
@@ -41,7 +45,7 @@ nav li {
     display: block;
     line-height: 40px;
     text-align: center;
-    color: white;
+    color: #26201a;
     text-decoration: none;
     font-weight: bold;
     /*background-color: aqua;*/
@@ -52,8 +56,8 @@ nav li {
 .btn:hover{
     padding-left: 5px;
     padding-right: 5px;
-    background-color: rgb(244, 199, 39);/*ホバー時の色変更*/
-    color: rgb(240, 234, 234);
+    background-color: #26201a;/*ホバー時の色変更*/
+    color: #ffffff;
 }
 
 .iconmenu{
@@ -78,11 +82,12 @@ nav li {
     transition: opacity 1s ease-out, transform 1s ease-in-out;
 }
 
+/*mainデザイン*/
 main{
     clear: both;
 }
 
-main p{
+.catch_freze{
     font-size: 26px;
     font-family: Hiragino Mincho ProN;
     font-weight: bold;
@@ -97,12 +102,138 @@ main p{
     transition: opacity 1s ease-out, transform 1s ease-in-out;
 }
 
+h3{
+    font-size: 25px;
+}
+
+.hotsand{
+    margin: 5px;
+    color: tomato;
+    background-color: #e6e6e6;
+    padding: 20px;
+    border-radius: 3px 40px;
+    width: 30%;
+    height: auto;
+    float: left;/*子要素を横向きに表示*/
+    align-items: center;/*縦方向の中央揃え*/
+    flex-wrap: wrap;/*幅が足りない場合に要素を折り返して表示する*/
+}
+
+.smorking_chickin {
+    vertical-align: middle;
+    max-width: 40%; /* 画像が親要素の40%を超えないように制限 */
+    height: auto; /* アスペクト比を維持 */
+    border-radius: 8px; /* 画像の角を少し丸く */
+}
+
+.price {
+    flex: 1; /* 残りの幅を占める */
+    text-align: right; /* テキストを左揃え */
+    font-size: 23px; /* 視認性の高いフォントサイズ */
+    line-height: 1.5;
+    word-wrap: break-word; /* 長いテキストを折り返す */
+}
+
+.institute{
+    margin: 0;
+    padding: 0;
+    font-size: 10px;
+}
+
+/* 左揃えにする、足跡を伸ばして、p要素か何かに繋げて説明文にする */
+.yatai_defo {
+    float: left;
+    width: 30%;
+    height: auto;
+    margin-right: 20px; /* 説明文との間隔を追加 */
+}
+
+.hot_menu{
+    padding: 5px;
+}
+
+@media screen and (max-width: 1980px) {
+    .hotsand {
+        flex-direction: column; /* 小さい画面では縦並び */
+        text-align: center; /* テキストを中央揃え */
+    }
+
+    .smorking_chickin {
+        max-width: 100%; /* 画像が幅を超えないように調整 */
+    }
+
+    .price {
+        margin-top: 10px; /* 画像の下にスペースを追加 */
+    }
+}
+
 main p.show{
     opacity: 1;
     transform: translateY(0);
 }
 
+
+/*footerデザイン*/
 footer{
     clear: both;
     text-align: center;
+    margin-top: 40px;
+}
+
+.splash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: #fbf3ea;  /* 背景色を変更 */
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 1s ease;
+}
+
+.splash.fade-out {
+    opacity: 0;
+}
+
+.catch_phrase_container {
+    text-align: center;
+    writing-mode: vertical-rl;
+    height: 70vh;
+}
+
+.catch_phrase1, .catch_phrase2 {
+    color: #26201a;
+    font-size: 2em;  /* フォントサイズを元の大きさに戻す */
+    font-family: "Yu Mincho", "游明朝", YuMincho, "Hiragino Mincho ProN", serif;
+    font-weight: bold;
+    opacity: 0;
+    transform: translateY(-30px);
+    margin: 0;
+    white-space: nowrap;
+}
+
+.fade-in1 {
+    animation: fadeInMoveBlur 2s ease forwards;
+}
+
+.fade-in2 {
+    animation: fadeInMoveBlur 2s ease forwards;
+    animation-delay: 2s;
+}
+
+@keyframes fadeInMoveBlur {
+    0% {
+        opacity: 0;
+        transform: translateY(-30px);
+        filter: blur(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
 }

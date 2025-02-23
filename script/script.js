@@ -35,3 +35,15 @@ document.addEventListener("DOMContentLoaded", function () {
     // 初期スクロール位置での確認
     handleScroll();
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+    const splash = document.querySelector('.splash');
+    
+    // スプラッシュ画面をフェードアウトして非表示
+    setTimeout(() => {
+        splash.classList.add('fade-out');
+        setTimeout(() => {
+            splash.style.display = 'none';
+        }, 1000); // フェードアウトのアニメーション時間後に非表示
+    }, 4000);
+});
