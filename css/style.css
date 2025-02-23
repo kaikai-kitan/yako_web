@@ -336,3 +336,28 @@ footer{
         display: none;
     }
 }
+
+/* ハンバーガーメニューの基本スタイル */
+.hamburger {
+    display: none;  /* デフォルトで非表示 */
+}
+
+/* スプラッシュ画面表示中はハンバーガーメニューを非表示 */
+.splash-active .hamburger {
+    display: none !important;
+}
+
+@media screen and (max-width: 768px) {
+    .hamburger {
+        display: block;  /* スマホサイズで表示 */
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 30px;
+        height: 24px;
+        z-index: 10000;
+        cursor: pointer;
+    }
+    
+    /* 他のスタイルは変更なし */
+}
