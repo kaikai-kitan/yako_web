@@ -71,15 +71,15 @@ nav li {
     transform: translateY(0);
 }
 
-.yatai_img{
-    float: right;
-    margin-right: 35px;
-    width: 50%;
-    height: auto;
-    box-shadow: 3px 4px 5px #e6e6e6;
-    opacity: 0;
-    transform: translateY(50px);
-    transition: opacity 1s ease-out, transform 1s ease-in-out;
+.yatai_img {
+    width: 90vw;  /* ビューポート幅の90% */
+    height: auto;  /* アスペクト比を維持 */
+    object-fit: cover;  /* 画像のアスペクト比を保持しながらフィット */
+    border-radius: 20px;  /* 角丸の設定 */
+    margin: 2rem auto;  /* 上下左右の余白 */
+    display: block;  /* ブロック要素として表示 */
+    max-width: 1200px;  /* 大きな画面での最大幅 */
+    box-shadow: 0 4px 8px rgba(38, 32, 26, 0.1);  /* 微細な影を追加 */
 }
 
 /*mainデザイン*/
@@ -109,7 +109,7 @@ h3{
 .hotsand{
     margin: 5px;
     color: tomato;
-    background-color: #e6e6e6;
+    background-color: #ffffff;
     padding: 20px;
     border-radius: 3px 40px;
     width: 30%;
@@ -246,38 +246,46 @@ footer{
         position: fixed;
         top: 20px;
         right: 20px;
-        width: 30px;
-        height: 24px;
+        width: 30px;  /* ハンバーガーアイコンの幅 */
+        height: 24px;  /* ハンバーガーアイコンの高さ */
         z-index: 10000;
         cursor: pointer;
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 10px;
+        border-radius: 5px;
     }
 
     .hamburger span {
         display: block;
         position: absolute;
-        width: 100%;
+        left: 10px;  /* 左側のパディングと同じ値 */
+        width: 30px;  /* 線の長さ */
         height: 2px;
         background-color: #26201a;
         transition: 0.3s ease-in-out;
     }
 
     .hamburger span:nth-child(1) {
-        top: 0;
+        top: 10px;  /* 上部のパディングと同じ値 */
     }
+    
     .hamburger span:nth-child(2) {
-        top: 11px;
+        top: 21px;  /* 中央の線の位置 */
     }
+    
     .hamburger span:nth-child(3) {
-        bottom: 0;
+        top: 32px;  /* 下部の線の位置 */
     }
 
-    /* ハンバーガーメニューがアクティブ時 */
+    /* ハンバーガーメニューがアクティブ時の調整 */
     .hamburger.active span:nth-child(1) {
         transform: translateY(11px) rotate(-45deg);
     }
+    
     .hamburger.active span:nth-child(2) {
         opacity: 0;
     }
+    
     .hamburger.active span:nth-child(3) {
         transform: translateY(-11px) rotate(45deg);
     }
@@ -289,10 +297,11 @@ footer{
         right: -100%;
         width: 70%;
         height: 100vh;
-        background-color: #fbf3ea;
+        background-color: rgba(255, 255, 255, 0.95);  /* メニューの背景も半透明の白に */
         transition: 0.3s ease-in-out;
         z-index: 9999;
         padding-top: 60px;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);  /* 左側に影を追加 */
     }
 
     .nav.active {
@@ -327,6 +336,12 @@ footer{
     /* スプラッシュ画面のレスポンシブ対応 */
     .catch_phrase1, .catch_phrase2 {
         font-size: 1.5em;
+    }
+
+    .yatai_img {
+        width: 95vw;  /* スマホではより大きく表示 */
+        border-radius: 15px;  /* スマホでは角丸を少し小さく */
+        margin: 1rem auto;  /* スマホでは余白を少し小さく */
     }
 }
 
