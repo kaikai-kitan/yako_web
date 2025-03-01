@@ -39,7 +39,11 @@ document.addEventListener("DOMContentLoaded", function () {
 document.addEventListener('DOMContentLoaded', () => {
     const splash = document.querySelector('.splash');
     
-    if (splash) {  // スプラッシュ要素が存在する場合（トップページの場合）
+    // URLパラメータをチェック
+    const urlParams = new URLSearchParams(window.location.search);
+    const noSplash = urlParams.get('nosplash');
+
+    if (splash && !noSplash) {  // スプラッシュ要素が存在し、かつnosplashパラメータがない場合
         // スプラッシュ表示中はbodyにクラスを追加
         document.body.classList.add('splash-active');
         
@@ -51,6 +55,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.classList.remove('splash-active');
             }, 1000);
         }, 4000);
+    } else if (splash) {
+        // nosplashパラメータがある場合は即座に非表示
+        splash.style.display = 'none';
     }
 
     // ハンバーガーメニューの制御（全ページ共通）
@@ -71,4 +78,30 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    // 画像スライドショーの制御
+    const images = document.querySelectorAll('.slideshow-img');
+    let currentImageIndex = 0;
+    
+    // 最初の画像を表示
+    if (images.length > 0) {
+        images[0].classList.add('active');
+    }
+
+    // 3秒ごとに画像を切り替え
+    function switchImage() {
+        // 現在の画像を非表示
+        images[currentImageIndex].classList.remove('active');
+        
+        // 次の画像のインデックスを計算
+        currentImageIndex = (currentImageIndex + 1) % images.length;
+        
+        // 次の画像を表示
+        images[currentImageIndex].classList.add('active');
+    }
+
+    // 3秒後から画像切り替えを開始
+    setTimeout(() => {
+        setInterval(switchImage, 3000);
+    }, 3000);
 });
