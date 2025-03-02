@@ -379,16 +379,16 @@ footer{
 
 .image-container {
     width: 90vw;
-    height: auto;
     position: relative;
     margin: 2rem auto;
     max-width: 1200px;
+    aspect-ratio: 16 / 9;  /* コンテナの縦横比を固定 */
 }
 
 .slideshow-img {
     width: 100%;
-    height: auto;
-    object-fit: cover;
+    height: 100%;  /* 高さを100%に変更 */
+    object-fit: cover;  /* アスペクト比を保ちながらカバー */
     border-radius: 20px;
     position: absolute;
     top: 0;
@@ -411,9 +411,129 @@ footer{
     .image-container {
         width: 95vw;
         margin: 1rem auto;
+        aspect-ratio: 4 / 3;  /* スマホ向けに縦横比を調整 */
     }
     
     .slideshow-img {
         border-radius: 15px;
+    }
+}
+
+.description {
+    padding: 20px;
+    text-align: left;
+    margin: 2rem auto;
+    width: 90%;
+    max-width: 1200px;
+}
+
+.description p {
+    font-family: "Hiragino Mincho ProN", "游明朝", YuMincho, "HG明朝E", "MS P明朝", "MS 明朝", serif;
+    font-size: 20px;
+    line-height: 2;
+    margin: 0;
+}
+
+.description strong {
+    font-weight: bold;  /* 太字に変更 */
+}
+
+/* レスポンシブ対応 */
+@media screen and (max-width: 768px) {
+    .description {
+        width: 95%;
+        padding: 20px;
+    }
+}
+
+.menu-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3rem;
+    padding: 2rem 0;
+}
+
+.menu-item {
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.menu-category {
+    font-family: "Hiragino Mincho ProN", "游明朝", YuMincho, serif;
+    font-size: 24px;
+    color: #26201a;
+    text-align: center;
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+.menu-title {
+    font-family: "Hiragino Mincho ProN", "游明朝", YuMincho, serif;
+    font-size: 20px;  /* フォントサイズを20pxに変更 */
+    margin-bottom: 1rem;
+    color: #26201a;
+}
+
+.menu-image-container {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.menu-image {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(38, 32, 26, 0.1);
+}
+
+.price {
+    font-size: 30px;  /* フォントサイズを30pxに変更 */
+    font-weight: bold;
+    margin: 0.5rem 0;
+    color: #26201a;
+}
+
+.institute {
+    color: #666;
+}
+
+/* レスポンシブ対応 */
+@media screen and (max-width: 768px) {
+    .menu-item {
+        width: 95%;
+    }
+}
+
+.deformed-image-container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 20px;
+}
+
+.deformed-img {
+    width: 33%;  /* 画面の1/3のサイズ */
+    height: auto;
+    display: block;
+    margin-left: 0;  /* 左寄せ */
+    object-fit: contain;
+}
+
+/* レスポンシブ対応 */
+@media screen and (max-width: 768px) {
+    .deformed-image-container {
+        padding: 0 10px;
+    }
+
+    .deformed-img {
+        width: 50%;  /* スマホでは少し大きめに */
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .deformed-img {
+        width: 70%;  /* さらに小さい画面では大きく */
     }
 }

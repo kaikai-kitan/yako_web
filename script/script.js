@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         images[0].classList.add('active');
     }
 
-    // 3秒ごとに画像を切り替え
+    // 4秒ごとに画像を切り替え
     function switchImage() {
         // 現在の画像を非表示
         images[currentImageIndex].classList.remove('active');
@@ -100,8 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
         images[currentImageIndex].classList.add('active');
     }
 
-    // 3秒後から画像切り替えを開始
+    // 4秒後から画像切り替えを開始
     setTimeout(() => {
-        setInterval(switchImage, 3000);
-    }, 3000);
+        setInterval(switchImage, 4000);
+    }, 4000);
 });
