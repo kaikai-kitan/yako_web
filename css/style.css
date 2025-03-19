@@ -421,7 +421,7 @@ footer{
 
 .description {
     padding: 20px;
-    text-align: left;
+    text-align: center;  /* 中央揃えに変更 */
     margin: 2rem auto;
     width: 90%;
     max-width: 1200px;
@@ -429,20 +429,33 @@ footer{
 
 .description p {
     font-family: "Hiragino Mincho ProN", "游明朝", YuMincho, "HG明朝E", "MS P明朝", "MS 明朝", serif;
-    font-size: 20px;
-    line-height: 2;
+    font-size: 15px;
+    line-height: 4;  /* 行間をさらに広げる */
     margin: 0;
 }
 
-.description strong {
-    font-weight: bold;  /* 太字に変更 */
+.description br {
+    display: block;
+    content: "";
+    margin-top: 10px;  /* 改行後の余白を追加 */
+}
+
+.highlight {
+    font-size: 25px;  /* 少し大きめに */
+    font-weight: bold;
+    margin-bottom: 5px;
+    display: inline-block;
 }
 
 /* レスポンシブ対応 */
 @media screen and (max-width: 768px) {
     .description {
         width: 95%;
-        padding: 20px;
+        padding: 10px;
+    }
+    
+    .description br {
+        margin-top: 8px;  /* スマホでは少し狭く */
     }
 }
 
