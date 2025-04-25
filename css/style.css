@@ -550,3 +550,71 @@ footer{
         width: 70%;  /* さらに小さい画面では大きく */
     }
 }
+
+    .content {
+      width: 90%;
+      max-width: 1200px;
+      margin: 0 auto;
+      font-family: "Yu Gothic", YuGothic, Meiryo;
+      line-height: 1.8;
+    }
+    .page-title {
+      text-align: center;
+      font-size: 2.5rem;
+      margin: 2rem 0;
+    }
+    .intro {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    .project-section {
+      margin: 3rem 0;
+      padding: 1rem 0;
+    }
+    .project-section h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      border-left: 8px solid #ff7f00; /* orange */
+      padding-left: 0.5rem;
+    }
+    .project-image {
+        margin: 2rem 0;
+        text-align: center; /* 画像中央揃え */
+      }
+    .project-image img {
+        width: 70%;
+        height: auto;
+        border-radius: 20px;
+        display: block;        /* ブロック要素化 */
+        margin: 0 auto;        /* 左右中央寄せ */
+    }
+    .gallery-section {
+      text-align: center;
+      margin: 4rem 0;
+    }
+    .gallery-section h2 {
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+    }
+    .gallery-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+    .gallery-grid img {
+      width: calc(33.333% - 1rem);
+      max-width: 320px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(38, 32, 26, 0.1);
+    }
+    @media (max-width: 768px) {
+      .gallery-grid img {
+        width: calc(50% - 1rem);
+      }
+      .project-section h2 {
+        font-size: 1.6rem;
+      }
+    }
