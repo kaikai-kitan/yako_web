@@ -6,7 +6,8 @@ body {
     background-color: #fbf3ea;
     color: #26201a;
     margin: 0;
-    padding: 0;
+
+    padding: 20px;
 }
 
 h1,h2,h3,h4,p,ul,li {
@@ -56,7 +57,7 @@ nav li {
 .btn:hover{
     padding-left: 5px;
     padding-right: 5px;
-    background-color: #26201a;/*ホバー時の色変更*/
+    background-color: #d56d04;/*ホバー時の色変更*/
     color: #ffffff;
 }
 
@@ -617,4 +618,69 @@ footer{
       .project-section h2 {
         font-size: 1.6rem;
       }
+    }
+
+    /* コンテナ設定 */
+    .container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: center;
+    }
+
+    /* 人物カード（固定サイズ） */
+    .person {
+        width: 250px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* 画像部分（枠を固定） */
+    .person .image {
+        width: 100%;
+        height: 250px; /* 高さ固定 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        background-color: #eee;
+    }
+
+    /* 画像自体の調整（顔がしっかり映るように） */
+    .person .image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 20%;
+    }
+
+    /* 情報部分 */
+    .person .info {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    /* 名言部分 */
+    .person .quote {
+        margin-top: 10px;
+        background-color: #f9f9f9;
+        padding: 10px;
+        border-radius: 4px;
+        font-style: italic;
+        font-size: 13px;
+    }
+
+    /* 📱 レスポンシブ対応（スマホ画面：1列に） */
+    @media screen and (max-width: 768px) {
+        .person {
+            width: 90%; /* スマホでは横幅90% */
+        }
+    }
+
+    .zukannmem{
+        font-weight: bold;
     }
