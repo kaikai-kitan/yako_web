@@ -105,3 +105,30 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(switchImage, 4000);
     }, 4000);
 });
+
+  // 必要な要素を取得
+  const modal = document.getElementById('modal');
+  const modalImage = document.getElementById('modalImage');
+  const galleryImages = document.querySelectorAll('.gallery-grid img');
+  const closeButton = document.querySelector('.close-button');
+
+  // ギャラリーの各画像にクリックイベントを設定
+  galleryImages.forEach(img => {
+    img.addEventListener('click', () => {
+      modal.style.display = 'flex'; // モーダルを表示
+      modalImage.src = img.src;     // クリックされた画像のURLをモーダルに設定
+    });
+  });
+
+  // 閉じるボタンがクリックされたらモーダルを非表示にする
+  closeButton.addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+
+  // モーダルの背景がクリックされたらモーダルを非表示にする
+  modal.addEventListener('click', (e) => {
+    // クリックされたのが背景（modal自身）の場合のみ閉じる
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });

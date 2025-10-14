@@ -460,57 +460,178 @@ footer{
     }
 }
 
-.menu-list {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3rem;
-    padding: 2rem 0;
+
+/* ========== 予約フォームセクション ========== */
+.reservation-section {
+    width: 90%;
+    max-width: 1200px;
+    margin: 4rem auto;
+    text-align: center;
 }
 
-.menu-item {
+.reservation-section h2 {
+    font-family: "Hiragino Mincho ProN", "游明朝", YuMincho, serif;
+    font-size: 2.2rem;
+    margin-bottom: 1rem;
+}
+
+.reservation-section p {
+    margin-bottom: 3rem;
+    line-height: 1.8;
+}
+
+.reservation-container {
+    display: flex;
+    flex-wrap: wrap; /* スマホ用に折り返し設定 */
+    gap: 2rem;
+    text-align: left;
+}
+
+.calendar-embed, .form-embed {
+    flex: 1; /* 横並び時に均等な幅を確保 */
+    min-width: 320px; /* 最小幅を指定 */
+}
+
+.calendar-embed h3, .form-embed h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #d56d04;
+    padding-bottom: 0.5rem;
+}
+
+.calendar-embed iframe, .form-embed iframe {
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(38, 32, 26, 0.1);
+}
+
+/* レスポンシブ対応 (画面幅が800px以下の場合) */
+@media (max-width: 800px) {
+    .reservation-container {
+        flex-direction: column; /* 縦並びにする */
+    }
+}
+
+/* ========== メニューページ用のスタイル ========== */
+
+.menu-page {
     width: 90%;
-    max-width: 400px;
+    max-width: 1200px;
+    margin: 2rem auto; /* 上下左右の余白 */
+}
+
+.menu-genre {
+    margin-bottom: 4rem; /* 各ジャンルの間の余白 */
+}
+
+.menu-category, .menu-subcategory {
+    font-family: "Hiragino Mincho ProN", "游明朝", YuMincho, serif;
     text-align: center;
+    color: #26201a;
+    margin-bottom: 2rem;
 }
 
 .menu-category {
-    font-family: "Hiragino Mincho ProN", "游明朝", YuMincho, serif;
-    font-size: 24px;
-    color: #26201a;
-    text-align: center;
-    margin-bottom: 2rem;
-    width: 100%;
+    font-size: 2.2rem;
 }
+
+.menu-subcategory {
+    font-size: 1.5rem;
+    margin-top: 3rem; /* サブカテゴリの上の余白 */
+    border-bottom: 2px solid #d56d04;
+    display: inline-block; /* 下線が文字幅に合うように */
+    padding-bottom: 0.5rem;
+    /* 中央寄せのための設定 */
+    left: 50%;
+    transform: translateX(-50%);
+    position: relative;
+}
+
+
+/* --- メニューを横並びにするためのグリッド設定 --- */
+.menu-grid {
+    display: flex;
+    flex-wrap: wrap; /* 画面幅に応じて折り返す */
+    gap: 2rem; /* アイテム間の余白 */
+    justify-content: center; /* アイテムを中央揃え */
+}
+
+/* --- 各メニューアイテムのスタイル --- */
+.menu-item {
+    background-color: #fff;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(38, 32, 26, 0.1);
+    padding: 1.5rem;
+    text-align: center;
+    width: calc(33.333% - 2rem); /* 3列表示（gapの値を考慮） */
+    max-width: 350px;
+    display: flex;
+    flex-direction: column; /* 中の要素を縦に並べる */
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.menu-item:hover {
+    transform: translateY(-5px); /* 少し浮き上がるアニメーション */
+    box-shadow: 0 8px 15px rgba(38, 32, 26, 0.15);
+}
+
 
 .menu-title {
     font-family: "Hiragino Mincho ProN", "游明朝", YuMincho, serif;
-    font-size: 20px;  /* フォントサイズを20pxに変更 */
+    font-size: 1.2rem;
     margin-bottom: 1rem;
     color: #26201a;
+    flex-grow: 1; /* タイトルの高さが揃うように調整 */
 }
 
 .menu-image-container {
     width: 100%;
     margin-bottom: 1rem;
+    aspect-ratio: 4 / 3; /* 画像のアスペクト比を4:3に */
 }
 
 .menu-image {
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover; /* 画像がコンテナにフィットするように */
     border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(38, 32, 26, 0.1);
 }
 
 .price {
-    font-size: 30px;  /* フォントサイズを30pxに変更 */
+    font-size: 1.8rem;
     font-weight: bold;
-    margin: 0.5rem 0;
     color: #26201a;
+    margin: 0.5rem 0;
 }
 
 .institute {
+    font-size: 0.8rem;
     color: #666;
+}
+
+/* ========== レスポンシブ対応 ========== */
+
+/* タブレットサイズ (幅が900px以下) */
+@media screen and (max-width: 900px) {
+    .menu-item {
+        width: calc(50% - 2rem); /* 2列表示 */
+    }
+}
+
+/* スマートフォンサイズ (幅が600px以下) */
+@media screen and (max-width: 600px) {
+    .menu-page {
+        width: 95%;
+    }
+    .menu-item {
+        width: 100%; /* 1列表示 */
+        max-width: 400px;
+    }
+    .menu-category {
+        font-size: 1.8rem;
+    }
+    .menu-subcategory {
+        font-size: 1.3rem;
+    }
 }
 
 /* レスポンシブ対応 */
@@ -610,13 +731,71 @@ footer{
       object-fit: cover;
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(38, 32, 26, 0.1);
+      cursor: pointer; /* ← クリックできることを示すカーソルに変更 */
+      transition: opacity 0.3s; /* ← ホバー時のアニメーション */
     }
+
+    /* ↓↓↓ マウスを乗せたときに少し透過させる ↓↓↓ */
+    .gallery-grid img:hover {
+      opacity: 0.8;
+    }
+
     @media (max-width: 768px) {
       .gallery-grid img {
         width: calc(50% - 1rem);
       }
       .project-section h2 {
         font-size: 1.6rem;
+      }
+    }
+
+    /* ↓↓↓ ここからモーダル用のスタイルを追加 ↓↓↓ */
+
+    /* モーダルの背景 */
+    .modal {
+      display: none; /* 初期状態では非表示 */
+      position: fixed; /* 画面に固定 */
+      z-index: 100; /* 他の要素より手前に表示 */
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.85); /* 半透明の黒い背景 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* モーダルのコンテンツ（拡大画像） */
+    .modal-content {
+      max-width: 90%;
+      max-height: 85vh; /* 画面の高さの85%を最大に */
+      animation: zoomIn 0.5s; /* ズームインするアニメーション */
+    }
+
+    /* 閉じるボタン */
+    .close-button {
+      position: absolute;
+      top: 20px;
+      right: 35px;
+      color: #fff;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+
+    .close-button:hover {
+      color: #bbb;
+    }
+
+    /* アニメーションの定義 */
+    @keyframes zoomIn {
+      from {
+        transform: scale(0);
+      }
+      to {
+        transform: scale(1);
       }
     }
 
