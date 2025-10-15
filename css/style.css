@@ -319,7 +319,7 @@ footer{
 
     .nav li {
         width: 100%;
-        padding: 10px 20px;
+        padding: 10px 0px;
         border-bottom: 1px solid #26201a;
     }
 
@@ -675,7 +675,7 @@ footer{
 
     .content {
       width: 90%;
-      max-width: 1200px;
+      max-width: 15cm;
       margin: 0 auto;
       font-family: "Yu Gothic", YuGothic, Meiryo;
       line-height: 1.8;
@@ -804,12 +804,13 @@ footer{
         display: flex;
         flex-wrap: wrap;
         gap: 20px;
-        justify-content: center;
+        justify-content: space-evenly;
+        padding: 20px 0;
     }
 
     /* 人物カード（固定サイズ） */
     .person {
-        width: 250px;
+        width: calc(50% - 20px);
         background-color: #fff;
         border-radius: 8px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -826,14 +827,14 @@ footer{
         justify-content: center;
         align-items: center;
         overflow: hidden;
-        background-color: #eee;
+        background-color: #fff;
     }
 
     /* 画像自体の調整（顔がしっかり映るように） */
     .person .image img {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
         object-position: center 20%;
     }
 
@@ -856,7 +857,11 @@ footer{
     /* 📱 レスポンシブ対応（スマホ画面：1列に） */
     @media screen and (max-width: 768px) {
         .person {
-            width: 90%; /* スマホでは横幅90% */
+            width: 100%; /* スマホでは横幅90% */
+        }
+        
+        body {
+            padding: 0;
         }
     }
 
