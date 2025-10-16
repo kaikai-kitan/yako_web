@@ -1,37 +1,52 @@
+<!-- メインページ -->
 <script>
+	import ImageSlideshow from '$lib/components/ImageSlideshow.svelte';
+	import SplashView from '$lib/components/SplashView.svelte';
+	import { onMount } from 'svelte';
 
+	let splash = $state();
+	let images = [
+		{
+			src: '/images/home_image/active01.jpg',
+			alt: 'active 01'
+		},
+		{
+			src: '/images/home_image/active02.jpg',
+			alt: 'active 02'
+		},
+		{
+			src: '/images/home_image/active03.jpg',
+			alt: 'active 03'
+		},
+		{
+			src: '/images/home_image/active04.jpg',
+			alt: 'active 04'
+		}
+	];
+
+	function showSplashInNecessary() {
+		const noSplashExpirationKey = 'no_splash_expiration_key';
+		const noSplashExpirationValue = localStorage.getItem(noSplashExpirationKey);
+
+		// localStorage にキーが存在しなかったら
+		if (noSplashExpirationValue === null) {
+			// localStorage に存在する期限を超過しているな実行
+			if (Date.parse(noSplashExpirationValue) < Date.now()) {
+				splash.showSplash();
+				localStorage.setItem(new Date().toDateString());
+			}
+		}
+	}
+
+	onMount(() => {
+		showSplashInNecessary();
+		// splash.showSplash();
+	});
 </script>
 
 <main>
-	<div class="splash">
-		<div class="catch_phrase_container">
-			<p class="catch_phrase1 fade-in1">小さな屋台の灯りに集い</p>
-			<p class="catch_phrase2 fade-in2">夜を乗り越えて行きましょう。</p>
-		</div>
-	</div>
-
-	<div class="image-container">
-		<img
-			src="../images/home_image/active01.JPG"
-			alt="屋台の食べ物イメージ写真"
-			class="slideshow-img fade"
-		/>
-		<img
-			src="../images/home_image/active02.jpg"
-			alt="鴨川デルタでの屋台"
-			class="slideshow-img fade"
-		/>
-		<img
-			src="../images/home_image/active03.JPG"
-			alt="屋台シアターの写真"
-			class="slideshow-img fade"
-		/>
-		<img
-			src="../images/home_image/active04.JPG"
-			alt="屋台を押している写真"
-			class="slideshow-img fade"
-		/>
-	</div>
+	<SplashView bind:this={splash} />
+	<ImageSlideshow images={images} />
 
 	<div class="deformed-image-container">
 		<img src="../images/yatai_defo.jpg" alt="デフォルメされた屋台イラスト" class="deformed-img" />
@@ -59,7 +74,7 @@
 		<div class="calendar-embed">
 			<h3>予約状況カレンダー</h3>
 			<iframe
-        title="予約状況カレンダー"
+				title="予約状況カレンダー"
 				src="https://calendar.google.com/calendar/embed?src=cfed507b8bd3c50b9beb4a6f84023b9b3331c85252e96c95b0d6812102cf80b7%40group.calendar.google.com&ctz=Asia%2FTokyo"
 				style="border: 0"
 				width="100%"
@@ -71,7 +86,7 @@
 		<div class="form-embed">
 			<h3>予約フォーム</h3>
 			<iframe
-        title="屋台予約フォーム"
+				title="屋台予約フォーム"
 				src="https://docs.google.com/forms/d/e/1FAIpQLSdcQyz_HwlTNo67d72XjLdgDFU4SO1vgGPBdW0A4F2_XaC48A/viewform?embedded=true"
 				width="100%"
 				height="800"
@@ -83,8 +98,5 @@
 	</div>
 </section>
 
-
 <style>
-
-
 </style>

@@ -1,6 +1,5 @@
 <script>
-  import { base } from '$app/paths';
-
+	import { base } from '$app/paths';
 </script>
 
 <header>
@@ -18,7 +17,7 @@
 						target="_blank"
 						rel="noopener noreferrer"
 						><img
-							src="../images/icon.png"
+							src="{base}/images/icon.png"
 							alt="微小夜行電灯のメニュー一覧用画像"
 							class="iconmenu"
 						/></a
@@ -82,6 +81,13 @@
 
 	.navbutton {
 		text-align: left;
+	}
+
+	.btn {
+		display: block;
+		padding: 10px;
+		text-decoration: none;
+		color: #26201a;
 	}
 
 	.hamburger {

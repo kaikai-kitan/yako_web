@@ -1,3 +1,4 @@
+<!-- 基本レイアウト -->
 <script>
 	import favicon from '$lib/assets/favicon.png';
 
@@ -22,5 +23,10 @@
 </footer>
 
 <style>
-
+	footer {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
 </style>
