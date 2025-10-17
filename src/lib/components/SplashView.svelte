@@ -11,6 +11,7 @@
 		visible_splash = true;
 		setTimeout(() => {
 			visible_splash = false;
+			window.scroll(0, 0);
 		}, 4500);
 	}
 </script>

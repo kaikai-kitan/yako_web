@@ -18,9 +18,9 @@
 		slideshow_index = (slideshow_index + 1) % images.length;
 		fadeImage.classList.remove('slideshow-animation');
 		requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        fadeImage.classList.add('slideshow-animation');
-      });
+			requestAnimationFrame(() => {
+				fadeImage.classList.add('slideshow-animation');
+			});
 		});
 	}
 
@@ -55,11 +55,10 @@
 
 <style>
 	.slideshow-container {
-		max-width: 1200px;
+		max-width: 800px;
 		width: 100%;
 		aspect-ratio: 16 / 9;
 		position: relative;
-		margin: 2rem auto;
 	}
 
 	.slideshow-image {
@@ -67,6 +66,7 @@
 		height: 100%;
 		object-fit: cover;
 		position: absolute;
+		clip-path: polygon(0% 40px, 40px 0%, 100% 0px, 100% calc(100% - 40px), calc(100% - 40px) 100%, 0px 100%);
 	}
 
 	.slideshow-animation {

@@ -75,7 +75,7 @@
 
 	.iconmenu {
 		padding-top: 5px;
-		max-width: 60%;
+		max-width: 70px;
 		height: auto;
 	}
 

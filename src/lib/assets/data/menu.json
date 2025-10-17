@@ -1,0 +1,85 @@
+[
+  {
+    "id": 0,
+    "name": "HOTSAND",
+    "sections": [
+      {
+        "name": "期間限定",
+        "items": [
+          {
+            "name": "すぐきホットサンド",
+            "image": "/images/menu/food/suguki.jpg"
+          }
+        ]
+      },
+      {
+        "name": "レギュラー",
+        "items": [
+          {
+            "name": "<ruby>燻製鴨肉<rt>くんせいかもにく</rt></ruby>ホットサンド",
+            "image": "/images/menu/food/smokechicken_cut.jpg"
+          },
+          {
+            "name": "フルーツ大福ホットサンド",
+            "image": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1,
+    "name": "SOFTDRINK",
+    "sections": [
+      {
+        "name": "レギュラー",
+        "items": [
+          {
+            "name": "コーヒー（屋台ブレンド）",
+            "image": ""
+          },
+          {
+            "name": "紅茶",
+            "image": ""
+          },
+          {
+            "name": "はちみつレモネード",
+            "image": "/images/menu/drink/honey_remon.jpg"
+          }
+        ]
+      },
+      {
+        "name": "トロピカル・ルイボスティー",
+        "items": [
+          {
+            "name": "南陽フルーツティー",
+            "image": "/images/menu/drink/nanyou.jpg"
+          },
+          {
+            "name": "ピスタチオ・ルイボスティー",
+            "image": "/images/menu/drink/pistatio.jpg"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "ALCOHOL",
+    "sections": [
+      {
+        "name": "レギュラー",
+        "items": [
+          {
+            "name": "電気レモネード",
+            "image": ""
+          },
+          {
+            "name": "スコッチコーヒーフロート",
+            "image": ""
+          }
+        ]
+      }
+    ]
+  }
+]

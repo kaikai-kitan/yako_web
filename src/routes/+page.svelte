@@ -46,21 +46,37 @@
 
 <main>
 	<SplashView bind:this={splash} />
-	<ImageSlideshow images={images} />
+	<div class="top-garalley-mask">
+		<div class="top-garalley">
+			<div class="slideshow-container">
+				<div class="slideshow">
+					<ImageSlideshow {images} />
+				</div>
+			</div>
 
-	<div class="deformed-image-container">
+			<div class="description">
+				<div class="description-text scroll-trigger">
+					<p class="highlight">微小夜行電灯</p>
+				</div>
+				<div class="description-text scroll-trigger">
+					<p>
+						京都に流れる鴨川の河川敷で<br />
+						ゆったりとした時間を過ごせる
+					</p>
+				</div>
+				<div class="description-text scroll-trigger">
+					<p>
+						<strong>おもろい空間</strong>を作りたいと思い、<br />
+						京都府を中心に活動をする夜行人です
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- <div class="deformed-image-container">
 		<img src="../images/yatai_defo.jpg" alt="デフォルメされた屋台イラスト" class="deformed-img" />
-	</div>
-
-	<div class="description">
-		<p>
-			<span class="highlight">微小夜行電灯</span><br />
-			京都に流れる鴨川の河川敷で<br />
-			ゆったりとした時間を過ごせる<br />
-			<strong>おもろい空間</strong>を作りたいと思い、<br />
-			京都府を中心に活動をする夜行人です
-		</p>
-	</div>
+	</div> -->
 
 	<article>
 		<section></section>
@@ -99,4 +115,51 @@
 </section>
 
 <style>
+	.top-garalley-mask {
+		width: 800px;
+		height: 600px;
+		overflow: scroll;
+		scrollbar-width: 0;
+	}
+
+	.top-garalley-mask::-webkit-scrollbar {
+		display: none;
+	}
+
+	.top-garalley {
+		display: flex;
+		justify-content: center;
+		column-gap: 40px;
+	}
+
+	.slideshow-container {
+		flex-grow: 1;
+		width: 100%;
+		max-width: 800px;
+		height: 1600px;
+	}
+
+	.slideshow {
+		position: sticky;
+		top: 10%;
+	}
+
+	.description {
+		max-width: 500px;
+		height: 1600px;
+		flex-grow: 1;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.description-text {
+		height: 600px;
+		writing-mode: vertical-lr;
+		font-size: 20px;
+		text-align: center;
+	}	
+
 </style>
