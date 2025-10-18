@@ -46,8 +46,8 @@
 
 <main>
 	<SplashView bind:this={splash} />
-	<div class="top-garalley-mask">
-		<div class="top-garalley">
+	<div class="top-gallery-mask">
+		<div class="top-gallery">
 			<div class="slideshow-container">
 				<div class="slideshow">
 					<ImageSlideshow {images} />
@@ -115,18 +115,18 @@
 </section>
 
 <style>
-	.top-garalley-mask {
+	.top-gallery-mask {
 		width: 800px;
 		height: 600px;
 		overflow: scroll;
 		scrollbar-width: 0;
 	}
 
-	.top-garalley-mask::-webkit-scrollbar {
+	.top-gallery-mask::-webkit-scrollbar {
 		display: none;
 	}
 
-	.top-garalley {
+	.top-gallery {
 		display: flex;
 		justify-content: center;
 		column-gap: 40px;
