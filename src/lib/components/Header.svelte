@@ -41,7 +41,7 @@
 			</li>
 			<li>
 				<div class="navbutton">
-					<a href="{base}/book" class="btn">夜行人図鑑</a>
+					<a href="{base}/directory" class="btn">夜行人図鑑</a>
 				</div>
 			</li>
 		</ul>
