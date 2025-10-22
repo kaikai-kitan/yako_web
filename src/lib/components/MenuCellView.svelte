@@ -28,7 +28,7 @@
 <style>
 	.menu-cell-container {
 		width: 100%;
-		padding: 10px;
+		box-sizing: border-box;
 	}
 
 	.menu-image-container {

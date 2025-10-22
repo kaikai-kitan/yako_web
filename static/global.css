@@ -1,11 +1,15 @@
 body {
-  font-family: "Zen Antique", "Yu Mincho", "游明朝", YuMincho, "Hiragino Mincho ProN", serif;
+  font-family: "Hiragino Mincho ProN", "Zen Antique", "Yu Mincho", "游明朝", YuMincho, serif;
   font-size: 16px;
   font-weight: 400;
   background-color: #fbf3ea;
   color: #26201a;
   margin: 0;
   padding: 20px;
+}
+
+.display-font {
+  font-family: "Zen Antique", YuMincho, serif;
 }
 
 h1,
