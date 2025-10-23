@@ -4,25 +4,9 @@
 	import SplashView from '$lib/components/SplashView.svelte';
 	import { onMount } from 'svelte';
 
+	import homeData from '$lib/assets/data/home.json';
+
 	let splash = $state();
-	let images = [
-		{
-			src: '/images/home_image/active01.jpg',
-			alt: 'active 01'
-		},
-		{
-			src: '/images/home_image/active02.jpg',
-			alt: 'active 02'
-		},
-		{
-			src: '/images/home_image/active03.jpg',
-			alt: 'active 03'
-		},
-		{
-			src: '/images/home_image/active04.jpg',
-			alt: 'active 04'
-		}
-	];
 
 	function showSplashInNecessary() {
 		const noSplashExpirationKey = 'no_splash_expiration_key';
@@ -39,8 +23,8 @@
 	}
 
 	onMount(() => {
-		showSplashInNecessary();
-		// splash.showSplash();
+		// showSplashInNecessary();
+		splash.showSplash();
 	});
 </script>
 
@@ -50,7 +34,7 @@
 		<div class="top-gallery">
 			<div class="slideshow-container">
 				<div class="slideshow">
-					<ImageSlideshow {images} />
+					<ImageSlideshow images={homeData.images} />
 				</div>
 			</div>
 
