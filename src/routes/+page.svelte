@@ -43,7 +43,8 @@
 
 			const maskCenterY = maskRect.y + maskRect.height / 2;
 			const phraseCenterY = phraseRect.y + phraseRect.height / 2;
-			const delta = Math.pow(phraseCenterY - maskCenterY, 2) / Math.pow(maskRect.height, 2);
+			const maskHeight = Math.pow(maskRect.height, 2) / 10;
+			const delta = Math.pow(phraseCenterY - maskCenterY, 2) / maskHeight;
 			const rate = 1 - Math.min(1, delta * 1.2);
 			updateStyle(rate, phrase);
 		});
