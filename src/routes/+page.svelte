@@ -19,13 +19,16 @@
 		const noSplashExpirationValue = localStorage.getItem(noSplashExpirationKey);
 
 		// localStorage にキーが存在しなかったら
-		if (noSplashExpirationValue === null) {
-			// localStorage に存在する期限を超過しているな実行
-			if (Date.parse(noSplashExpirationValue) < Date.now()) {
-				splash.showSplash();
-				localStorage.setItem(new Date().toDateString());
+		if (noSplashExpirationValue !== null) {
+			// localStorage に存在する期限を超過しているなら実行
+			if (noSplashExpirationValue > Date.now()) {
+				return;
 			}
 		}
+
+		splash.showSplash();
+		const nextExpiration = Date.now() + (24 * 60 * 60 * 1000);
+		localStorage.setItem(noSplashExpirationKey, nextExpiration);
 	}
 
 	function onScrollGallery() {
@@ -45,15 +48,13 @@
 			const phraseCenterY = phraseRect.y + phraseRect.height / 2;
 			const maskHeight = Math.pow(maskRect.height, 2) / 10;
 			const delta = Math.pow(phraseCenterY - maskCenterY, 2) / maskHeight;
-			const rate = 1 - Math.min(1, delta * 1.2);
+			const rate = 1 - Math.min(1, delta / 5);
 			updateStyle(rate, phrase);
 		});
 	}
 
 	onMount(() => {
-		// showSplashInNecessary();
-		// splash.showSplash();
-
+		showSplashInNecessary();
 		onScrollGallery();
 	});
 
