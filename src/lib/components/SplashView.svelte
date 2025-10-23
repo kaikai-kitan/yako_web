@@ -18,7 +18,7 @@
 
 {#if visible_splash}
 	<div out:fade class="splash-background">
-		<div class="splash-container">
+		<div class="splash-container display-font">
 			<p in:blur={{duration: 2000}} class="catch_phrase">小さな屋台の灯りに集い</p>
 			<p in:blur={{duration: 2000, delay: 2000}} class="catch_phrase">夜を乗り越えて行きましょう。</p>
 		</div>
@@ -48,9 +48,9 @@
 	.catch_phrase {
 		color: #26201a;
 		font-size: 2em; /* フォントサイズを元の大きさに戻す */
-		font-family: 'Yu Mincho', '游明朝', YuMincho, 'Hiragino Mincho ProN', serif;
 		font-weight: bold;
 		margin: 0;
 		white-space: nowrap;
+		user-select: none;
 	}
 </style>
