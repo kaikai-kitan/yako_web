@@ -5,8 +5,14 @@
 	import { onMount } from 'svelte';
 
 	import homeData from '$lib/assets/data/home.json';
+	import ReservationForm from '$lib/components/ReservationForm.svelte';
 
 	let splash = $state();
+
+	let gallery;
+	let phrase1;
+	let phrase2;
+	let phrase3;
 
 	function showSplashInNecessary() {
 		const noSplashExpirationKey = 'no_splash_expiration_key';
@@ -22,85 +28,79 @@
 		}
 	}
 
+	function onScrollGallery() {
+		function updateStyle(rate, element) {
+			const opacity = `${rate}`;
+			const blur = `blur(${(1 - rate) * 10}px)`;
+
+			element.style["opacity"] = opacity;
+			element.style["filter"] = blur;
+		}
+		
+		const maskRect = gallery.getBoundingClientRect();
+		[phrase1, phrase2, phrase3].forEach(phrase => {
+			const phraseRect = phrase.getBoundingClientRect();
+
+			const maskCenterY = maskRect.y + maskRect.height / 2;
+			const phraseCenterY = phraseRect.y + phraseRect.height / 2;
+			const delta = Math.pow(phraseCenterY - maskCenterY, 2) / Math.pow(maskRect.height, 2);
+			const rate = 1 - Math.min(1, delta * 1.2);
+			updateStyle(rate, phrase);
+		});
+	}
+
 	onMount(() => {
 		// showSplashInNecessary();
-		splash.showSplash();
+		// splash.showSplash();
+
+		onScrollGallery();
 	});
+
 </script>
 
+<SplashView bind:this={splash} />
+
 <main>
-	<SplashView bind:this={splash} />
-	<div class="top-gallery-mask">
+	<div class="top-gallery-mask" bind:this={gallery} onscroll={onScrollGallery}>
 		<div class="top-gallery">
 			<div class="slideshow-container">
 				<div class="slideshow">
 					<ImageSlideshow images={homeData.images} />
 				</div>
 			</div>
-
-			<div class="description">
-				<div class="description-text scroll-trigger">
-					<p class="highlight">微小夜行電灯</p>
+			<div class="description-container">
+				<div class="phrase-container phrase-1" bind:this={phrase1}>
+					<span class="description-text">微小夜行電灯</span>
 				</div>
-				<div class="description-text scroll-trigger">
-					<p>
-						京都に流れる鴨川の河川敷で<br />
-						ゆったりとした時間を過ごせる
-					</p>
+				<div class="phrase-container phrase-2" bind:this={phrase2}>
+					<span class="description-text">京都に流れる鴨川の河川敷で </span>
+					<span class="description-text">ゆったりとした時間を過ごせる </span>
 				</div>
-				<div class="description-text scroll-trigger">
-					<p>
-						<strong>おもろい空間</strong>を作りたいと思い、<br />
-						京都府を中心に活動をする夜行人です
-					</p>
+				<div class="phrase-container phrase-3" bind:this={phrase3}>
+					<span class="description-text">
+						<strong>おもろい空間</strong>を作りたいと思い、
+					</span>
+					<span class="description-text">京都府を中心に活動をする夜行人です </span>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- <div class="deformed-image-container">
-		<img src="../images/yatai_defo.jpg" alt="デフォルメされた屋台イラスト" class="deformed-img" />
-	</div> -->
+	<div class="messages-container">
 
-	<article>
-		<section></section>
-	</article>
+	</div>
+
+	<ReservationForm />
 </main>
 
-<section class="reservation-section">
-	<h2>屋台貸し出しのご予約はこちら</h2>
-	<p>以下のカレンダーで空き状況をご確認の上、フォームよりご予約ください。</p>
-	<div class="reservation-container">
-		<div class="calendar-embed">
-			<h3>予約状況カレンダー</h3>
-			<iframe
-				title="予約状況カレンダー"
-				src="https://calendar.google.com/calendar/embed?src=cfed507b8bd3c50b9beb4a6f84023b9b3331c85252e96c95b0d6812102cf80b7%40group.calendar.google.com&ctz=Asia%2FTokyo"
-				style="border: 0"
-				width="100%"
-				height="600"
-				frameborder="0"
-				scrolling="no"
-			></iframe>
-		</div>
-		<div class="form-embed">
-			<h3>予約フォーム</h3>
-			<iframe
-				title="屋台予約フォーム"
-				src="https://docs.google.com/forms/d/e/1FAIpQLSdcQyz_HwlTNo67d72XjLdgDFU4SO1vgGPBdW0A4F2_XaC48A/viewform?embedded=true"
-				width="100%"
-				height="800"
-				frameborder="0"
-				marginheight="0"
-				marginwidth="0">読み込んでいます…</iframe
-			>
-		</div>
-	</div>
-</section>
-
 <style>
+	main {
+		width: 100%;
+		box-sizing: border-box;
+	}
+
 	.top-gallery-mask {
-		width: 800px;
+		width: 100%;
 		height: 600px;
 		overflow: scroll;
 		scrollbar-width: 0;
@@ -112,6 +112,7 @@
 
 	.top-gallery {
 		display: flex;
+		position: relative;
 		justify-content: center;
 		column-gap: 40px;
 	}
@@ -128,22 +129,70 @@
 		top: 10%;
 	}
 
-	.description {
-		max-width: 500px;
-		height: 1600px;
+	.phrase-container {
+		position: relative;
+		width: 80%;
+		margin: auto;
+		display: flex;
+		gap: 1rem;
+	}
+
+	.description-container {
+		position: absolute;
+		width: 100%;
+		max-width: 800px;
+		height: 1800px;
 		flex-grow: 1;
 		overflow: hidden;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
+	}
+
+	.phrase-1 {
+		top: 200px;
+		justify-content: flex-start;
+	}
+
+	.phrase-2 {
+		top: 250px;
+		justify-content: flex-end;
+	}
+
+	.phrase-3 {
+		top: 300px;
+		justify-content: flex-start;
 	}
 
 	.description-text {
-		height: 600px;
 		writing-mode: vertical-lr;
 		font-size: 20px;
 		text-align: center;
-	}	
+		padding: 30px 2px;
+		background-color: #ffffff;
+		box-shadow: 0 10px 10px rgba(0, 0, 0, 0.3);
+	}
 
+	.description-text:nth-child(even) {
+		transform: translateY(2rem);
+	}
+
+	@keyframes blur-fade {
+		0% {
+			opacity: 0;
+			filter: blur(10px);
+		}
+
+		25% {
+			opacity: 1;
+			filter: blur(0);
+		}
+
+		75% {
+			opacity: 1;
+			filter: blur(0);
+		}
+
+		100% {
+			opacity: 0;
+			filter: blur(10px);
+		}
+	}
 </style>
