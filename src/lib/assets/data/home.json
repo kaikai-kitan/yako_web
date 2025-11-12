@@ -1,0 +1,20 @@
+{
+  "images": [
+    {
+      "src": "/images/home_image/active01.jpg",
+      "atl": "Image 01"
+    },
+    {
+      "src": "/images/home_image/active02.jpg",
+      "alt": "Image 02"
+    },
+    {
+      "src": "/images/home_image/active03.jpg",
+      "alt": "Image 03"
+    },
+    {
+      "src": "/images/home_image/active04.jpg",
+      "alt": "Image 04"
+    }
+  ]
+}

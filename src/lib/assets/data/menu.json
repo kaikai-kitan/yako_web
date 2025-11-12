@@ -1,0 +1,95 @@
+[
+  {
+    "id": 0,
+    "name": "HOTSAND",
+    "sections": [
+      {
+        "name": "期間限定",
+        "items": [
+          {
+            "name": "すぐきホットサンド",
+            "image": "/images/menu/food/suguki.jpg",
+            "price": 900
+          }
+        ]
+      },
+      {
+        "name": "レギュラー",
+        "items": [
+          {
+            "name": "<ruby>燻製鴨肉<rt>くんせいかもにく</rt></ruby>ホットサンド",
+            "image": "/images/menu/food/smokechicken_cut.jpg",
+            "price": 800
+          },
+          {
+            "name": "フルーツ大福ホットサンド",
+            "image": "",
+            "price": 900
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1,
+    "name": "SOFTDRINK",
+    "sections": [
+      {
+        "name": "レギュラー",
+        "items": [
+          {
+            "name": "コーヒー（屋台ブレンド）",
+            "image": "",
+            "price": 0
+          },
+          {
+            "name": "紅茶",
+            "image": "",
+            "price": 0
+          },
+          {
+            "name": "はちみつレモネード",
+            "image": "/images/menu/drink/honey_remon.jpg",
+            "price": 500
+          }
+        ]
+      },
+      {
+        "name": "トロピカル・ルイボスティー",
+        "items": [
+          {
+            "name": "南陽フルーツティー",
+            "image": "/images/menu/drink/nanyou.jpg",
+            "price": 500
+          },
+          {
+            "name": "ピスタチオ・ルイボスティー",
+            "image": "/images/menu/drink/pistatio.jpg",
+            "price": 500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "ALCOHOL",
+    "sections": [
+      {
+        "name": "レギュラー",
+        "items": [
+          {
+            "name": "電気レモネード",
+            "image": "",
+            "price": 500
+          },
+          {
+            "name": "スコッチコーヒーフロート",
+            "image": "",
+            "price": 700
+          }
+        ]
+      }
+    ]
+  }
+]

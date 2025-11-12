@@ -1,0 +1,37 @@
+[
+  {
+    "name": "タオ",
+    "age": "20代",
+    "status": "浪漫家科学教徒",
+    "image": "/images/yatainin/01.png",
+    "message": "「自分の人生は自分で歩め。夜は誰かと行け。」"
+  },
+  {
+    "name": "カイドウ",
+    "age": "20代",
+    "status": "猫の世話をする人",
+    "image": "",
+    "message": "「頑張んなくてもいいんじゃね」"
+  },
+  {
+    "name": "ヤニー",
+    "age": "20代",
+    "status": "ハムスター愛好家",
+    "image": "",
+    "message": "「」"
+  },
+  {
+    "name": "ASKR",
+    "age": "20代",
+    "status": "料理人",
+    "image": "",
+    "message": "「」"
+  },
+  {
+    "name": "ダー本",
+    "age": "20代",
+    "status": "何でもする人",
+    "image": "",
+    "message": "「コーヒーはブラックで。」"
+  }
+]
