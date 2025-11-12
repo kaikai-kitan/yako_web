@@ -23,7 +23,7 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div transition:fade={{ duration: 300 }} class="modal-background" onclick={hide}>
-		<image transition:scale={{ duration: 300, start: 0.8 }} class="image" {base + src} {alt} />
+		<image transition:scale={{ duration: 300, start: 0.8 }} class="image" src={base + src} {alt} />
 	</div>
 
 	<span class="close-button">
