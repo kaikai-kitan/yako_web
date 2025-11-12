@@ -1,5 +1,6 @@
 <!-- 画像を拡大表示するモーダル　-->
 <script>
+	import { base } from '$app/paths';
 	import { fade, scale } from 'svelte/transition';
 
 	let src = $state('');
@@ -22,7 +23,7 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div transition:fade={{ duration: 300 }} class="modal-background" onclick={hide}>
-		<image transition:scale={{ duration: 300, start: 0.8 }} class="image" {src} {alt} />
+		<image transition:scale={{ duration: 300, start: 0.8 }} class="image" {base + src} {alt} />
 	</div>
 
 	<span class="close-button">

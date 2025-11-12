@@ -1,12 +1,13 @@
 <!-- 夜行人図鑑のセル -->
 <script>
+	import { base } from '$app/paths';
 	let { directoryItem } = $props();
 </script>
 
 <div class="directory-cell-container">
 	<div class="directory-image-container">
 		{#if directoryItem.image !== ''}
-			<img class="directory-image" src={directoryItem.image} alt={directoryItem.name} />
+			<img class="directory-image" src={base + directoryItem.image} alt={directoryItem.name} />
 		{:else}
 			<div class="no-image">NO IMAGE</div>
 		{/if}

@@ -1,4 +1,6 @@
 <script>
+	import { base } from '$app/paths';
+
 	let { menuItem } = $props();
 
 	function formatMenuPrice(price) {
@@ -12,7 +14,7 @@
 <div class="menu-cell-container">
 	<div class="menu-image-container">
 		{#if menuItem.image !== ''}
-			<img class="menu-image" src={menuItem.image} alt={menuItem.name} />
+			<img class="menu-image" src={base + menuItem.image} alt={menuItem.name} />
 		{:else}
 			<div class="no-image">NO IMAGE</div>
 		{/if}
