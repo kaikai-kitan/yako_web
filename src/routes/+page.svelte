@@ -137,6 +137,7 @@
 		margin: auto;
 		display: flex;
 		gap: 1rem;
+		flex-direction: row-reverse;
 	}
 
 	.description-container {
@@ -150,21 +151,21 @@
 
 	.phrase-1 {
 		top: 200px;
-		justify-content: flex-start;
+		justify-content: flex-end;
 	}
 
 	.phrase-2 {
 		top: 250px;
-		justify-content: flex-end;
+		justify-content: flex-start;
 	}
 
 	.phrase-3 {
 		top: 300px;
-		justify-content: flex-start;
+		justify-content: flex-end;
 	}
 
 	.description-text {
-		writing-mode: vertical-lr;
+		writing-mode: vertical-rl;
 		font-size: 20px;
 		text-align: center;
 		padding: 30px 2px;
