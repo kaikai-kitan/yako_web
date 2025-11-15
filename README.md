@@ -1,4 +1,4 @@
-https://kaikai-kitan.github.io/yako_web/html/delta_top.html
+https://kaikai-kitan.github.io/yako_web/
 
 # 微小夜行電灯 ホームページ
 
