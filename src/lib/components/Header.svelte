@@ -36,6 +36,11 @@
 			</li>
 			<li>
 				<div class="navbutton">
+					<a href="{base}/map" class="btn">屋台貸し出し</a>
+				</div>
+			</li>
+			<li>
+				<div class="navbutton">
 					<a href="{base}/company" class="btn">事業内容</a>
 				</div>
 			</li>

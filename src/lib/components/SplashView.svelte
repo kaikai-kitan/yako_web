@@ -16,11 +16,17 @@
 	}
 </script>
 
+<svelte:head>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Kaisei+Opti&display=swap" rel="stylesheet">
+</svelte:head>
+
 {#if visible_splash}
 	<div out:fade class="splash-background">
 		<div class="splash-container display-font">
-			<p in:blur={{duration: 2000}} class="catch_phrase">小さな屋台の灯りに集い</p>
-			<p in:blur={{duration: 2000, delay: 2000}} class="catch_phrase">夜を乗り越えて行きましょう。</p>
+			<p in:blur={{duration: 2000}} class="catch_phrase">世界は常に夜なのよ</p>
+			<p in:blur={{duration: 2000, delay: 2000}} class="catch_phrase">我々はただ歩いて行くだけ。</p>
 		</div>
 	</div>
 {/if}
@@ -48,7 +54,9 @@
 	.catch_phrase {
 		color: #26201a;
 		font-size: 2em; /* フォントサイズを元の大きさに戻す */
-		font-weight: bold;
+		font-family: "Kaisei Opti", serif;
+		font-weight: 400;
+		font-style: normal;
 		margin: 0;
 		white-space: nowrap;
 		user-select: none;
