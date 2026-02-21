@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 	import { fade, fly } from 'svelte/transition';
+	import { base } from '$app/paths';
 
 	// --- ステート管理 (Svelte 5) ---
 	let mapContainer = $state();
@@ -349,15 +350,15 @@
 	{#if ['map', 'dashboard'].includes(currentView)}
 		<nav class="bottom-nav">
 			<button class="nav-item" class:active={currentView === 'map'} onclick={() => currentView = 'map'}>
-				<span class="icon">📅</span>
+				<img src="{base}/images/map_icon/calendar.jpg" alt="予約確認" class="nav-icon" />
 				<span>予約確認</span>
 			</button>
 			<button class="nav-item">
-				<span class="icon">👤</span>
+				<img src="{base}/images/map_icon/yatainin.jpg" alt="プロフィール" class="nav-icon" />
 				<span>プロフィール</span>
 			</button>
 			<button class="nav-item" class:active={currentView === 'dashboard'} onclick={() => currentView = 'dashboard'}>
-				<span class="icon">💰</span>
+				<img src="{base}/images/map_icon/earn_money.jpg" alt="今月の売上" class="nav-icon" />
 				<span>今月の売上</span>
 			</button>
 		</nav>
@@ -579,7 +580,11 @@
 		cursor: pointer;
 	}
 	.nav-item.active { color: #0f172a; }
-	.nav-item .icon { font-size: 1.5rem; }
+	.nav-icon {
+		width: 24px;
+		height: 24px;
+		object-fit: contain;
+	}
 
 	/* Dashboard Styles */
 	.dashboard-screen {
