@@ -12,6 +12,9 @@
 	// アプリの現在の画面状態
 	// 'map': マップ探索, 'detail': 詳細確認, 'qr': 解錠QR, 'active': 利用中(販売管理), 'return': 返却・撮影, 'finish': 完了, 'dashboard': オーナーダッシュボード
 	let currentView = $state('map');
+
+	// ダッシュボード（売上）モーダルの表示状態
+	let isDashboardOpen = $state(false);
 	
 	// マップのフィルターモード ('available': 予約可能, 'active': 出店中)
 	let mapMode = $state('available');
@@ -34,7 +37,7 @@
 	];
 
 	// --- ダッシュボード用データ ---
-	const dashboardData = {
+	let dashboardData = $state({
 		totalSales: 328000,
 		lastMonthSales: 290000,
 		occupancyRate: 85,
@@ -43,10 +46,11 @@
 			{ id: 1, user: '鈴木 花子', date: '2023-10-25', stall: '屋台壱号', amount: 15000 },
 			{ id: 2, user: '佐藤 健', date: '2023-10-24', stall: '屋台弐号', amount: 12000 },
 		]
-	};
+	});
 
 	// グラフのポイント計算
 	function getGraphPoints(data) {
+		if (!data || data.length < 2) return '';
 		const max = Math.max(...data, 1);
 		
 		return data.map((val, i) => {
@@ -56,38 +60,48 @@
 		}).join(' ');
 	}
 
+	// API初期化フラグ
+	let isApiInitialized = false;
+
 	// --- マップ初期化 ---
 	onMount(async () => {
-		setOptions({
-			apiKey: "AIzaSyD9qThdWskVygclntIA6Elzm3tE_tc0JW4", // ★★★ ここにAPIキーを設定してください ★★★
-			version: "weekly",
-			libraries: ["maps", "marker"]
-		});
+		if (!isApiInitialized) {
+			setOptions({
+				apiKey: "AIzaSyD9qThdWskVygclntIA6Elzm3tE_tc0JW4", // ★★★ ここにAPIキーを設定してください ★★★
+				version: "weekly",
+				libraries: ["maps", "marker"]
+			});
+			isApiInitialized = true;
+		}
 
 		try {
 			const { Map } = await importLibrary("maps");
 			// マーカーライブラリも読み込んでおく
-			await importLibrary("marker");
+			const { AdvancedMarkerElement } = await importLibrary("marker");
 
 			mapInstance = new Map(mapContainer, {
 				center: { lat: 35.009, lng: 135.772 },
 				zoom: 16,
 				disableDefaultUI: true, // アプリっぽくするためにUIを消す
 				mapId: "dc1ab66880d245ef156be95a", // ★★★ ここにマップIDを設定してください ★★★
-				styles: [
-					{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }
-				]
+				// mapIdを使用する場合、stylesプロパティは使用できません（Cloud Consoleで設定してください）
 			});
 
-			updateMarkers(mapInstance);
+			updateMarkers(mapInstance, AdvancedMarkerElement);
 		} catch (e) {
 			console.error("Google Maps Load Error:", e);
 		}
 	});
 
 	// マーカーの更新処理
-	function updateMarkers(map) {
+	async function updateMarkers(map, AdvancedMarkerElement) {
 		if (!map) return;
+		
+		// AdvancedMarkerElementが渡されていない場合は読み込む
+		if (!AdvancedMarkerElement) {
+			const lib = await importLibrary("marker");
+			AdvancedMarkerElement = lib.AdvancedMarkerElement;
+		}
 
 		// 既存マーカー削除
 		markers.forEach(m => m.setMap(null));
@@ -96,17 +110,18 @@
 		const filteredStalls = stalls.filter(s => s.status === mapMode);
 
 		filteredStalls.forEach(stall => {
-			// google.maps.Marker はレガシーですが、ここではシンプルさのために使用します。
-			// AdvancedMarkerElement を使う場合は mapId が必須です。
-			const marker = new google.maps.Marker({
-				position: { lat: stall.lat, lng: stall.lng },
+			// マーカーのアイコン画像を作成
+			const iconImg = document.createElement('img');
+			iconImg.src = mapMode === 'available' 
+				? 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' 
+				: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+
+			// AdvancedMarkerElement を使用
+			const marker = new AdvancedMarkerElement({
 				map: map,
+				position: { lat: stall.lat, lng: stall.lng },
 				title: stall.name,
-				icon: {
-					url: mapMode === 'available' 
-						? 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' 
-						: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
-				}
+				content: iconImg
 			});
 
 			marker.addListener('click', () => {
@@ -123,7 +138,7 @@
 	function toggleMode() {
 		mapMode = mapMode === 'available' ? 'active' : 'available';
 		selectedStall = null;
-		updateMarkers(mapInstance);
+		updateMarkers(mapInstance, null);
 	}
 
 	// --- アクションハンドラー ---
@@ -279,9 +294,11 @@
 			</div>
 		{/if}
 
-		<!-- 6. オーナーダッシュボード -->
-		{#if currentView === 'dashboard'}
-			<div class="dashboard-screen" transition:fade>
+		<!-- 6. オーナーダッシュボード (モーダル) -->
+		{#if isDashboardOpen}
+			<div class="modal-overlay" transition:fade onclick={() => isDashboardOpen = false} role="button" tabindex="0" onkeydown={(e) => e.key === 'Escape' && (isDashboardOpen = false)}>
+				<div class="modal-content dashboard-modal" onclick={(e) => e.stopPropagation()} role="document">
+				<button class="close-btn" onclick={() => isDashboardOpen = false}>×</button>
 				<h2 class="dashboard-title">オーナーダッシュボード</h2>
 				
 				<!-- KPIカード -->
@@ -342,14 +359,15 @@
 						</div>
 					{/each}
 				</div>
+				</div>
 			</div>
 		{/if}
 	</main>
 
 	<!-- ボトムナビゲーション (マップとダッシュボードで表示) -->
-	{#if ['map', 'dashboard'].includes(currentView)}
+	{#if ['map'].includes(currentView)}
 		<nav class="bottom-nav">
-			<button class="nav-item" class:active={currentView === 'map'} onclick={() => currentView = 'map'}>
+			<button class="nav-item" class:active={currentView === 'map' && !isDashboardOpen} onclick={() => { currentView = 'map'; isDashboardOpen = false; }}>
 				<img src="{base}/images/map_icon/calendar.jpg" alt="予約確認" class="nav-icon" />
 				<span>予約確認</span>
 			</button>
@@ -357,7 +375,7 @@
 				<img src="{base}/images/map_icon/yatainin.jpg" alt="プロフィール" class="nav-icon" />
 				<span>プロフィール</span>
 			</button>
-			<button class="nav-item" class:active={currentView === 'dashboard'} onclick={() => currentView = 'dashboard'}>
+			<button class="nav-item" class:active={isDashboardOpen} onclick={() => isDashboardOpen = true}>
 				<img src="{base}/images/map_icon/earn_money.jpg" alt="今月の売上" class="nav-icon" />
 				<span>今月の売上</span>
 			</button>
@@ -586,16 +604,27 @@
 		object-fit: contain;
 	}
 
-	/* Dashboard Styles */
-	.dashboard-screen {
-		width: 100%;
-		height: 100%;
+	/* Modal Styles */
+	.modal-overlay {
+		position: absolute;
+		top: 0; left: 0; width: 100%; height: 100%;
+		background: rgba(0, 0, 0, 0.5);
+		z-index: 60;
+		display: flex;
+		align-items: flex-end; /* Bottom sheet style or center */
+		justify-content: center;
+	}
+
+	.modal-content {
 		background: #f8fafc;
+		width: 100%;
+		height: 90%; /* Almost full screen */
+		border-radius: 20px 20px 0 0;
 		padding: 20px;
-		padding-top: 80px; /* Header space */
 		box-sizing: border-box;
 		overflow-y: auto;
-		padding-bottom: 80px; /* Nav space */
+		position: relative;
+		box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
 	}
 
 	.dashboard-title { margin-top: 0; color: #0f172a; font-size: 1.5rem; }
