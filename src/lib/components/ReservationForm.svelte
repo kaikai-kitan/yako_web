@@ -20,18 +20,6 @@
 				scrolling="no"
 			></iframe>
 		</div>
-		<div class="form-embed">
-			<h3 class="title-for-embed">予約フォーム</h3>
-			<iframe
-				title="屋台予約フォーム"
-				src="https://docs.google.com/forms/d/e/1FAIpQLSdcQyz_HwlTNo67d72XjLdgDFU4SO1vgGPBdW0A4F2_XaC48A/viewform?embedded=true"
-				width="100%"
-				height="600"
-				frameborder="0"
-				marginheight="0"
-				marginwidth="0">読み込んでいます…</iframe
-			>
-		</div>
 	</div>
 </div>
 
@@ -65,11 +53,6 @@
   }
 
   .calendar-embed {
-    flex: 1;
-    min-width: 320px;
-  }
-
-  .form-embed {
     flex: 1;
     min-width: 320px;
   }
