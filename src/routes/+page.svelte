@@ -5,9 +5,7 @@
 	import { onMount } from 'svelte';
 
 	import homeData from '$lib/assets/data/home.json';
-	import ReservationForm from '$lib/components/ReservationForm.svelte';
-
-	let splash = $state();
+let splash = $state();
 
 	let gallery;
 	let phrase1;
@@ -91,8 +89,6 @@
 	<div class="messages-container">
 
 	</div>
-
-	<ReservationForm />
 </main>
 
 <style>

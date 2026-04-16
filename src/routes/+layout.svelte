@@ -14,7 +14,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 	<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&display=swap" rel="stylesheet" />
 
-	<link rel="stylesheet" href="global.css" />
+	<link rel="stylesheet" href="{base}/global.css" />
 
 	<title>微小夜行電灯</title>
 </svelte:head>

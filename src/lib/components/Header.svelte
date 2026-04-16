@@ -1,12 +1,19 @@
 <script>
     import { base } from '$app/paths';
+    import { session } from '$lib/auth.js';
+    import { signOut } from '$lib/db.js';
+    import { goto } from '$app/navigation';
 
-    // メニューの開閉状態を管理する変数を追加
     let isOpen = false;
 
-    // メニューを切り替える関数を追加
     function toggleMenu() {
         isOpen = !isOpen;
+    }
+
+    async function handleSignOut() {
+        await signOut();
+        goto(`${base}/`);
+        isOpen = false;
     }
 </script>
 
@@ -65,6 +72,15 @@
                     <a href="{base}/directory" class="btn">夜行人図鑑</a>
                 </div>
             </li>
+            <li>
+                <div class="navbutton">
+                    {#if $session}
+                        <button class="btn auth-btn" on:click={handleSignOut}>ログアウト</button>
+                    {:else}
+                        <a href="{base}/auth" class="btn auth-link">ログイン / 登録</a>
+                    {/if}
+                </div>
+            </li>
         </ul>
     </nav>
 </header>
@@ -109,6 +125,20 @@
         padding: 10px;
         text-decoration: none;
         color: #26201a;
+    }
+
+    .auth-btn {
+        background: none;
+        border: 1.5px solid #26201a;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: inherit;
+        font-family: inherit;
+    }
+
+    .auth-link {
+        border: 1.5px solid #26201a;
+        border-radius: 6px;
     }
 
     .hamburger {
