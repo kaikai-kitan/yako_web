@@ -12,7 +12,7 @@
 		setTimeout(() => {
 			visible_splash = false;
 			window.scroll(0, 0);
-		}, 4500);
+		}, 8000);
 	}
 </script>
 
@@ -23,12 +23,16 @@
 </svelte:head>
 
 {#if visible_splash}
-	<div out:fade class="splash-background">
-		<div class="splash-container display-font">
-			<p in:blur={{duration: 2000}} class="catch_phrase">世界は常に夜なのよ</p>
-			<p in:blur={{duration: 2000, delay: 2000}} class="catch_phrase">我々はただ歩いて行くだけ。</p>
-		</div>
-	</div>
+    <div out:fade class="splash-background">
+        <div class="splash-container display-font">
+            <p in:blur={{duration: 2000}} class="catch_phrase">世界は常に夜なのよ</p>
+            <p in:blur={{duration: 2000, delay: 2000}} class="catch_phrase">我々はただ歩いて行くだけ。</p>
+            
+            <cite in:blur={{duration: 2000, delay: 3000}} class="quote_source">
+                一部引用：森見登美彦『夜行』より
+            </cite>
+        </div>
+    </div>
 {/if}
 
 <style>
