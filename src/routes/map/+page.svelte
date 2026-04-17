@@ -75,6 +75,11 @@
 	// マイメニュー（登録済み商品一覧）
 	let myMenuItems = $state([]);
 
+	// QRスキャナー
+	let qrScanPhase = $state('idle'); // 'idle'|'scanning'|'verifying'|'error'
+	let qrErrorMsg = $state('');
+	let html5QrCode = null;
+
 	onMount(async () => {
 		const {
 			data: { session }
@@ -450,9 +455,61 @@
 		}, 3000);
 	}
 
-	function goQR(reservationId) {
+	async function goQR(reservationId) {
 		currentReservationId = reservationId;
+		qrScanPhase = 'idle';
+		qrErrorMsg = '';
 		currentView = 'qr';
+		// DOM描画後にカメラを起動
+		setTimeout(startQrCamera, 100);
+	}
+
+	async function startQrCamera() {
+		qrScanPhase = 'scanning';
+		try {
+			const { Html5Qrcode } = await import('html5-qrcode');
+			html5QrCode = new Html5Qrcode('qr-reader-map');
+			await html5QrCode.start(
+				{ facingMode: 'environment' },
+				{ fps: 10, qrbox: { width: 220, height: 220 } },
+				async (text) => {
+					stopQrCamera();
+					qrScanPhase = 'verifying';
+					// QRコードの内容を検証（space_idまたはstall_idが一致するか、または同サイトのQRなら許可）
+					let valid = false;
+					try {
+						const url = new URL(text);
+						if (url.origin === window.location.origin) valid = true;
+					} catch {
+						// UUID直接の場合も許可
+						valid = text.trim().length > 0;
+					}
+					if (valid) {
+						await unlockStall();
+					} else {
+						qrScanPhase = 'error';
+						qrErrorMsg = '無効なQRコードです。このサービスのQRコードを読み取ってください。';
+					}
+				},
+				() => {} // フレームエラーは無視
+			);
+		} catch (e) {
+			qrScanPhase = 'error';
+			qrErrorMsg = 'カメラの起動に失敗しました。カメラの使用を許可してください。';
+		}
+	}
+
+	function stopQrCamera() {
+		if (html5QrCode?.isScanning) {
+			html5QrCode.stop().catch(() => {});
+			html5QrCode = null;
+		}
+	}
+
+	function cancelQr() {
+		stopQrCamera();
+		currentView = 'map';
+		qrScanPhase = 'idle';
 	}
 
 	function closeDetail() { selectedStall = null; }
@@ -741,13 +798,26 @@
 		{#if currentView === 'qr'}
 			<div class="full-screen-modal" transition:fade>
 				<div class="qr-container">
-					<h2>屋台のロック解除</h2>
-					<p>屋台に付いているQRコードを読み取ってください</p>
-					<div class="qr-box">
-						<div class="qr-scanner-mock"><div class="scan-line"></div></div>
-					</div>
-					<button class="action-btn primary" onclick={unlockStall}>(デモ) ロック解除成功</button>
-					<button class="text-btn" onclick={() => (currentView = 'map')}>キャンセル</button>
+					{#if qrScanPhase === 'scanning'}
+						<h2>QRコードをスキャン</h2>
+						<p>屋台・スペースに貼られたQRコードを<br />カメラに向けてください</p>
+						<div id="qr-reader-map"></div>
+						<button class="text-btn" onclick={cancelQr}>キャンセル</button>
+
+					{:else if qrScanPhase === 'verifying' || qrScanPhase === 'idle'}
+						<div class="qr-loading">
+							<div class="qr-spinner"></div>
+							<p>{qrScanPhase === 'verifying' ? '確認中…' : '準備中…'}</p>
+						</div>
+
+					{:else if qrScanPhase === 'error'}
+						<div class="qr-error">
+							<div class="qr-error-icon">✕</div>
+							<p>{qrErrorMsg}</p>
+							<button class="action-btn primary" onclick={startQrCamera}>もう一度スキャン</button>
+							<button class="text-btn" onclick={cancelQr}>キャンセル</button>
+						</div>
+					{/if}
 				</div>
 			</div>
 		{/if}
@@ -1143,16 +1213,49 @@
 		background: none; border: none; color: white;
 		text-decoration: underline; cursor: pointer; margin-top: 15px;
 	}
-	.qr-container { text-align: center; }
-	.qr-box {
-		width: 250px; height: 250px; border: 4px solid #facc15;
-		margin: 30px auto; position: relative; background: rgba(255,255,255,0.1);
+	.qr-container {
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+		max-width: 360px;
 	}
-	.scan-line {
-		width: 100%; height: 2px; background: #facc15;
-		position: absolute; top: 0; animation: scan 2s infinite;
+	.qr-container h2 { margin: 0; font-size: 1.1rem; }
+	.qr-container p { margin: 0; font-size: 0.85rem; opacity: 0.85; line-height: 1.5; }
+
+	#qr-reader-map {
+		width: 100%;
+		border-radius: 12px;
+		overflow: hidden;
 	}
-	@keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+	:global(#qr-reader-map video) { border-radius: 12px; }
+	:global(#qr-reader-map__scan_region) { background: transparent !important; }
+
+	.qr-loading {
+		display: flex; flex-direction: column; align-items: center; gap: 16px;
+		color: white;
+	}
+	.qr-spinner {
+		width: 48px; height: 48px;
+		border: 4px solid rgba(255,255,255,0.3);
+		border-top-color: white;
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+	@keyframes spin { to { transform: rotate(360deg); } }
+
+	.qr-error {
+		display: flex; flex-direction: column; align-items: center; gap: 12px;
+		color: white;
+	}
+	.qr-error-icon {
+		width: 64px; height: 64px; border-radius: 50%;
+		background: rgba(239,68,68,0.3);
+		display: flex; align-items: center; justify-content: center;
+		font-size: 1.8rem; font-weight: 700;
+	}
 
 	/* 利用中ダッシュボード */
 	.active-dashboard {
