@@ -318,7 +318,7 @@ export async function getMyReservations(userId) {
 	const { data, error } = await supabase
 		.from('reservations')
 		.select(`
-			id, start_datetime, end_datetime, planned_items, status, created_at,
+			id, rental_space_id, start_datetime, end_datetime, planned_items, status, created_at,
 			rental_spaces ( name, address ),
 			stall_specs ( stall_name )
 		`)
@@ -433,6 +433,26 @@ export async function startRental(reservationId) {
 		.update({ status: 'active' })
 		.eq('id', reservationId);
 	if (error) throw error;
+}
+
+/** QRスキャンによる貸出開始（スペースIDからpending予約を検索してactive化） */
+export async function activateReservationBySpace(userId, spaceId) {
+	requireSupabase();
+	const { data, error } = await supabase
+		.from('reservations')
+		.select('id, start_datetime, end_datetime, rental_spaces(name), stall_specs(stall_name)')
+		.eq('user_id', userId)
+		.eq('rental_space_id', spaceId)
+		.eq('status', 'pending')
+		.order('start_datetime', { ascending: true })
+		.limit(1)
+		.maybeSingle();
+
+	if (error) throw error;
+	if (!data) throw new Error('この場所の有効な予約が見つかりません。予約状況をご確認ください。');
+
+	await startRental(data.id);
+	return data;
 }
 
 /**
