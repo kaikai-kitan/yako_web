@@ -257,6 +257,18 @@
 
 	let isCancelling = $state('');
 
+	// ---- QRコード表示 ----
+	let qrModalSpace = $state(null); // { id, name }
+	let qrDataUrl = $state('');
+
+	async function showSpaceQR(space) {
+		qrModalSpace = space;
+		qrDataUrl = '';
+		const url = `${window.location.origin}/scan?space=${space.id}`;
+		const QRCode = (await import('qrcode')).default;
+		qrDataUrl = await QRCode.toDataURL(url, { width: 280, margin: 2 });
+	}
+
 	async function handleCancel(reservationId) {
 		if (!confirm('予約をキャンセルしますか？')) return;
 		isCancelling = reservationId;
@@ -404,6 +416,9 @@
 									¥{(space.space_fee ?? 0).toLocaleString()} / 泊　{space.ground_type ?? ''}
 									{space.fire_use_allowed ? '🔥 火気可' : '🚫 火気不可'}
 								</div>
+								<button class="qr-btn" onclick={() => showSpaceQR(space)}>
+									QRコードを表示（印刷用）
+								</button>
 							</div>
 						{/each}
 					</div>
@@ -460,6 +475,14 @@
 							<div class="item-detail">
 								{formatDate(res.start_datetime)} 〜 {formatDate(res.end_datetime)}
 							</div>
+							{#if res.status === 'pending' && res.rental_space_id}
+								<a
+									href="{base}/scan?space={res.rental_space_id}"
+									class="scan-res-btn"
+								>
+									📷 QRスキャンで借り出し開始
+								</a>
+							{/if}
 							{#if canCancel(res.start_datetime, res.status)}
 								<button
 									class="cancel-res-btn"
@@ -481,6 +504,33 @@
 		</div>
 	{/if}
 </div>
+
+<!-- ===== QRコード表示モーダル ===== -->
+{#if qrModalSpace}
+	<div
+		class="modal-overlay"
+		onclick={(e) => e.target === e.currentTarget && (qrModalSpace = null)}
+		onkeydown={(e) => e.key === 'Escape' && (qrModalSpace = null)}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div class="modal-card qr-modal">
+			<h3 class="modal-title">QRコード</h3>
+			<p class="qr-space-name">📍 {qrModalSpace.name}</p>
+			{#if qrDataUrl}
+				<img src={qrDataUrl} alt="QRコード" class="qr-image" />
+				<p class="qr-note">このQRコードを印刷してスペースに貼ってください。<br />利用者がスキャンすると借り出しが開始されます。</p>
+				<a href={qrDataUrl} download="qr_{qrModalSpace.name}.png" class="submit-btn qr-download-btn">
+					画像をダウンロード
+				</a>
+			{:else}
+				<div class="qr-loading">生成中…</div>
+			{/if}
+			<button class="cancel-btn" onclick={() => (qrModalSpace = null)}>閉じる</button>
+		</div>
+	</div>
+{/if}
 
 <!-- ===== マイメニュー追加/編集モーダル ===== -->
 {#if isMenuModalOpen && menuEditItem}
@@ -909,6 +959,70 @@
 	}
 
 	.cancel-res-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+	.scan-res-btn {
+		display: block;
+		margin-top: 8px;
+		padding: 8px 14px;
+		background: #26201a;
+		color: #fff;
+		border-radius: 8px;
+		font-size: 0.82rem;
+		text-decoration: none;
+		text-align: center;
+	}
+
+	.qr-btn {
+		margin-top: 10px;
+		padding: 6px 14px;
+		background: none;
+		border: 1.5px solid #26201a;
+		color: #26201a;
+		border-radius: 6px;
+		font-size: 0.78rem;
+		cursor: pointer;
+		font-family: inherit;
+		width: 100%;
+	}
+
+	.qr-modal { align-items: center; text-align: center; }
+
+	.qr-space-name {
+		font-size: 0.95rem;
+		color: #26201a;
+		margin: 0 0 12px;
+	}
+
+	.qr-image {
+		width: 240px;
+		height: 240px;
+		border-radius: 8px;
+		border: 1px solid #e2ddd8;
+	}
+
+	.qr-loading {
+		width: 240px;
+		height: 240px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #9e9289;
+		font-size: 0.9rem;
+	}
+
+	.qr-note {
+		font-size: 0.78rem;
+		color: #7a6f67;
+		line-height: 1.6;
+		margin: 8px 0;
+	}
+
+	.qr-download-btn {
+		display: block;
+		text-decoration: none;
+		text-align: center;
+		margin-bottom: 8px;
+	}
 
 	.empty-msg { color: #94a3b8; font-size: 0.9rem; padding: 12px 0; }
 
