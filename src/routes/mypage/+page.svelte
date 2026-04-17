@@ -11,6 +11,13 @@
 		getMyReservations,
 		createOwnerProfile,
 		createOperatorProfile,
+		cancelReservation,
+		updateUserProfile,
+		getMyMenuItems,
+		addMenuItem,
+		updateMenuItem,
+		deleteMenuItem,
+		uploadImage,
 		signOut
 	} from '$lib/db.js';
 
@@ -18,12 +25,29 @@
 	let mySpaces = $state([]);
 	let myStalls = $state([]);
 	let myReservations = $state([]);
+	let myMenuItems = $state([]);
 	let isLoading = $state(true);
 	let userId = $state('');
 
+	// ---- プロフィール編集 ----
+	let editName = $state('');
+	let editBio = $state('');
+	let editIconFile = $state(null);
+	let editIconPreview = $state('');
+	let isSavingProfile = $state(false);
+	let profileSaveMsg = $state('');
+
+	// ---- マイメニュー ----
+	// 編集中のアイテム（null = 追加モード、object = 編集モード）
+	let menuEditItem = $state(null); // { id?, name, description, price, photo_path, photoFile? }
+	let isMenuModalOpen = $state(false);
+	let isSavingMenu = $state(false);
+	let menuSaveError = $state('');
+	let menuPhotoPreview = $state('');
+
 	// 役割追加モーダル
 	let showRoleModal = $state(false);
-	let addingRole = $state(''); // '場所提供者' | '屋台提供者'
+	let addingRole = $state('');
 	let roleFormError = $state('');
 	let isAddingRole = $state(false);
 
@@ -40,20 +64,21 @@
 		const {
 			data: { session }
 		} = await supabase.auth.getSession();
-		if (!session) {
-			goto(`${base}/auth`);
-			return;
-		}
+		if (!session) { goto(`${base}/auth`); return; }
 		userId = session.user.id;
 
 		profile = await getMyProfile(userId);
-		if (!profile) {
-			goto(`${base}/auth/setup`);
-			return;
-		}
+		if (!profile) { goto(`${base}/auth/setup`); return; }
 
-		// 役割に応じたデータを並行取得
-		const tasks = [getMyReservations(userId).then((d) => (myReservations = d))];
+		// プロフィール編集フォームの初期値
+		editName = profile.name ?? '';
+		editBio = profile.bio ?? '';
+		editIconPreview = profile.icon_path ?? '';
+
+		const tasks = [
+			getMyReservations(userId).then((d) => (myReservations = d)),
+			getMyMenuItems(userId).then((d) => (myMenuItems = d))
+		];
 		if (profile.owners) tasks.push(getMySpaces(userId).then((d) => (mySpaces = d)));
 		if (profile.operators) tasks.push(getMyStalls(userId).then((d) => (myStalls = d)));
 		await Promise.all(tasks);
@@ -61,6 +86,107 @@
 		isLoading = false;
 	});
 
+	// ---- プロフィール保存 ----
+	async function saveProfile() {
+		if (!editName.trim()) return;
+		isSavingProfile = true;
+		profileSaveMsg = '';
+		try {
+			let iconPath = profile.icon_path ?? null;
+			if (editIconFile) {
+				iconPath = await uploadImage(userId, editIconFile, 'profile-images');
+			}
+			await updateUserProfile(userId, {
+				name: editName.trim(),
+				bio: editBio.trim() || null,
+				iconPath
+			});
+			profile = { ...profile, name: editName.trim(), bio: editBio.trim(), icon_path: iconPath };
+			editIconFile = null;
+			profileSaveMsg = '保存しました';
+			setTimeout(() => (profileSaveMsg = ''), 2500);
+		} catch (e) {
+			profileSaveMsg = '保存失敗: ' + e.message;
+		} finally {
+			isSavingProfile = false;
+		}
+	}
+
+	function onIconFileChange(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		editIconFile = file;
+		editIconPreview = URL.createObjectURL(file);
+	}
+
+	// ---- マイメニュー操作 ----
+	function openAddMenu() {
+		menuEditItem = { name: '', description: '', price: '', photo_path: '', photoFile: null };
+		menuPhotoPreview = '';
+		menuSaveError = '';
+		isMenuModalOpen = true;
+	}
+
+	function openEditMenu(item) {
+		menuEditItem = { ...item, photoFile: null };
+		menuPhotoPreview = item.photo_path ?? '';
+		menuSaveError = '';
+		isMenuModalOpen = true;
+	}
+
+	function onMenuPhotoChange(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		menuEditItem = { ...menuEditItem, photoFile: file };
+		menuPhotoPreview = URL.createObjectURL(file);
+	}
+
+	async function saveMenuItemHandler() {
+		if (!menuEditItem?.name?.trim()) { menuSaveError = '商品名を入力してください'; return; }
+		isSavingMenu = true;
+		menuSaveError = '';
+		try {
+			let photoPath = menuEditItem.photo_path ?? null;
+			if (menuEditItem.photoFile) {
+				photoPath = await uploadImage(userId, menuEditItem.photoFile, 'menu-item-images');
+			}
+			const payload = {
+				name: menuEditItem.name.trim(),
+				description: menuEditItem.description?.trim() || null,
+				price: parseInt(String(menuEditItem.price)) || 0,
+				photoPath,
+				displayOrder: menuEditItem.display_order ?? myMenuItems.length
+			};
+			if (menuEditItem.id) {
+				await updateMenuItem(menuEditItem.id, payload);
+				myMenuItems = myMenuItems.map((m) =>
+					m.id === menuEditItem.id
+						? { ...m, ...payload, photo_path: photoPath }
+						: m
+				);
+			} else {
+				const newItem = await addMenuItem(userId, payload);
+				myMenuItems = [...myMenuItems, newItem];
+			}
+			isMenuModalOpen = false;
+		} catch (e) {
+			menuSaveError = '保存失敗: ' + e.message;
+		} finally {
+			isSavingMenu = false;
+		}
+	}
+
+	async function handleDeleteMenu(id) {
+		if (!confirm('このメニューを削除しますか？')) return;
+		try {
+			await deleteMenuItem(id);
+			myMenuItems = myMenuItems.filter((m) => m.id !== id);
+		} catch (e) {
+			alert('削除失敗: ' + e.message);
+		}
+	}
+
+	// ---- 役割追加 ----
 	async function handleSignOut() {
 		await signOut();
 		goto(`${base}/`);
@@ -69,11 +195,8 @@
 	function openRoleModal(role) {
 		addingRole = role;
 		roleFormError = '';
-		ownerName = '';
-		bio = '';
-		career = '';
-		businessName = '';
-		phoneNumber = '';
+		ownerName = ''; bio = ''; career = '';
+		businessName = ''; phoneNumber = '';
 		showRoleModal = true;
 	}
 
@@ -83,19 +206,11 @@
 		try {
 			if (addingRole === '場所提供者') {
 				if (!ownerName.trim()) { roleFormError = 'オーナー名を入力してください'; return; }
-				await createOwnerProfile(userId, {
-					ownerName: ownerName.trim(),
-					bio: bio.trim(),
-					career: career.trim()
-				});
+				await createOwnerProfile(userId, { ownerName: ownerName.trim(), bio: bio.trim(), career: career.trim() });
 			} else if (addingRole === '屋台提供者') {
 				if (!businessName.trim()) { roleFormError = '屋号を入力してください'; return; }
-				await createOperatorProfile(userId, {
-					businessName: businessName.trim(),
-					phoneNumber: phoneNumber.trim()
-				});
+				await createOperatorProfile(userId, { businessName: businessName.trim(), phoneNumber: phoneNumber.trim() });
 			}
-			// プロフィールを再取得してUIを更新
 			profile = await getMyProfile(userId);
 			if (addingRole === '場所提供者') mySpaces = await getMySpaces(userId);
 			if (addingRole === '屋台提供者') myStalls = await getMyStalls(userId);
@@ -107,10 +222,54 @@
 		}
 	}
 
+	// ---- 予約 ----
 	function formatDate(isoString) {
-		return new Date(isoString).toLocaleDateString('ja-JP', {
-			year: 'numeric', month: 'short', day: 'numeric'
-		});
+		return new Date(isoString).toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' });
+	}
+
+	function formatPlannedItems(text) {
+		if (!text) return '';
+		try {
+			const parsed = JSON.parse(text);
+			if (Array.isArray(parsed)) {
+				return parsed
+					.map((i) => (typeof i === 'string' ? i : `${i.name}(¥${(i.price ?? 0).toLocaleString()})`))
+					.join('、');
+			}
+		} catch {}
+		return text;
+	}
+
+	function canCancel(startDatetime, status) {
+		if (status === 'completed' || status === 'cancelled' || status === 'active') return false;
+		const threeDaysBefore = new Date(startDatetime);
+		threeDaysBefore.setDate(threeDaysBefore.getDate() - 3);
+		return new Date() < threeDaysBefore;
+	}
+
+	function statusLabel(status) {
+		return { pending: '予約中', active: '利用中', completed: '完了', cancelled: 'キャンセル済み' }[status] ?? '予約中';
+	}
+
+	function statusClass(status) {
+		return { pending: 'res-pending', active: 'res-active', completed: 'res-done', cancelled: 'res-cancelled' }[status] ?? 'res-pending';
+	}
+
+	let isCancelling = $state('');
+
+	async function handleCancel(reservationId) {
+		if (!confirm('予約をキャンセルしますか？')) return;
+		isCancelling = reservationId;
+		try {
+			await cancelReservation(reservationId);
+			myReservations = myReservations.map((r) =>
+				r.id === reservationId ? { ...r, status: 'cancelled' } : r
+			);
+		} catch (e) {
+			alert('キャンセルに失敗しました: ' + e.message);
+		} finally {
+			isCancelling = '';
+		}
 	}
 </script>
 
@@ -118,53 +277,112 @@
 	{#if isLoading}
 		<div class="loading">読み込み中…</div>
 	{:else if profile}
-		<!-- プロフィールカード -->
-		<div class="profile-card">
-			<div class="avatar">
-				{profile.name?.charAt(0) ?? '?'}
-			</div>
-			<div class="profile-info">
-				<h2 class="profile-name">{profile.name}</h2>
-				<div class="badge-row">
-					<span class="badge user">屋台利用者</span>
-					{#if profile.owners}
-						<span class="badge owner">場所提供者</span>
-					{/if}
-					{#if profile.operators}
-						<span class="badge operator">屋台提供者</span>
-					{/if}
-				</div>
-			</div>
-		</div>
 
-		<!-- 役割を追加 -->
-		{#if !profile.owners || !profile.operators}
+		<!-- ===== プロフィール編集 ===== -->
+		<section class="section profile-edit-section">
+			<h3 class="section-title">プロフィール</h3>
+
+			<!-- アイコン -->
+			<div class="avatar-edit-row">
+				<label class="avatar-label" for="icon-upload">
+					{#if editIconPreview}
+						<img src={editIconPreview} alt="アイコン" class="avatar-img" />
+					{:else}
+						<div class="avatar-placeholder">{profile.name?.charAt(0) ?? '?'}</div>
+					{/if}
+					<span class="avatar-edit-hint">タップして変更</span>
+				</label>
+				<input id="icon-upload" type="file" accept="image/*" class="hidden-file" onchange={onIconFileChange} />
+			</div>
+
+			<!-- バッジ -->
+			<div class="badge-row-small">
+				<span class="badge user">屋台利用者</span>
+				{#if profile.owners}<span class="badge owner">場所提供者</span>{/if}
+				{#if profile.operators}<span class="badge operator">屋台提供者</span>{/if}
+			</div>
+
+			<!-- 名前 -->
+			<label class="field-label">
+				名前 / 店舗名
+				<input type="text" bind:value={editName} class="field-input" placeholder="例: 鴨川珈琲" />
+			</label>
+
+			<!-- 自己紹介 -->
+			<label class="field-label">
+				店舗説明文
+				<textarea
+					bind:value={editBio}
+					class="field-input textarea"
+					rows="3"
+					placeholder="例: 京都・鴨川沿いで珈琲と軽食を提供しています"
+				></textarea>
+			</label>
+
+			{#if profileSaveMsg}
+				<p class="save-msg" class:error-msg={profileSaveMsg.startsWith('保存失敗')}>{profileSaveMsg}</p>
+			{/if}
+			<button class="save-btn" onclick={saveProfile} disabled={isSavingProfile || !editName.trim()}>
+				{isSavingProfile ? '保存中…' : '保存する'}
+			</button>
+		</section>
+
+		<!-- ===== マイメニュー ===== -->
+		<section class="section">
+			<div class="section-header">
+				<h3 class="section-title">マイメニュー</h3>
+				<button class="add-btn" onclick={openAddMenu}>＋ 追加</button>
+			</div>
+			<p class="section-hint">普段の営業で提供する商品を登録すると、予約時に呼び出せます</p>
+
+			{#if myMenuItems.length === 0}
+				<p class="empty-msg">まだ登録がありません</p>
+			{:else}
+				<div class="menu-list">
+					{#each myMenuItems as item}
+						<div class="menu-card">
+							{#if item.photo_path}
+								<img src={item.photo_path} alt={item.name} class="menu-thumb" />
+							{:else}
+								<div class="menu-thumb no-photo">🍽</div>
+							{/if}
+							<div class="menu-info">
+								<span class="menu-name">{item.name}</span>
+								{#if item.description}
+									<span class="menu-desc">{item.description}</span>
+								{/if}
+								<span class="menu-price">¥{(item.price ?? 0).toLocaleString()}</span>
+							</div>
+							<div class="menu-actions">
+								<button class="icon-btn" onclick={() => openEditMenu(item)}>編集</button>
+								<button class="icon-btn danger" onclick={() => handleDeleteMenu(item.id)}>削除</button>
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</section>
+
+		<!-- ===== 役割を追加 ===== -->
+		{#if !profile.owners && !profile.operators}
 			<section class="section">
 				<h3 class="section-title">役割を追加する</h3>
 				<div class="role-add-row">
-					{#if !profile.owners}
-						<button class="role-add-btn" onclick={() => openRoleModal('場所提供者')}>
-							<span class="role-icon">📍</span>
-							<span class="role-text">
-								<strong>場所提供者</strong>として登録
-							</span>
-							<span class="arrow">›</span>
-						</button>
-					{/if}
-					{#if !profile.operators}
-						<button class="role-add-btn" onclick={() => openRoleModal('屋台提供者')}>
-							<span class="role-icon">🏮</span>
-							<span class="role-text">
-								<strong>屋台提供者</strong>として登録
-							</span>
-							<span class="arrow">›</span>
-						</button>
-					{/if}
+					<button class="role-add-btn" onclick={() => openRoleModal('場所提供者')}>
+						<span class="role-icon">📍</span>
+						<span class="role-text"><strong>場所提供者</strong>として登録</span>
+						<span class="arrow">›</span>
+					</button>
+					<button class="role-add-btn" onclick={() => openRoleModal('屋台提供者')}>
+						<span class="role-icon">🏮</span>
+						<span class="role-text"><strong>屋台提供者</strong>として登録</span>
+						<span class="arrow">›</span>
+					</button>
 				</div>
 			</section>
 		{/if}
 
-		<!-- 場所提供者セクション -->
+		<!-- ===== 場所提供者セクション ===== -->
 		{#if profile.owners}
 			<section class="section">
 				<div class="section-header">
@@ -193,7 +411,7 @@
 			</section>
 		{/if}
 
-		<!-- 屋台提供者セクション -->
+		<!-- ===== 屋台提供者セクション ===== -->
 		{#if profile.operators}
 			<section class="section">
 				<div class="section-header">
@@ -219,7 +437,7 @@
 			</section>
 		{/if}
 
-		<!-- 予約履歴セクション -->
+		<!-- ===== 予約履歴 ===== -->
 		<section class="section">
 			<h3 class="section-title">📅 予約履歴</h3>
 			{#if myReservations.length === 0}
@@ -231,37 +449,113 @@
 						<div class="item-card">
 							<div class="item-header">
 								<span class="item-name">{res.rental_spaces?.name ?? '不明'}</span>
-								<span class="res-date">{formatDate(res.start_datetime)}</span>
+								<span class="status-badge {statusClass(res.status)}">{statusLabel(res.status)}</span>
 							</div>
 							{#if res.stall_specs}
 								<div class="item-detail">🏮 {res.stall_specs.stall_name}</div>
 							{/if}
 							{#if res.planned_items}
-								<div class="item-detail">品目: {res.planned_items}</div>
+								<div class="item-detail">品目: {formatPlannedItems(res.planned_items)}</div>
 							{/if}
 							<div class="item-detail">
 								{formatDate(res.start_datetime)} 〜 {formatDate(res.end_datetime)}
 							</div>
+							{#if canCancel(res.start_datetime, res.status)}
+								<button
+									class="cancel-res-btn"
+									onclick={() => handleCancel(res.id)}
+									disabled={isCancelling === res.id}
+								>
+									{isCancelling === res.id ? 'キャンセル中…' : 'キャンセルする'}
+								</button>
+							{/if}
 						</div>
 					{/each}
 				</div>
 			{/if}
 		</section>
 
-		<!-- ログアウト -->
+		<!-- ===== ログアウト ===== -->
 		<div class="logout-section">
 			<button class="logout-btn" onclick={handleSignOut}>ログアウト</button>
 		</div>
 	{/if}
 </div>
 
-<!-- 役割追加モーダル -->
+<!-- ===== マイメニュー追加/編集モーダル ===== -->
+{#if isMenuModalOpen && menuEditItem}
+	<div
+		class="modal-overlay"
+		onclick={(e) => e.target === e.currentTarget && (isMenuModalOpen = false)}
+		onkeydown={(e) => e.key === 'Escape' && (isMenuModalOpen = false)}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div class="modal-card">
+			<h3 class="modal-title">{menuEditItem.id ? 'メニューを編集' : 'メニューを追加'}</h3>
+
+			{#if menuSaveError}
+				<p class="error-msg">{menuSaveError}</p>
+			{/if}
+
+			<!-- 商品写真 -->
+			<div class="photo-upload-row">
+				<label class="photo-upload-label" for="menu-photo-upload">
+					{#if menuPhotoPreview}
+						<img src={menuPhotoPreview} alt="商品写真" class="photo-preview" />
+					{:else}
+						<div class="photo-placeholder">📷 写真を追加</div>
+					{/if}
+				</label>
+				<input
+					id="menu-photo-upload"
+					type="file"
+					accept="image/*"
+					class="hidden-file"
+					onchange={onMenuPhotoChange}
+				/>
+			</div>
+
+			<label class="field-label">
+				商品名 <span class="req">*</span>
+				<input type="text" bind:value={menuEditItem.name} class="field-input" placeholder="例: クラフトビール" />
+			</label>
+
+			<label class="field-label">
+				商品説明
+				<textarea
+					bind:value={menuEditItem.description}
+					class="field-input textarea"
+					rows="2"
+					placeholder="例: 地元醸造所のIPAビール"
+				></textarea>
+			</label>
+
+			<label class="field-label">
+				料金（円）
+				<input type="number" bind:value={menuEditItem.price} class="field-input" placeholder="800" min="0" />
+			</label>
+
+			<div class="modal-btns">
+				<button class="cancel-btn" onclick={() => (isMenuModalOpen = false)}>キャンセル</button>
+				<button class="submit-btn" onclick={saveMenuItemHandler} disabled={isSavingMenu}>
+					{isSavingMenu ? '保存中…' : '保存する'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- ===== 役割追加モーダル ===== -->
 {#if showRoleModal}
 	<div
 		class="modal-overlay"
 		onclick={(e) => e.target === e.currentTarget && (showRoleModal = false)}
+		onkeydown={(e) => e.key === 'Escape' && (showRoleModal = false)}
 		role="dialog"
 		aria-modal="true"
+		tabindex="-1"
 	>
 		<div class="modal-card">
 			<h3 class="modal-title">
@@ -280,8 +574,7 @@
 				</label>
 				<label class="field-label">
 					紹介文
-					<textarea bind:value={bio} class="field-input textarea" rows="3"
-						placeholder="場所の特徴など"></textarea>
+					<textarea bind:value={bio} class="field-input textarea" rows="3" placeholder="場所の特徴など"></textarea>
 				</label>
 				<label class="field-label">
 					経歴
@@ -312,50 +605,74 @@
 	.page {
 		max-width: 600px;
 		margin: 0 auto;
-		padding: 20px 16px 60px;
+		padding: 20px 16px 80px;
 	}
 
-	.loading {
-		text-align: center;
-		padding: 60px;
-		color: #64748b;
-	}
+	.loading { text-align: center; padding: 60px; color: #64748b; }
 
-	/* プロフィールカード */
-	.profile-card {
-		display: flex;
-		align-items: center;
-		gap: 16px;
+	/* ===== プロフィール編集 ===== */
+	.profile-edit-section {
 		background: #0f172a;
 		color: white;
 		border-radius: 16px;
-		padding: 20px;
-		margin-bottom: 24px;
+		padding: 20px 16px 24px;
+		margin-bottom: 28px;
 	}
 
-	.avatar {
-		width: 56px;
-		height: 56px;
+	.profile-edit-section .section-title {
+		color: #94a3b8;
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin: 0 0 16px;
+	}
+
+	.avatar-edit-row {
+		display: flex;
+		justify-content: center;
+		margin-bottom: 12px;
+	}
+
+	.avatar-label {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		cursor: pointer;
+	}
+
+	.avatar-img {
+		width: 72px;
+		height: 72px;
+		border-radius: 50%;
+		object-fit: cover;
+		border: 2px solid #facc15;
+	}
+
+	.avatar-placeholder {
+		width: 72px;
+		height: 72px;
 		background: #facc15;
 		color: #0f172a;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 1.5rem;
+		font-size: 1.8rem;
 		font-weight: bold;
-		flex-shrink: 0;
 	}
 
-	.profile-name {
-		font-size: 1.2rem;
-		margin: 0 0 8px 0;
+	.avatar-edit-hint {
+		font-size: 0.72rem;
+		color: #94a3b8;
 	}
 
-	.badge-row {
+	.badge-row-small {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
+		justify-content: center;
+		margin-bottom: 16px;
 	}
 
 	.badge {
@@ -369,16 +686,53 @@
 	.badge.owner { background: #166534; color: #bbf7d0; }
 	.badge.operator { background: #92400e; color: #fef9c3; }
 
-	/* セクション */
-	.section {
-		margin-bottom: 28px;
+	.profile-edit-section .field-label {
+		color: #94a3b8;
 	}
+
+	.profile-edit-section .field-input {
+		border-color: #334155;
+		background: #1e293b;
+		color: white;
+	}
+
+	.profile-edit-section .field-input:focus {
+		border-color: #facc15;
+	}
+
+	.save-msg {
+		font-size: 0.82rem;
+		color: #4ade80;
+		margin: 6px 0;
+	}
+
+	.save-msg.error-msg {
+		color: #f87171;
+	}
+
+	.save-btn {
+		width: 100%;
+		padding: 12px;
+		background: #facc15;
+		color: #0f172a;
+		border: none;
+		border-radius: 10px;
+		font-size: 0.95rem;
+		font-weight: bold;
+		cursor: pointer;
+		margin-top: 4px;
+	}
+
+	.save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+	/* ===== セクション共通 ===== */
+	.section { margin-bottom: 28px; }
 
 	.section-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-bottom: 12px;
+		margin-bottom: 4px;
 	}
 
 	.section-title {
@@ -388,8 +742,12 @@
 		margin: 0 0 12px 0;
 	}
 
-	.section-header .section-title {
-		margin-bottom: 0;
+	.section-header .section-title { margin-bottom: 0; }
+
+	.section-hint {
+		font-size: 0.78rem;
+		color: #94a3b8;
+		margin: 0 0 12px;
 	}
 
 	.add-btn {
@@ -400,14 +758,92 @@
 		padding: 6px 14px;
 		border-radius: 20px;
 		text-decoration: none;
+		border: none;
+		cursor: pointer;
 	}
 
-	/* 役割追加ボタン */
-	.role-add-row {
+	/* ===== マイメニュー ===== */
+	.menu-list {
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
 	}
+
+	.menu-card {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		background: white;
+		border-radius: 12px;
+		padding: 12px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+	}
+
+	.menu-thumb {
+		width: 56px;
+		height: 56px;
+		border-radius: 8px;
+		object-fit: cover;
+		flex-shrink: 0;
+	}
+
+	.menu-thumb.no-photo {
+		background: #f1f5f9;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.4rem;
+	}
+
+	.menu-info {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.menu-name {
+		font-size: 0.92rem;
+		font-weight: bold;
+		color: #0f172a;
+	}
+
+	.menu-desc {
+		font-size: 0.78rem;
+		color: #64748b;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.menu-price {
+		font-size: 0.82rem;
+		color: #92400e;
+		font-weight: bold;
+	}
+
+	.menu-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		flex-shrink: 0;
+	}
+
+	.icon-btn {
+		font-size: 0.72rem;
+		padding: 4px 10px;
+		border: 1px solid #e2e8f0;
+		border-radius: 6px;
+		background: none;
+		color: #475569;
+		cursor: pointer;
+	}
+
+	.icon-btn.danger { color: #dc2626; border-color: #fca5a5; }
+
+	/* ===== 役割追加 ===== */
+	.role-add-row { display: flex; flex-direction: column; gap: 10px; }
 
 	.role-add-btn {
 		display: flex;
@@ -420,27 +856,15 @@
 		cursor: pointer;
 		text-align: left;
 		width: 100%;
-		transition: border-color 0.2s;
 	}
 
 	.role-add-btn:hover { border-color: #facc15; }
-
 	.role-icon { font-size: 1.4rem; }
-
-	.role-text {
-		flex: 1;
-		font-size: 0.9rem;
-		color: #334155;
-	}
-
+	.role-text { flex: 1; font-size: 0.9rem; color: #334155; }
 	.arrow { color: #94a3b8; font-size: 1.2rem; }
 
-	/* アイテムカード */
-	.card-list {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
+	/* ===== カードリスト ===== */
+	.card-list { display: flex; flex-direction: column; gap: 10px; }
 
 	.item-card {
 		background: white;
@@ -456,17 +880,8 @@
 		margin-bottom: 6px;
 	}
 
-	.item-name {
-		font-weight: bold;
-		font-size: 0.95rem;
-		color: #0f172a;
-	}
-
-	.item-detail {
-		font-size: 0.82rem;
-		color: #64748b;
-		margin-top: 3px;
-	}
+	.item-name { font-weight: bold; font-size: 0.95rem; color: #0f172a; }
+	.item-detail { font-size: 0.82rem; color: #64748b; margin-top: 3px; }
 
 	.status-badge {
 		font-size: 0.7rem;
@@ -477,17 +892,25 @@
 
 	.status-badge.available { background: #dcfce7; color: #166534; }
 	.status-badge.stall { background: #fef9c3; color: #92400e; }
+	.status-badge.res-pending { background: #dbeafe; color: #1d4ed8; }
+	.status-badge.res-active { background: #dcfce7; color: #166534; }
+	.status-badge.res-done { background: #f1f5f9; color: #64748b; }
+	.status-badge.res-cancelled { background: #fee2e2; color: #dc2626; }
 
-	.res-date {
+	.cancel-res-btn {
+		margin-top: 8px;
+		padding: 6px 14px;
+		background: none;
+		border: 1px solid #fca5a5;
+		color: #dc2626;
+		border-radius: 6px;
 		font-size: 0.78rem;
-		color: #94a3b8;
+		cursor: pointer;
 	}
 
-	.empty-msg {
-		color: #94a3b8;
-		font-size: 0.9rem;
-		padding: 12px 0;
-	}
+	.cancel-res-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+	.empty-msg { color: #94a3b8; font-size: 0.9rem; padding: 12px 0; }
 
 	.map-link {
 		display: inline-block;
@@ -497,11 +920,8 @@
 		margin-top: 4px;
 	}
 
-	/* ログアウト */
-	.logout-section {
-		text-align: center;
-		margin-top: 16px;
-	}
+	/* ===== ログアウト ===== */
+	.logout-section { text-align: center; margin-top: 16px; }
 
 	.logout-btn {
 		background: none;
@@ -513,7 +933,7 @@
 		font-size: 0.9rem;
 	}
 
-	/* モーダル */
+	/* ===== モーダル共通 ===== */
 	.modal-overlay {
 		position: fixed;
 		inset: 0;
@@ -530,6 +950,8 @@
 		padding: 28px 20px 36px;
 		width: 100%;
 		max-width: 600px;
+		max-height: 90vh;
+		overflow-y: auto;
 	}
 
 	.modal-title {
@@ -539,6 +961,43 @@
 		color: #0f172a;
 	}
 
+	/* ===== 写真アップロード ===== */
+	.photo-upload-row {
+		display: flex;
+		justify-content: center;
+		margin-bottom: 16px;
+	}
+
+	.photo-upload-label {
+		cursor: pointer;
+		display: block;
+	}
+
+	.photo-preview {
+		width: 100%;
+		max-width: 280px;
+		height: 160px;
+		object-fit: cover;
+		border-radius: 10px;
+		display: block;
+	}
+
+	.photo-placeholder {
+		width: 280px;
+		height: 120px;
+		background: #f1f5f9;
+		border: 2px dashed #cbd5e1;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.9rem;
+		color: #94a3b8;
+	}
+
+	.hidden-file { display: none; }
+
+	/* ===== フォーム ===== */
 	.field-label {
 		display: block;
 		font-size: 0.85rem;
@@ -558,6 +1017,8 @@
 		font-size: 0.95rem;
 		font-family: inherit;
 		box-sizing: border-box;
+		background: white;
+		color: #0f172a;
 	}
 
 	.field-input:focus { outline: none; border-color: #facc15; }
@@ -572,11 +1033,7 @@
 		margin-bottom: 14px;
 	}
 
-	.modal-btns {
-		display: flex;
-		gap: 10px;
-		margin-top: 8px;
-	}
+	.modal-btns { display: flex; gap: 10px; margin-top: 8px; }
 
 	.cancel-btn {
 		flex: 1;

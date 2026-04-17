@@ -22,6 +22,8 @@
 	let groundType = $state('');
 	let areaCategory = $state('');
 	let fireUseAllowed = $state(false);
+	let maxStalls = $state(1);
+	let capacity = $state(10);
 	let lat = $state(null);
 	let lng = $state(null);
 
@@ -91,6 +93,8 @@
 				ground_type: groundType.trim() || null,
 				area_category: areaCategory.trim() || null,
 				fire_use_allowed: fireUseAllowed,
+				max_stalls: maxStalls ? parseInt(maxStalls) : 1,
+				capacity: capacity ? parseInt(capacity) : 10,
 				status: 'available'
 			});
 			successMessage = 'スペースを登録しました！';
@@ -155,6 +159,16 @@
 			<label class="field-label">
 				地面の種類
 				<input type="text" bind:value={groundType} class="field-input" placeholder="例: 芝生、砂利、アスファルト" />
+			</label>
+
+			<label class="field-label">
+				貸出可能台数（屋台の最大同時出店数）
+				<input type="number" bind:value={maxStalls} class="field-input" placeholder="1" min="1" />
+			</label>
+
+			<label class="field-label">
+				利用可能人数（スペースの最大収容人数）
+				<input type="number" bind:value={capacity} class="field-input" placeholder="10" min="1" />
 			</label>
 
 			<label class="checkbox-label">

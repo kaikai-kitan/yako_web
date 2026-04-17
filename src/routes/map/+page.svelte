@@ -9,82 +9,110 @@
 		getAvailableSpaces,
 		getAvailableStallPins,
 		getAvailableStallsList,
-		createReservation
+		createReservation,
+		getUserReservations,
+		startRental,
+		completeRental,
+		getMyProfile,
+		getMySalesThisMonth,
+		getMyProviderMonthlyStats,
+		getBookedStallIds,
+		getMyMenuItems
 	} from '$lib/db.js';
 
 	// --- ステート管理 ---
 	let mapContainer = $state();
 	let mapInstance = $state();
 	let markers = $state([]);
+	let AdvancedMarkerClass = null;
+	let isApiInitialized = false;
 
-	// 'map' | 'reserve' | 'qr' | 'active' | 'return' | 'finish'
-	let currentView = $state('map');
+	let currentView = $state('map'); // 'map'|'reserve'|'qr'|'active'|'return'|'finish'
 	let isDashboardOpen = $state(false);
-	let mapMode = $state('available'); // 'available' | 'active'
+	let mapMode = $state('available'); // 'available'|'active'
 	let selectedStall = $state(null);
 	let currentUser = $state(null);
+	let userProfile = $state(null);
 
 	// DBデータ
 	let availableSpaces = $state([]);
 	let activeStalls = $state([]);
-	let stallPins = $state([]);          // 屋台提供者がピン登録した屋台
-	let availableStallsList = $state([]); // 予約フォーム用ドロップダウン
+	let stallPins = $state([]);
+	let availableStallsList = $state([]);
 	let isLoading = $state(true);
 	let fetchError = $state('');
 
-	// 販売管理
-	let salesData = $state({ beer: 0, yakisoba: 0, oden: 0 });
+	// 予約済み屋台IDセット（全ユーザー共通のブッキング確認）
+	let bookedStallIds = $state(new Set());
 
-	// 予約フォーム
-	let reservationForm = $state({
-		spaceId: null,
-		spaceName: '',
-		stallId: '',
-		startDate: '',
-		startTime: '10:00',
-		endDate: '',
-		endTime: '22:00',
-		plannedItems: ''
-	});
-	let reservationError = $state('');
-	let isReserving = $state(false);
-	let reservationSuccess = $state(false);
+	// 販売管理（{ '品目名': { count: 0, price: 0 } }）
+	let salesData = $state({});
+	let plannedItemsList = $state([]); // [{ name, price }]
 
-	// ダッシュボード（TODO: Supabaseから取得）
-	let dashboardData = $state({
-		totalSales: 0, occupancyRate: 0,
-		graphData: [0, 0, 0, 0, 0, 0, 0], recentReservations: []
-	});
+	// ユーザーの進行中予約
+	let myUserReservations = $state([]);
+	let currentReservationId = $state(null);
 
-	function getGraphPoints(data) {
-		if (!data || data.length < 2) return '';
-		const max = Math.max(...data, 1);
-		return data.map((val, i) => {
-			const x = (i / (data.length - 1)) * 300;
-			const y = 100 - (val / max) * 80;
-			return `${x},${y}`;
-		}).join(' ');
-	}
+	let myReservedSpaceIds = $derived(
+		new Set(myUserReservations.map((r) => r.rental_space_id).filter(Boolean))
+	);
 
-	let isApiInitialized = false;
+	// ダッシュボードデータ（役割別）
+	let monthlySalesItems = $state({});
+	let providerStats = $state({ count: 0, grossRevenue: 0, netRevenue: 0 });
+
+	// 売上集計（derived）
+	let salesTotalRevenue = $derived(
+		Object.values(salesData).reduce((sum, v) => sum + (v.count || 0) * (v.price || 0), 0)
+	);
+	let salesTotalCount = $derived(
+		Object.values(salesData).reduce((sum, v) => sum + (v.count || 0), 0)
+	);
+
+	// 予約フォーム 品目リスト（構造化: { name, price }[]）
+	let reservationItems = $state([{ name: '', price: '' }]);
+
+	// マイメニュー（登録済み商品一覧）
+	let myMenuItems = $state([]);
 
 	onMount(async () => {
-		// 認証状態を取得
-		const { data: { session } } = await supabase.auth.getSession();
+		const {
+			data: { session }
+		} = await supabase.auth.getSession();
 		currentUser = session?.user ?? null;
 
-		// DBデータを取得
 		try {
-			const [spaces, stalls, stallPinsData, stallsListData] = await Promise.all([
+			// getBookedStallIds はログイン不要なので base fetches に含める
+			const fetches = [
 				getAvailableSpaces(),
 				getActiveStalls(),
 				getAvailableStallPins(),
-				getAvailableStallsList()
-			]);
-			availableSpaces = spaces;
-			activeStalls = stalls;
-			stallPins = stallPinsData;
-			availableStallsList = stallsListData;
+				getAvailableStallsList(),
+				getBookedStallIds()
+			];
+			if (currentUser) {
+				fetches.push(getUserReservations(currentUser.id)); // index 5
+				fetches.push(getMyProfile(currentUser.id));        // index 6
+				fetches.push(getMyMenuItems(currentUser.id));      // index 7
+			}
+			const results = await Promise.all(fetches);
+			availableSpaces = results[0];
+			activeStalls   = results[1];
+			stallPins      = results[2];
+			availableStallsList = results[3];
+			bookedStallIds = results[4] ?? new Set();
+
+			if (currentUser) {
+				myUserReservations = results[5] ?? [];
+				userProfile = results[6];
+				myMenuItems = results[7] ?? [];
+
+				if (userProfile?.owners || userProfile?.operators) {
+					providerStats = await getMyProviderMonthlyStats(currentUser.id);
+				} else {
+					monthlySalesItems = await getMySalesThisMonth(currentUser.id);
+				}
+			}
 		} catch (e) {
 			console.error('DB fetch error:', e);
 			fetchError = e.message.includes('未設定')
@@ -94,7 +122,6 @@
 			isLoading = false;
 		}
 
-		// Google Maps 初期化
 		try {
 			if (!isApiInitialized) {
 				setOptions({
@@ -106,36 +133,30 @@
 			}
 			const { Map } = await importLibrary('maps');
 			const { AdvancedMarkerElement } = await importLibrary('marker');
+			AdvancedMarkerClass = AdvancedMarkerElement;
 			mapInstance = new Map(mapContainer, {
 				center: { lat: 35.009, lng: 135.772 },
 				zoom: 16,
 				disableDefaultUI: true,
 				mapId: 'dc1ab66880d245ef156be95a'
 			});
-			updateMarkers(mapInstance, AdvancedMarkerElement);
+			updateMarkers(mapInstance);
 		} catch (e) {
 			console.error('Google Maps Load Error:', e);
 		}
 	});
 
-	// マーカー更新
-	async function updateMarkers(map, AdvancedMarkerElement) {
-		if (!map) return;
-		if (!AdvancedMarkerElement) {
-			const lib = await importLibrary('marker');
-			AdvancedMarkerElement = lib.AdvancedMarkerElement;
-		}
-
+	function updateMarkers(map) {
+		if (!map || !AdvancedMarkerClass) return;
 		markers.forEach((m) => m.setMap(null));
 		markers = [];
 
 		if (mapMode === 'available') {
-			// 青ピン: 予約可能スペース
 			availableSpaces.forEach((stall) => {
 				if (!stall.lat || !stall.lng) return;
 				const icon = document.createElement('img');
 				icon.src = 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-				const marker = new AdvancedMarkerElement({
+				const marker = new AdvancedMarkerClass({
 					map, position: { lat: stall.lat, lng: stall.lng },
 					title: stall.name, content: icon
 				});
@@ -143,12 +164,14 @@
 				markers.push(marker);
 			});
 
-			// 黄ピン: 屋台提供者がピン登録した屋台
 			stallPins.forEach((stall) => {
 				if (!stall.lat || !stall.lng) return;
 				const icon = document.createElement('img');
-				icon.src = 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
-				const marker = new AdvancedMarkerElement({
+				// 予約済みの屋台はグレーピン、空き屋台は黄色ピン
+				icon.src = bookedStallIds.has(stall.id)
+					? 'http://maps.google.com/mapfiles/ms/icons/grey.png'
+					: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
+				const marker = new AdvancedMarkerClass({
 					map, position: { lat: stall.lat, lng: stall.lng },
 					title: stall.name, content: icon
 				});
@@ -156,14 +179,61 @@
 				markers.push(marker);
 			});
 		} else {
-			// 赤ピン: 出店中
 			activeStalls.forEach((stall) => {
 				if (!stall.lat || !stall.lng) return;
-				const icon = document.createElement('img');
-				icon.src = 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
-				const marker = new AdvancedMarkerElement({
+
+				// 営業者アイコンをカスタムピンとして表示
+				const pin = document.createElement('div');
+				pin.style.cssText = [
+					'position:relative',
+					'display:flex',
+					'flex-direction:column',
+					'align-items:center',
+					'cursor:pointer'
+				].join(';');
+
+				const avatar = document.createElement('div');
+				avatar.style.cssText = [
+					'width:48px',
+					'height:48px',
+					'border-radius:50%',
+					'border:3px solid #ef4444',
+					'overflow:hidden',
+					'box-shadow:0 2px 10px rgba(0,0,0,0.45)',
+					'background:#fef2f2',
+					'display:flex',
+					'align-items:center',
+					'justify-content:center',
+					'font-size:22px'
+				].join(';');
+
+				if (stall.image) {
+					const img = document.createElement('img');
+					img.src = stall.image;
+					img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+					img.onerror = () => { img.remove(); avatar.textContent = '🏮'; };
+					avatar.appendChild(img);
+				} else {
+					avatar.textContent = '🏮';
+				}
+
+				// ピン下の三角形
+				const caret = document.createElement('div');
+				caret.style.cssText = [
+					'width:0',
+					'height:0',
+					'border-left:7px solid transparent',
+					'border-right:7px solid transparent',
+					'border-top:10px solid #ef4444',
+					'margin-top:-1px'
+				].join(';');
+
+				pin.appendChild(avatar);
+				pin.appendChild(caret);
+
+				const marker = new AdvancedMarkerClass({
 					map, position: { lat: stall.lat, lng: stall.lng },
-					title: stall.name, content: icon
+					title: stall.name, content: pin
 				});
 				marker.addListener('click', () => { selectedStall = stall; });
 				markers.push(marker);
@@ -174,36 +244,63 @@
 	function toggleMode() {
 		mapMode = mapMode === 'available' ? 'active' : 'available';
 		selectedStall = null;
-		updateMarkers(mapInstance, null);
+		updateMarkers(mapInstance);
 	}
 
-	// 予約フォームを開く（スペースピンから）
+	// 予約フォーム state
+	let reservationForm = $state({
+		spaceId: null, spaceName: '',
+		stallId: '',
+		startDate: '', startTime: '10:00',
+		endDate: '', endTime: '22:00'
+	});
+	let reservationError = $state('');
+	let isReserving = $state(false);
+	let reservationSuccess = $state(false);
+
 	function goReserve() {
 		reservationForm = {
 			spaceId: selectedStall?.id ?? null,
 			spaceName: selectedStall?.name ?? '',
 			stallId: '',
 			startDate: '', startTime: '10:00',
-			endDate: '', endTime: '22:00',
-			plannedItems: ''
+			endDate: '', endTime: '22:00'
 		};
+		reservationItems = [{ name: '', price: '' }];
 		reservationError = '';
 		reservationSuccess = false;
 		currentView = 'reserve';
 	}
 
-	// 予約フォームを開く（屋台ピンから）
 	function goReserveFromStall() {
 		reservationForm = {
 			spaceId: null, spaceName: '',
 			stallId: selectedStall?.id ?? '',
 			startDate: '', startTime: '10:00',
-			endDate: '', endTime: '22:00',
-			plannedItems: ''
+			endDate: '', endTime: '22:00'
 		};
+		reservationItems = [{ name: '', price: '' }];
 		reservationError = '';
 		reservationSuccess = false;
 		currentView = 'reserve';
+	}
+
+	function addReservationItem() {
+		reservationItems = [...reservationItems, { name: '', price: '' }];
+	}
+
+	function removeReservationItem(index) {
+		reservationItems = reservationItems.filter((_, i) => i !== index);
+	}
+
+	/** マイメニューの商品を品目リストに一括読み込み（既存内容を上書き） */
+	function loadFromMyMenu() {
+		if (myMenuItems.length === 0) return;
+		reservationItems = myMenuItems.map((m) => ({
+			name: m.name,
+			price: m.price ?? 0,
+			description: m.description ?? ''
+		}));
 	}
 
 	async function submitReservation() {
@@ -218,21 +315,37 @@
 			reservationError = '利用日を入力してください'; return;
 		}
 
+		// 品目リストをJSONに変換（空行は除外）
+		const validItems = reservationItems.filter((i) => i.name.trim());
+		const plannedItemsJson = validItems.length > 0
+			? JSON.stringify(validItems.map((i) => ({
+				name: i.name.trim(),
+				price: parseInt(String(i.price)) || 0,
+				description: i.description?.trim() || ''
+			})))
+			: null;
+
 		isReserving = true;
 		try {
 			const startDatetime = `${reservationForm.startDate}T${reservationForm.startTime}:00`;
-			const endDatetime = `${reservationForm.endDate}T${reservationForm.endTime}:00`;
+			const endDatetime   = `${reservationForm.endDate}T${reservationForm.endTime}:00`;
 			await createReservation(currentUser.id, {
 				rentalSpaceId: reservationForm.spaceId,
 				stallId: reservationForm.stallId,
 				startDatetime, endDatetime,
-				plannedItems: reservationForm.plannedItems
+				plannedItems: plannedItemsJson
 			});
 			reservationSuccess = true;
+			// 予約一覧・予約済み屋台を再取得
+			[myUserReservations, bookedStallIds] = await Promise.all([
+				getUserReservations(currentUser.id),
+				getBookedStallIds()
+			]);
 			setTimeout(() => {
 				currentView = 'map';
 				selectedStall = null;
 				reservationSuccess = false;
+				updateMarkers(mapInstance);
 			}, 2000);
 		} catch (e) {
 			reservationError = '予約に失敗しました: ' + e.message;
@@ -241,26 +354,112 @@
 		}
 	}
 
-	function unlockStall() {
-		setTimeout(() => { currentView = 'active'; }, 1000);
+	/**
+	 * 品目テキスト（旧: 読点区切り / 新: JSON）→ [{ name, price }] に変換
+	 */
+	function parsePlannedItems(text) {
+		if (!text) return [];
+		try {
+			const parsed = JSON.parse(text);
+			if (Array.isArray(parsed)) {
+				return parsed
+					.map((i) =>
+						typeof i === 'string'
+							? { name: i, price: 0, description: '' }
+							: {
+									name: String(i.name || ''),
+									price: Number(i.price) || 0,
+									description: String(i.description || '')
+								}
+					)
+					.filter((i) => i.name);
+			}
+		} catch {
+			// 旧フォーマット（読点区切りテキスト）
+		}
+		return text
+			.split(/[、,，\n]/)
+			.map((s) => s.trim())
+			.filter(Boolean)
+			.map((name) => ({ name, price: 0, description: '' }));
+	}
+
+	/** 売上カウント更新 */
+	function updateSalesCount(name, delta) {
+		const current = salesData[name] ?? { count: 0, price: 0 };
+		salesData[name] = { ...current, count: Math.max(0, current.count + delta) };
+	}
+
+	/** QR解錠成功 → DB ステータスを active に変更、品目リストを設定 */
+	async function unlockStall() {
+		if (currentReservationId) {
+			try {
+				await startRental(currentReservationId);
+				const currentRes = myUserReservations.find((r) => r.id === currentReservationId);
+				plannedItemsList = parsePlannedItems(currentRes?.planned_items);
+				salesData = Object.fromEntries(
+					plannedItemsList.map((item) => [item.name, { count: 0, price: item.price || 0 }])
+				);
+				myUserReservations = myUserReservations.map((r) =>
+					r.id === currentReservationId ? { ...r, status: 'active' } : r
+				);
+				// 出店中マップを更新するためアクティブ一覧を再取得
+				activeStalls = await getActiveStalls();
+			} catch (e) {
+				console.error('startRental error:', e);
+			}
+		}
+		setTimeout(() => { currentView = 'active'; }, 500);
 	}
 
 	function startReturn() { currentView = 'return'; }
 
-	function finishReturn() {
+	/** 返却確認 → completed に更新 & 支払い履歴を記録 */
+	async function finishReturn() {
 		currentView = 'finish';
+		if (currentReservationId && currentUser) {
+			try {
+				// DB には { 品目名: count } 形式で保存
+				const salesForDB = Object.fromEntries(
+					Object.entries(salesData).map(([name, v]) => [name, v.count || 0])
+				);
+				await completeRental(currentReservationId, currentUser.id, salesForDB);
+				myUserReservations = myUserReservations.filter((r) => r.id !== currentReservationId);
+				// 出店中・予約済みを再取得
+				[activeStalls, bookedStallIds] = await Promise.all([
+					getActiveStalls(),
+					getBookedStallIds()
+				]);
+				// ダッシュボードを更新
+				if (userProfile?.owners || userProfile?.operators) {
+					providerStats = await getMyProviderMonthlyStats(currentUser.id);
+				} else {
+					monthlySalesItems = await getMySalesThisMonth(currentUser.id);
+				}
+			} catch (e) {
+				console.error('completeRental error:', e);
+			}
+		}
 		setTimeout(() => {
 			currentView = 'map';
 			selectedStall = null;
-			salesData = { beer: 0, yakisoba: 0, oden: 0 };
+			currentReservationId = null;
+			salesData = {};
+			plannedItemsList = [];
+			updateMarkers(mapInstance);
 		}, 3000);
+	}
+
+	function goQR(reservationId) {
+		currentReservationId = reservationId;
+		currentView = 'qr';
 	}
 
 	function closeDetail() { selectedStall = null; }
 </script>
 
 <div class="app-container">
-	<!-- ヘッダー（マップ画面のみ） -->
+	<!-- ヘッダー -->
 	{#if currentView === 'map'}
 		<header class="app-header">
 			<div class="toggle-switch" onclick={toggleMode} role="button" tabindex="0"
@@ -290,11 +489,11 @@
 				<div class="map-overlay info"><p>現在出店中の屋台はありません</p></div>
 			{/if}
 
-			<!-- ピン凡例 -->
 			{#if currentView === 'map' && mapMode === 'available'}
 				<div class="legend">
 					<span class="legend-item">🔵 スペース</span>
 					<span class="legend-item">🟡 屋台</span>
+					<span class="legend-item">⚫ 予約済み</span>
 				</div>
 			{/if}
 		</div>
@@ -317,10 +516,22 @@
 						{#if selectedStall.status === 'stall'}
 							<!-- 屋台ピン -->
 							<p class="specs">提供者: {selectedStall.owner}</p>
-							<p class="specs">{selectedStall.specs}</p>
+							{#if selectedStall.specs}<p class="specs">{selectedStall.specs}</p>{/if}
 							<p class="price">¥{(selectedStall.price ?? 0).toLocaleString()} / 日</p>
 							{#if currentUser}
-								<button class="action-btn primary" onclick={goReserveFromStall}>この屋台で予約する</button>
+								{@const pendingRes = myUserReservations.find((r) => r.stall_id === selectedStall.id)}
+								{@const bookedByOther = bookedStallIds.has(selectedStall.id) && !pendingRes}
+								{#if pendingRes}
+									<button class="action-btn primary" onclick={() => goQR(pendingRes.id)}>
+										📱 QRで受け取りを開始
+									</button>
+								{:else if bookedByOther}
+									<div class="booked-badge">予約済み（利用不可）</div>
+								{:else}
+									<button class="action-btn primary" onclick={goReserveFromStall}>
+										この屋台で予約する
+									</button>
+								{/if}
 							{:else}
 								<a href="{base}/auth" class="action-btn primary link-btn">ログインして予約する</a>
 							{/if}
@@ -331,18 +542,58 @@
 							{#if selectedStall.address}
 								<p class="specs">📍 {selectedStall.address}</p>
 							{/if}
+							<div class="space-meta">
+								<span>🏮 最大 {selectedStall.maxStalls ?? 1} 台</span>
+								<span>👥 {selectedStall.capacity ?? 10} 名まで</span>
+							</div>
 							<p class="price">¥{(selectedStall.price ?? 0).toLocaleString()} / 泊</p>
 							{#if currentUser}
-								<button class="action-btn primary" onclick={goReserve}>予約する</button>
+								{@const pendingRes = myUserReservations.find((r) => r.rental_space_id === selectedStall.id)}
+								{#if pendingRes}
+									<button class="action-btn primary" onclick={() => goQR(pendingRes.id)}>
+										📱 QRで受け取りを開始
+									</button>
+								{:else if myReservedSpaceIds.has(selectedStall.id)}
+									<button class="action-btn secondary" disabled>予約済み</button>
+								{:else}
+									<button class="action-btn primary" onclick={goReserve}>予約する</button>
+								{/if}
 							{:else}
 								<a href="{base}/auth" class="action-btn primary link-btn">ログインして予約する</a>
 							{/if}
 
 						{:else}
 							<!-- 出店中ピン -->
-							<p class="owner">店主: {selectedStall.owner}</p>
-							<p class="genre">ジャンル: {selectedStall.genre}</p>
-							<button class="action-btn secondary">プロフィールを見る</button>
+							<div class="active-store-info">
+								<p class="owner-name">{selectedStall.owner}</p>
+								{#if selectedStall.spaceName}
+									<p class="specs">📍 {selectedStall.spaceName}</p>
+								{/if}
+								{#if selectedStall.bio}
+									<p class="store-bio">{selectedStall.bio}</p>
+								{/if}
+
+								{#each [parsePlannedItems(selectedStall.plannedItems)] as activeItems}
+									{#if activeItems.length > 0}
+										<div class="active-menu-list">
+											<p class="active-menu-label">本日のメニュー</p>
+											{#each activeItems as item}
+												<div class="active-menu-item">
+													<div class="active-menu-item-info">
+														<span class="active-menu-name">{item.name}</span>
+														{#if item.description}
+															<span class="active-menu-desc">{item.description}</span>
+														{/if}
+													</div>
+													{#if item.price > 0}
+														<span class="active-menu-price">¥{item.price.toLocaleString()}</span>
+													{/if}
+												</div>
+											{/each}
+										</div>
+									{/if}
+								{/each}
+							</div>
 						{/if}
 					</div>
 				</div>
@@ -375,7 +626,9 @@
 								<select id="space-select" bind:value={reservationForm.spaceId} class="form-select">
 									<option value={null}>スペースを選択してください</option>
 									{#each availableSpaces as space}
-										<option value={space.id}>{space.name}（{space.address ?? '住所未設定'}）</option>
+										<option value={space.id}>
+											{space.name}（{space.address ?? '住所未設定'}）
+										</option>
 									{/each}
 								</select>
 							{/if}
@@ -392,9 +645,11 @@
 								<select id="stall-select" bind:value={reservationForm.stallId} class="form-select">
 									<option value="">屋台を選択してください</option>
 									{#each availableStallsList as stall}
-										<option value={stall.id}>
+										{@const isBooked = bookedStallIds.has(stall.id) && !myUserReservations.some(r => r.stall_id === stall.id)}
+										<option value={stall.id} disabled={isBooked}>
 											{stall.stall_name}（{stall.operators?.business_name ?? ''}）
 											— ¥{(stall.rental_fee ?? 0).toLocaleString()}/日
+											{#if isBooked}（予約済み）{/if}
 										</option>
 									{/each}
 								</select>
@@ -419,16 +674,55 @@
 							</div>
 						</div>
 
-						<!-- 提供品目 -->
+						<!-- 提供品目（構造化入力） -->
 						<div class="form-section">
-							<label class="form-label" for="items-input">提供品目</label>
-							<textarea
-								id="items-input"
-								bind:value={reservationForm.plannedItems}
-								class="form-input form-textarea"
-								placeholder="例: クラフトビール、焼きそば、たこ焼き"
-								rows="3"
-							></textarea>
+							<div class="items-label-row">
+								<span class="form-label" style="margin-bottom:0">提供品目</span>
+								<span class="form-hint">売上入力に使用されます</span>
+							</div>
+							{#if myMenuItems.length > 0}
+								<button
+									type="button"
+									class="load-menu-btn"
+									onclick={loadFromMyMenu}
+								>
+									マイメニューから読み込む（{myMenuItems.length}件）
+								</button>
+							{/if}
+							<div class="items-header">
+								<span class="items-col-label">商品名</span>
+								<span class="items-col-label">料金（円）</span>
+							</div>
+							{#each reservationItems as item, i}
+								<div class="item-row">
+									<input
+										type="text"
+										bind:value={item.name}
+										placeholder="例: クラフトビール"
+										class="item-name-input"
+									/>
+									<div class="item-price-wrapper">
+										<span class="yen-sign">¥</span>
+										<input
+											type="number"
+											bind:value={item.price}
+											placeholder="800"
+											min="0"
+											class="item-price-input"
+										/>
+									</div>
+									{#if reservationItems.length > 1}
+										<button
+											type="button"
+											class="remove-item-btn"
+											onclick={() => removeReservationItem(i)}
+										>×</button>
+									{/if}
+								</div>
+							{/each}
+							<button type="button" class="add-item-btn" onclick={addReservationItem}>
+								＋ 商品を追加
+							</button>
 						</div>
 
 						{#if reservationError}
@@ -462,29 +756,39 @@
 		{#if currentView === 'active'}
 			<div class="active-dashboard" transition:fly={{ x: 300, duration: 300 }}>
 				<div class="status-bar">
-					<span class="blinking">●</span> 貸出中: {selectedStall?.name}
+					<span class="blinking">●</span> 貸出中: {selectedStall?.name ?? '屋台'}
 				</div>
 				<div class="sales-form">
 					<h3>本日の売上入力</h3>
-					<div class="input-group">
-						<label for="beer-count">🍺 クラフトビール</label>
-						<div class="stepper">
-							<button onclick={() => (salesData.beer = Math.max(0, salesData.beer - 1))}>-</button>
-							<span id="beer-count">{salesData.beer}</span>
-							<button onclick={() => salesData.beer++}>+</button>
+					{#if plannedItemsList.length > 0}
+						{#each plannedItemsList as item}
+							<div class="input-group">
+								<div class="item-info">
+									<span class="item-label">{item.name}</span>
+									{#if item.price > 0}
+										<span class="item-unit-price">¥{item.price.toLocaleString()} / 個</span>
+									{/if}
+								</div>
+								<div class="stepper">
+									<button onclick={() => updateSalesCount(item.name, -1)}>−</button>
+									<span>{salesData[item.name]?.count ?? 0}</span>
+									<button onclick={() => updateSalesCount(item.name, 1)}>＋</button>
+								</div>
+							</div>
+						{/each}
+						<div class="total-sales">
+							{#if salesTotalRevenue > 0}
+								売上 ¥{salesTotalRevenue.toLocaleString()}（{salesTotalCount} 個）
+							{:else}
+								合計: {salesTotalCount} 個
+							{/if}
 						</div>
-					</div>
-					<div class="input-group">
-						<label for="yakisoba-count">🍝 焼きそば</label>
-						<div class="stepper">
-							<button onclick={() => (salesData.yakisoba = Math.max(0, salesData.yakisoba - 1))}>-</button>
-							<span id="yakisoba-count">{salesData.yakisoba}</span>
-							<button onclick={() => salesData.yakisoba++}>+</button>
+					{:else}
+						<div class="no-items">
+							<p>品目が未登録です</p>
+							<small>予約時に「提供品目」を入力すると、ここに表示されます</small>
 						</div>
-					</div>
-					<div class="total-sales">
-						推定売上: ¥{(salesData.beer * 800 + salesData.yakisoba * 600).toLocaleString()}
-					</div>
+					{/if}
 				</div>
 				<button class="action-btn danger return-btn" onclick={startReturn}>屋台を返却する</button>
 			</div>
@@ -515,36 +819,55 @@
 		<!-- ダッシュボードモーダル -->
 		{#if isDashboardOpen}
 			<div class="modal-overlay" transition:fade onclick={() => (isDashboardOpen = false)}
-				role="button" tabindex="0" onkeydown={(e) => e.key === 'Escape' && (isDashboardOpen = false)}>
+				role="button" tabindex="0"
+				onkeydown={(e) => e.key === 'Escape' && (isDashboardOpen = false)}>
 				<div class="modal-content dashboard-modal" onclick={(e) => e.stopPropagation()} role="document">
 					<button class="close-btn" onclick={() => (isDashboardOpen = false)}>×</button>
-					<h2 class="dashboard-title">オーナーダッシュボード</h2>
-					<div class="kpi-container">
-						<div class="kpi-card highlight">
-							<span class="kpi-label">今月の売上</span>
-							<span class="kpi-value">¥{dashboardData.totalSales.toLocaleString()}</span>
+					<h2 class="dashboard-title">ダッシュボード</h2>
+
+					{#if !currentUser}
+						<p class="empty-history">ログインするとデータが表示されます</p>
+					{:else if userProfile?.owners || userProfile?.operators}
+						<p class="dashboard-role-label">
+							{#if userProfile?.owners}📍 場所提供者{:else}🏮 屋台提供者{/if}
+						</p>
+						<div class="kpi-container">
+							<div class="kpi-card">
+								<span class="kpi-label">今月の利用回数</span>
+								<span class="kpi-value">{providerStats.count} 回</span>
+							</div>
+							<div class="kpi-card highlight">
+								<span class="kpi-label">今月の収益（手数料30%後）</span>
+								<span class="kpi-value">¥{providerStats.netRevenue.toLocaleString()}</span>
+							</div>
 						</div>
-						<div class="kpi-card">
-							<span class="kpi-label">稼働率</span>
-							<span class="kpi-value">{dashboardData.occupancyRate}%</span>
+						<p class="fee-note">
+							総額 ¥{providerStats.grossRevenue.toLocaleString()} × 70% = ¥{providerStats.netRevenue.toLocaleString()}
+						</p>
+					{:else}
+						<p class="dashboard-role-label">🛒 屋台利用者</p>
+						<div class="kpi-container">
+							<div class="kpi-card highlight">
+								<span class="kpi-label">今月の販売個数合計</span>
+								<span class="kpi-value">
+									{Object.values(monthlySalesItems).reduce((sum, v) => sum + v, 0)} 個
+								</span>
+							</div>
 						</div>
-					</div>
-					<div class="chart-container">
-						<h3>売上推移 (直近7日間)</h3>
-						<svg viewBox="0 0 300 100" class="sales-chart">
-							<line x1="0" y1="20" x2="300" y2="20" stroke="#e2e8f0" stroke-width="1" />
-							<line x1="0" y1="60" x2="300" y2="60" stroke="#e2e8f0" stroke-width="1" />
-							<polyline points={getGraphPoints(dashboardData.graphData)}
-								fill="none" stroke="#facc15" stroke-width="3"
-								stroke-linecap="round" stroke-linejoin="round" />
-						</svg>
-					</div>
-					<div class="history-list">
-						<h3>最近の利用履歴</h3>
-						{#if dashboardData.recentReservations.length === 0}
-							<p class="empty-history">利用履歴はありません</p>
+						{#if Object.keys(monthlySalesItems).length > 0}
+							<div class="sales-breakdown">
+								<h3>品目別合計</h3>
+								{#each Object.entries(monthlySalesItems) as [item, count]}
+									<div class="breakdown-row">
+										<span>{item}</span>
+										<span class="breakdown-count">{count} 個</span>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<p class="empty-history">今月の販売記録はありません</p>
 						{/if}
-					</div>
+					{/if}
 				</div>
 			</div>
 		{/if}
@@ -562,7 +885,8 @@
 				<img src="{base}/images/map_icon/yatainin.jpg" alt="マイページ" class="nav-icon" />
 				<span>マイページ</span>
 			</a>
-			<button class="nav-item" class:active={isDashboardOpen} onclick={() => (isDashboardOpen = true)}>
+			<button class="nav-item" class:active={isDashboardOpen}
+				onclick={() => (isDashboardOpen = true)}>
 				<img src="{base}/images/map_icon/earn_money.jpg" alt="今月の売上" class="nav-icon" />
 				<span>今月の売上</span>
 			</button>
@@ -579,9 +903,7 @@
 		background: #f1f5f9; position: relative; overflow: hidden;
 	}
 
-	.app-header {
-		position: absolute; top: 80px; right: 20px; z-index: 10;
-	}
+	.app-header { position: absolute; top: 80px; right: 20px; z-index: 10; }
 
 	.toggle-switch {
 		background: white; border-radius: 30px; padding: 4px;
@@ -603,15 +925,13 @@
 	.map-layer { width: 100%; height: 100%; }
 	.map-canvas { width: 100%; height: 100%; }
 
-	/* 凡例 */
 	.legend {
 		position: absolute; bottom: 100px; left: 12px;
 		background: white; border-radius: 10px; padding: 8px 12px;
-		display: flex; gap: 12px; font-size: 0.75rem; color: #475569;
+		display: flex; gap: 10px; font-size: 0.73rem; color: #475569;
 		box-shadow: 0 2px 8px rgba(0,0,0,0.12); z-index: 15;
 	}
 
-	/* マップオーバーレイ */
 	.map-overlay {
 		position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
 		background: white; border-radius: 12px; padding: 12px 20px;
@@ -644,8 +964,52 @@
 	}
 	.stall-info { flex: 1; }
 	.stall-info h3 { margin: 0 0 5px 0; font-size: 1.1rem; }
-	.specs, .owner, .genre { font-size: 0.8rem; color: #64748b; margin: 2px 0; }
+	.specs { font-size: 0.8rem; color: #64748b; margin: 2px 0; }
+
+	/* 出店中パネル */
+	.active-store-info { width: 100%; }
+	.owner-name { font-weight: bold; font-size: 1rem; color: #0f172a; margin: 0 0 4px; }
+	.store-bio {
+		font-size: 0.8rem; color: #475569; margin: 2px 0 0;
+		line-height: 1.5; white-space: pre-wrap;
+	}
+	.active-menu-list {
+		margin-top: 10px;
+		background: #fef9c3;
+		border-radius: 8px;
+		padding: 10px 12px;
+	}
+	.active-menu-label {
+		font-size: 0.72rem; font-weight: bold; color: #92400e;
+		text-transform: uppercase; letter-spacing: 0.04em;
+		margin: 0 0 6px;
+	}
+	.active-menu-item {
+		display: flex; justify-content: space-between; align-items: flex-start;
+		padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06);
+	}
+	.active-menu-item:last-child { border-bottom: none; }
+	.active-menu-item-info {
+		display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0;
+	}
+	.active-menu-name { font-size: 0.88rem; color: #1e293b; font-weight: 500; }
+	.active-menu-desc {
+		font-size: 0.75rem; color: #64748b; line-height: 1.4;
+	}
+	.active-menu-price {
+		font-weight: bold; color: #92400e; font-size: 0.88rem;
+		flex-shrink: 0; margin-left: 8px; padding-top: 1px;
+	}
 	.price { font-weight: bold; font-size: 1.1rem; margin: 5px 0; }
+	.space-meta {
+		display: flex; gap: 10px; font-size: 0.78rem; color: #475569;
+		background: #f8fafc; border-radius: 6px; padding: 5px 8px; margin: 4px 0;
+	}
+	.booked-badge {
+		margin-top: 10px; padding: 8px 12px;
+		background: #fee2e2; color: #dc2626;
+		border-radius: 8px; font-size: 0.82rem; font-weight: bold; text-align: center;
+	}
 
 	.action-btn {
 		width: 100%; padding: 10px; border: none; border-radius: 8px;
@@ -654,6 +1018,7 @@
 	.action-btn.primary { background: #facc15; color: #0f172a; }
 	.action-btn.secondary { background: #e2e8f0; color: #0f172a; }
 	.action-btn.danger { background: #ef4444; color: white; }
+	.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 	.link-btn { display: block; text-decoration: none; text-align: center; }
 
 	/* 予約フォーム */
@@ -677,6 +1042,7 @@
 	.form-label {
 		display: block; font-size: 0.85rem; color: #475569; margin-bottom: 6px; font-weight: bold;
 	}
+	.form-hint { font-size: 0.75rem; color: #94a3b8; font-weight: normal; margin-left: 6px; }
 	.req { color: #ef4444; }
 	.form-value {
 		background: #f1f5f9; border-radius: 8px; padding: 10px 12px;
@@ -690,15 +1056,74 @@
 	.form-select:focus, .form-input:focus { outline: none; border-color: #facc15; }
 	.date-row { display: flex; gap: 8px; }
 	.time-input { width: 110px; flex-shrink: 0; }
-	.form-textarea { resize: vertical; min-height: 70px; }
 	.form-error {
 		background: #fee2e2; color: #dc2626; border-radius: 8px;
 		padding: 10px 12px; font-size: 0.85rem; margin-bottom: 12px;
 	}
+
+	/* 提供品目 構造化入力 */
+	.items-label-row {
+		display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;
+	}
+	.items-header {
+		display: grid; grid-template-columns: 1fr 100px 28px;
+		gap: 6px; margin-bottom: 4px; padding: 0 2px;
+	}
+	.items-col-label {
+		font-size: 0.75rem; color: #94a3b8; font-weight: bold;
+	}
+	.item-row {
+		display: grid; grid-template-columns: 1fr 100px 28px;
+		gap: 6px; margin-bottom: 6px; align-items: center;
+	}
+	.item-name-input {
+		padding: 8px 10px; border: 1.5px solid #e2e8f0;
+		border-radius: 8px; font-size: 0.88rem;
+		font-family: inherit; box-sizing: border-box; width: 100%;
+	}
+	.item-price-wrapper {
+		display: flex; align-items: center;
+		border: 1.5px solid #e2e8f0; border-radius: 8px;
+		overflow: hidden; background: white;
+	}
+	.yen-sign {
+		padding: 0 6px; color: #94a3b8;
+		font-size: 0.85rem; background: #f8fafc;
+		border-right: 1px solid #e2e8f0; line-height: 36px;
+	}
+	.item-price-input {
+		border: none; padding: 8px 6px;
+		font-size: 0.88rem; font-family: inherit;
+		width: 100%; min-width: 0;
+	}
+	.item-price-input:focus { outline: none; }
+	.item-name-input:focus { outline: none; border-color: #facc15; }
+	.remove-item-btn {
+		width: 28px; height: 28px; border-radius: 50%;
+		border: 1.5px solid #fca5a5; background: white;
+		color: #ef4444; cursor: pointer; font-size: 0.9rem;
+		display: flex; align-items: center; justify-content: center;
+	}
+	.add-item-btn {
+		width: 100%; padding: 8px; margin-top: 4px;
+		background: #f8fafc; border: 1.5px dashed #cbd5e1;
+		border-radius: 8px; color: #64748b; font-size: 0.85rem;
+		cursor: pointer; font-family: inherit;
+	}
+	.add-item-btn:hover { border-color: #facc15; color: #0f172a; }
+
+	.load-menu-btn {
+		width: 100%; padding: 8px 12px; margin-bottom: 8px;
+		background: #fef9c3; border: 1.5px solid #facc15;
+		border-radius: 8px; color: #92400e; font-size: 0.82rem;
+		font-weight: bold; cursor: pointer; font-family: inherit;
+		text-align: left;
+	}
+	.load-menu-btn:hover { background: #facc15; color: #0f172a; }
+
 	.reserve-submit-btn {
 		width: 100%; padding: 14px; background: #facc15; color: #0f172a;
-		border: none; border-radius: 10px; font-size: 1rem; font-weight: bold;
-		cursor: pointer;
+		border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer;
 	}
 	.reserve-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 	.reserve-success {
@@ -729,30 +1154,48 @@
 	}
 	@keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
 
+	/* 利用中ダッシュボード */
 	.active-dashboard {
 		position: absolute; top: 0; left: 0; width: 100%; height: 100%;
 		background: white; z-index: 50; padding: 20px; padding-top: 80px;
-		box-sizing: border-box; display: flex; flex-direction: column;
+		box-sizing: border-box; display: flex; flex-direction: column; overflow-y: auto;
 	}
 	.status-bar {
-		background: #dcfce7; color: #166534; padding: 10px; border-radius: 8px;
-		font-weight: bold; text-align: center; margin-bottom: 30px;
+		background: #dcfce7; color: #166534; padding: 10px;
+		border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 24px;
 	}
 	.blinking { animation: blink 1s infinite; }
 	@keyframes blink { 50% { opacity: 0; } }
+	.sales-form h3 { font-size: 1rem; color: #0f172a; margin: 0 0 16px 0; }
 	.input-group {
 		display: flex; justify-content: space-between; align-items: center;
-		margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 12px;
+		margin-bottom: 10px; padding: 12px 14px;
+		background: #f8fafc; border-radius: 12px;
 	}
-	.stepper { display: flex; align-items: center; gap: 15px; }
+	.item-info { display: flex; flex-direction: column; gap: 2px; }
+	.item-label { font-size: 0.9rem; color: #334155; font-weight: 500; }
+	.item-unit-price { font-size: 0.75rem; color: #94a3b8; }
+	.stepper { display: flex; align-items: center; gap: 12px; }
 	.stepper button {
-		width: 30px; height: 30px; border-radius: 50%;
-		border: 1px solid #cbd5e1; background: white; cursor: pointer;
+		width: 32px; height: 32px; border-radius: 50%;
+		border: 1px solid #cbd5e1; background: white;
+		cursor: pointer; font-size: 1rem; color: #334155;
+	}
+	.stepper span {
+		min-width: 28px; text-align: center;
+		font-weight: bold; font-size: 1rem;
 	}
 	.total-sales {
-		font-size: 1.5rem; font-weight: bold; text-align: right;
-		margin-top: 20px; border-top: 2px solid #f1f5f9; padding-top: 20px;
+		font-size: 1.15rem; font-weight: bold; text-align: right;
+		margin-top: 16px; border-top: 2px solid #f1f5f9;
+		padding-top: 16px; color: #0f172a;
 	}
+	.no-items {
+		text-align: center; padding: 24px;
+		color: #94a3b8; background: #f8fafc; border-radius: 12px;
+	}
+	.no-items p { margin: 0 0 6px 0; font-size: 0.9rem; }
+	.no-items small { font-size: 0.78rem; }
 	.return-btn { margin-top: auto; }
 
 	.camera-mock {
@@ -793,21 +1236,31 @@
 		overflow-y: auto; position: relative; box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
 	}
 	.dashboard-title { margin-top: 0; color: #0f172a; font-size: 1.5rem; }
-	.kpi-container { display: flex; gap: 15px; margin-bottom: 25px; }
+	.dashboard-role-label { font-size: 0.85rem; color: #64748b; margin: -8px 0 16px 0; }
+	.kpi-container { display: flex; gap: 15px; margin-bottom: 16px; }
 	.kpi-card {
 		flex: 1; background: white; padding: 15px; border-radius: 12px;
 		box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column;
 	}
 	.kpi-card.highlight { background: #0f172a; color: white; }
 	.kpi-card.highlight .kpi-label { color: #94a3b8; }
-	.kpi-label { font-size: 0.8rem; color: #64748b; margin-bottom: 5px; }
-	.kpi-value { font-size: 1.4rem; font-weight: bold; }
-	.chart-container {
-		background: white; padding: 20px; border-radius: 16px;
-		margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+	.kpi-label { font-size: 0.75rem; color: #64748b; margin-bottom: 5px; }
+	.kpi-value { font-size: 1.3rem; font-weight: bold; }
+	.fee-note {
+		font-size: 0.78rem; color: #64748b; margin-top: 0;
+		padding: 8px 12px; background: #f1f5f9; border-radius: 8px;
 	}
-	.chart-container h3 { margin: 0 0 15px 0; font-size: 1rem; color: #334155; }
-	.sales-chart { width: 100%; height: auto; overflow: visible; }
-	.history-list h3 { font-size: 1rem; color: #334155; margin-bottom: 15px; }
+	.sales-breakdown {
+		background: white; border-radius: 12px; padding: 16px;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+	}
+	.sales-breakdown h3 { font-size: 0.9rem; color: #334155; margin: 0 0 12px 0; }
+	.breakdown-row {
+		display: flex; justify-content: space-between; align-items: center;
+		padding: 8px 0; border-bottom: 1px solid #f1f5f9;
+		font-size: 0.9rem; color: #334155;
+	}
+	.breakdown-row:last-child { border-bottom: none; }
+	.breakdown-count { font-weight: bold; color: #0f172a; }
 	.empty-history { color: #94a3b8; text-align: center; padding: 20px; }
 </style>
