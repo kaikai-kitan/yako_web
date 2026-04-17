@@ -74,6 +74,11 @@
             </li>
             <li>
                 <div class="navbutton">
+                    <a href="{base}/mypage" class="btn">マイページ</a>
+                </div>
+            </li>
+            <li>
+                <div class="navbutton">
                     {#if $session}
                         <button class="btn auth-btn" on:click={handleSignOut}>ログアウト</button>
                     {:else}
