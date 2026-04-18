@@ -58,6 +58,14 @@ let splash = $state();
 
 </script>
 
+<svelte:head>
+	<title>微小夜行電灯 | 京都・鴨川の屋台シェアリング</title>
+	<meta name="description" content="京都の鴨川河川敷で屋台を借りて出店できるシェアリングサービス。屋台・スペースをマップから予約し、当日QRコードで開錠。" />
+	<meta property="og:title" content="微小夜行電灯 | 京都・鴨川の屋台シェアリング" />
+	<meta property="og:description" content="京都の鴨川河川敷で屋台を借りて出店できるシェアリングサービス。" />
+	<meta property="og:url" content="https://yako-web.vercel.app/" />
+</svelte:head>
+
 <SplashView bind:this={splash} />
 
 <main>

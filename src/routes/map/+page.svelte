@@ -28,8 +28,9 @@
 	let isApiInitialized = false;
 
 	let currentView = $state('map'); // 'map'|'reserve'|'qr'|'active'|'return'|'finish'
+
 	let isDashboardOpen = $state(false);
-	let mapMode = $state('available'); // 'available'|'active'
+	let mapMode = $state('active'); // 'available'|'active'
 	let selectedStall = $state(null);
 	let currentUser = $state(null);
 	let userProfile = $state(null);
@@ -605,15 +606,22 @@
 	function closeDetail() { selectedStall = null; }
 </script>
 
+<svelte:head>
+	<title>屋台貸し出しマップ | 微小夜行電灯</title>
+	<meta name="description" content="京都・鴨川河川敷の屋台・スペースをマップから検索して予約。QRコードで簡単に借り出し開始。" />
+	<meta property="og:title" content="屋台貸し出しマップ | 微小夜行電灯" />
+	<meta property="og:description" content="京都・鴨川河川敷の屋台・スペースをマップから検索して予約。" />
+</svelte:head>
+
 <div class="app-container">
 	<!-- ヘッダー -->
 	{#if currentView === 'map'}
 		<header class="app-header">
 			<div class="toggle-switch" onclick={toggleMode} role="button" tabindex="0"
 				onkeydown={(e) => e.key === 'Enter' && toggleMode()}>
-				<div class="toggle-bg" style="left: {mapMode === 'available' ? '2px' : '50%'};"></div>
-				<span class:active={mapMode === 'available'}>予約可能</span>
+				<div class="toggle-bg" style="left: {mapMode === 'active' ? '2px' : '50%'};"></div>
 				<span class:active={mapMode === 'active'}>出店中</span>
+				<span class:active={mapMode === 'available'}>予約可能</span>
 			</div>
 		</header>
 	{/if}

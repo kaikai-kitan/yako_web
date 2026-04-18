@@ -23,14 +23,18 @@
 
 		const params = new URLSearchParams(window.location.search);
 		const spaceId = params.get('space');
+		const yataiId = params.get('yatai');
 		const rentalDoneId = params.get('rental_done');
 		const stripeSessionId = params.get('session_id');
 
 		if (rentalDoneId && stripeSessionId) {
 			// Stripe決済完了後の返却 → 予約をアクティブ化
 			await activateFromStripe(rentalDoneId, stripeSessionId);
+		} else if (yataiId) {
+			// 屋台QRコード → 屋台IDで予約検索してStripe決済へ
+			await startPaymentByYatai(yataiId);
 		} else if (spaceId) {
-			// QRコードから直接アクセス → Stripe決済へ
+			// スペースQRコード → スペースIDで予約検索してStripe決済へ
 			await startPayment(spaceId);
 		} else {
 			// パラメータなし → カメラスキャン
@@ -41,6 +45,58 @@
 	onDestroy(() => {
 		stopCamera();
 	});
+
+	/** 屋台QRコード → 屋台IDで予約を検索してStripe決済へ（屋台+スペース両方を一括アクティブ化） */
+	async function startPaymentByYatai(yataiId) {
+		phase = 'loading';
+		try {
+			const { data: reservation } = await supabase
+				.from('reservations')
+				.select('id, start_datetime, end_datetime, planned_items, rental_space_id, stall_specs(stall_name), rental_spaces(name)')
+				.eq('user_id', userId)
+				.eq('stall_id', yataiId)
+				.eq('status', 'pending')
+				.order('start_datetime', { ascending: true })
+				.limit(1)
+				.maybeSingle();
+
+			if (!reservation) {
+				phase = 'error';
+				errorMsg = 'この屋台の有効な予約が見つかりません。予約状況をご確認ください。';
+				return;
+			}
+
+			const origin = window.location.origin;
+			const res = await fetch('/api/create-rental-checkout', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					reservationId: reservation.id,
+					userId,
+					successUrl: `${origin}/scan?yatai=${yataiId}&rental_done=${reservation.id}&session_id={CHECKOUT_SESSION_ID}`,
+					cancelUrl: `${origin}/map`
+				})
+			});
+
+			if (!res.ok) {
+				const msg = await res.text();
+				phase = 'error';
+				errorMsg = `決済処理に失敗しました: ${msg}`;
+				return;
+			}
+
+			const { url, free } = await res.json();
+			if (free) {
+				successData = reservation;
+				phase = 'success';
+			} else {
+				window.location.href = url;
+			}
+		} catch (e) {
+			phase = 'error';
+			errorMsg = '処理に失敗しました: ' + e.message;
+		}
+	}
 
 	/** QRコードからスペースIDを読み取り、Stripe決済へ進む */
 	async function startPayment(spaceId) {
@@ -142,15 +198,25 @@
 				{ fps: 10, qrbox: { width: 240, height: 240 } },
 				async (text) => {
 					stopCamera();
-					// URLからspaceパラメータを抽出
-					let spaceId = text.trim();
+					// URLからspace/yataiパラメータを抽出
+					let spaceId = null;
+					let yataiId = null;
 					try {
 						const url = new URL(text);
-						spaceId = url.searchParams.get('space') ?? text.trim();
+						spaceId = url.searchParams.get('space');
+						yataiId = url.searchParams.get('yatai');
 					} catch {
 						// URLでない場合はそのままspaceIdとして扱う
+						spaceId = text.trim() || null;
 					}
-					await startPayment(spaceId);
+					if (yataiId) {
+						await startPaymentByYatai(yataiId);
+					} else if (spaceId) {
+						await startPayment(spaceId);
+					} else {
+						phase = 'error';
+						errorMsg = '無効なQRコードです。スペースまたは屋台のQRコードを読み取ってください。';
+					}
 				},
 				() => {}
 			);

@@ -16,7 +16,16 @@
 
 	<link rel="stylesheet" href="{base}/global.css" />
 
+	<!-- デフォルトSEO・OGP（各ページで上書き可能） -->
 	<title>微小夜行電灯</title>
+	<meta name="description" content="京都・鴨川河川敷で屋台を借りて出店できるシェアリングサービス。屋台・スペースの予約からオンラインショップまで。" />
+	<meta property="og:site_name" content="微小夜行電灯" />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="微小夜行電灯" />
+	<meta property="og:description" content="京都・鴨川河川敷で屋台を借りて出店できるシェアリングサービス。" />
+	<meta property="og:image" content="https://yako-web.vercel.app/images/shop/yatai.jpg" />
+	<meta property="og:url" content="https://yako-web.vercel.app/" />
+	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
 <Header />
