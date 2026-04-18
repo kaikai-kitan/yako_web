@@ -3,10 +3,9 @@
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase.js';
-	import { activateReservationBySpace } from '$lib/db.js';
 
 	let userId = $state('');
-	/** @type {'init'|'scanning'|'activating'|'success'|'error'} */
+	/** @type {'init'|'scanning'|'loading'|'success'|'error'} */
 	let phase = $state('init');
 	let errorMsg = $state('');
 	let successData = $state(null);
@@ -22,11 +21,19 @@
 		}
 		userId = session.user.id;
 
-		// URL に ?space= がある場合はカメラ不要でそのままアクティベート
-		const spaceId = new URLSearchParams(window.location.search).get('space');
-		if (spaceId) {
-			await activateFromSpaceId(spaceId);
+		const params = new URLSearchParams(window.location.search);
+		const spaceId = params.get('space');
+		const rentalDoneId = params.get('rental_done');
+		const stripeSessionId = params.get('session_id');
+
+		if (rentalDoneId && stripeSessionId) {
+			// Stripe決済完了後の返却 → 予約をアクティブ化
+			await activateFromStripe(rentalDoneId, stripeSessionId);
+		} else if (spaceId) {
+			// QRコードから直接アクセス → Stripe決済へ
+			await startPayment(spaceId);
 		} else {
+			// パラメータなし → カメラスキャン
 			await startCamera();
 		}
 	});
@@ -34,6 +41,96 @@
 	onDestroy(() => {
 		stopCamera();
 	});
+
+	/** QRコードからスペースIDを読み取り、Stripe決済へ進む */
+	async function startPayment(spaceId) {
+		phase = 'loading';
+		try {
+			// このスペースに対するpending予約を取得
+			const { data: reservation } = await supabase
+				.from('reservations')
+				.select('id, start_datetime, end_datetime, planned_items, stall_specs(stall_name), rental_spaces(name)')
+				.eq('user_id', userId)
+				.eq('rental_space_id', spaceId)
+				.eq('status', 'pending')
+				.order('start_datetime', { ascending: true })
+				.limit(1)
+				.maybeSingle();
+
+			if (!reservation) {
+				phase = 'error';
+				errorMsg = 'この場所の有効な予約が見つかりません。予約状況をご確認ください。';
+				return;
+			}
+
+			const origin = window.location.origin;
+			const res = await fetch('/api/create-rental-checkout', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					reservationId: reservation.id,
+					userId,
+					successUrl: `${origin}/scan?space=${spaceId}&rental_done=${reservation.id}&session_id={CHECKOUT_SESSION_ID}`,
+					cancelUrl: `${origin}/map`
+				})
+			});
+
+			if (!res.ok) {
+				const msg = await res.text();
+				phase = 'error';
+				errorMsg = `決済処理に失敗しました: ${msg}`;
+				return;
+			}
+
+			const { url, free } = await res.json();
+
+			if (free) {
+				// 無料の場合はそのまま成功
+				successData = reservation;
+				phase = 'success';
+			} else {
+				// Stripe決済ページへリダイレクト
+				window.location.href = url;
+			}
+		} catch (e) {
+			phase = 'error';
+			errorMsg = '処理に失敗しました: ' + e.message;
+		}
+	}
+
+	/** Stripe決済完了後に予約をアクティブ化 */
+	async function activateFromStripe(reservationId, stripeSessionId) {
+		phase = 'loading';
+		window.history.replaceState({}, '', '/scan');
+		try {
+			const res = await fetch('/api/activate-rental', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					sessionId: stripeSessionId,
+					reservationId,
+					userId
+				})
+			});
+
+			if (res.ok) {
+				const { data } = await supabase
+					.from('reservations')
+					.select('rental_spaces(name), stall_specs(stall_name)')
+					.eq('id', reservationId)
+					.single();
+				successData = data;
+				phase = 'success';
+			} else {
+				const msg = await res.text();
+				phase = 'error';
+				errorMsg = `決済の確認に失敗しました: ${msg}`;
+			}
+		} catch (e) {
+			phase = 'error';
+			errorMsg = '処理に失敗しました: ' + e.message;
+		}
+	}
 
 	async function startCamera() {
 		phase = 'scanning';
@@ -45,9 +142,17 @@
 				{ fps: 10, qrbox: { width: 240, height: 240 } },
 				async (text) => {
 					stopCamera();
-					await handleScannedText(text);
+					// URLからspaceパラメータを抽出
+					let spaceId = text.trim();
+					try {
+						const url = new URL(text);
+						spaceId = url.searchParams.get('space') ?? text.trim();
+					} catch {
+						// URLでない場合はそのままspaceIdとして扱う
+					}
+					await startPayment(spaceId);
 				},
-				() => {} // フレームごとのエラーは無視
+				() => {}
 			);
 		} catch (e) {
 			phase = 'error';
@@ -62,30 +167,6 @@
 		}
 	}
 
-	async function handleScannedText(text) {
-		// URLからspace=パラメータを取り出す。直接UUIDの場合はそのまま使用
-		let spaceId = text.trim();
-		try {
-			const url = new URL(text);
-			spaceId = url.searchParams.get('space') ?? text.trim();
-		} catch {
-			// URLでない場合はtextをそのままspaceIdとして扱う
-		}
-		await activateFromSpaceId(spaceId);
-	}
-
-	async function activateFromSpaceId(spaceId) {
-		phase = 'activating';
-		try {
-			const data = await activateReservationBySpace(userId, spaceId);
-			successData = data;
-			phase = 'success';
-		} catch (e) {
-			errorMsg = e.message;
-			phase = 'error';
-		}
-	}
-
 	async function retry() {
 		errorMsg = '';
 		await startCamera();
@@ -93,10 +174,10 @@
 </script>
 
 <div class="scan-page">
-	{#if phase === 'init' || phase === 'activating'}
+	{#if phase === 'init' || phase === 'loading'}
 		<div class="status-box">
 			<div class="spinner"></div>
-			<p>{phase === 'activating' ? '予約を確認しています…' : '準備中…'}</p>
+			<p>{phase === 'loading' ? '処理中…' : '準備中…'}</p>
 		</div>
 
 	{:else if phase === 'scanning'}
@@ -140,7 +221,6 @@
 		padding: 20px;
 	}
 
-	/* ===== ローディング・共通ステータスボックス ===== */
 	.status-box {
 		text-align: center;
 		display: flex;
@@ -168,7 +248,6 @@
 		to { transform: rotate(360deg); }
 	}
 
-	/* ===== スキャナー ===== */
 	.scanner-wrapper {
 		width: 100%;
 		max-width: 400px;
@@ -200,13 +279,8 @@
 		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 	}
 
-	/* html5-qrcode のデフォルトUIを上書き */
-	:global(#qr-reader video) {
-		border-radius: 12px;
-	}
-	:global(#qr-reader__scan_region) {
-		background: transparent !important;
-	}
+	:global(#qr-reader video) { border-radius: 12px; }
+	:global(#qr-reader__scan_region) { background: transparent !important; }
 
 	.back-btn {
 		margin-top: 8px;
@@ -218,7 +292,6 @@
 		padding: 8px 16px;
 	}
 
-	/* ===== 結果画面 ===== */
 	.result-icon {
 		width: 72px;
 		height: 72px;
@@ -230,15 +303,8 @@
 		font-weight: 700;
 	}
 
-	.success-icon {
-		background: #e8f5e9;
-		color: #2e7d32;
-	}
-
-	.error-icon {
-		background: #fdecea;
-		color: #c62828;
-	}
+	.success-icon { background: #e8f5e9; color: #2e7d32; }
+	.error-icon { background: #fdecea; color: #c62828; }
 
 	.result-title {
 		font-size: 1.3rem;
@@ -286,10 +352,7 @@
 		cursor: pointer;
 	}
 
-	.action-btn.retry {
-		background: #c62828;
-	}
-
+	.action-btn.retry { background: #c62828; }
 	.action-btn.ghost {
 		background: none;
 		border: 1.5px solid #26201a;
