@@ -26,17 +26,21 @@ export async function POST({ request }) {
 
 		const stripe = new Stripe(key, { apiVersion: '2024-06-20' });
 
-		const lineItems = items.map((item) => ({
-			price_data: {
-				currency: 'jpy',
-				product_data: {
-					name: item.name,
-					...(item.photoUrl ? { images: [item.photoUrl] } : {})
+		const lineItems = items.map((item) => {
+			const productData = { name: item.name };
+			// Stripe は絶対URL のみ受け付けるため、https:// で始まる場合のみ画像を渡す
+			if (item.photoUrl && item.photoUrl.startsWith('https://')) {
+				productData.images = [item.photoUrl];
+			}
+			return {
+				price_data: {
+					currency: 'jpy',
+					product_data: productData,
+					unit_amount: item.price
 				},
-				unit_amount: item.price
-			},
-			quantity: item.quantity
-		}));
+				quantity: item.quantity
+			};
+		});
 
 		const session = await stripe.checkout.sessions.create({
 			payment_method_types: ['card'],
