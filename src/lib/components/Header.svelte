@@ -64,6 +64,11 @@
             </li>
             <li>
                 <div class="navbutton">
+                    <a href="{base}/shop" class="btn">ショップ</a>
+                </div>
+            </li>
+            <li>
+                <div class="navbutton">
                     <a href="{base}/company" class="btn">事業内容</a>
                 </div>
             </li>
