@@ -5,45 +5,56 @@ import { json, error } from '@sveltejs/kit';
 export const prerender = false;
 
 export async function POST({ request }) {
-	let body;
 	try {
-		body = await request.json();
-	} catch {
-		throw error(400, 'Invalid JSON');
-	}
+		let body;
+		try {
+			body = await request.json();
+		} catch {
+			throw error(400, 'Invalid JSON');
+		}
 
-	const { items, successUrl, cancelUrl, userId } = body;
+		const { items, successUrl, cancelUrl, userId } = body;
 
-	if (!items || items.length === 0) {
-		throw error(400, 'カートが空です');
-	}
+		if (!items || items.length === 0) {
+			throw error(400, 'カートが空です');
+		}
 
-	if (!env.STRIPE_SECRET_KEY) {
-		throw error(500, 'STRIPE_SECRET_KEY が未設定です。Vercelの環境変数を確認してください。');
-	}
-	const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+		const key = env.STRIPE_SECRET_KEY;
+		if (!key) {
+			throw error(500, 'STRIPE_SECRET_KEY が Vercel 環境変数に未設定です');
+		}
 
-	const lineItems = items.map((item) => ({
-		price_data: {
-			currency: 'jpy',
-			product_data: {
-				name: item.name,
-				...(item.photoUrl ? { images: [item.photoUrl] } : {})
+		const stripe = new Stripe(key, { apiVersion: '2024-06-20' });
+
+		const lineItems = items.map((item) => ({
+			price_data: {
+				currency: 'jpy',
+				product_data: {
+					name: item.name,
+					...(item.photoUrl ? { images: [item.photoUrl] } : {})
+				},
+				unit_amount: item.price
 			},
-			unit_amount: item.price
-		},
-		quantity: item.quantity
-	}));
+			quantity: item.quantity
+		}));
 
-	const session = await stripe.checkout.sessions.create({
-		payment_method_types: ['card'],
-		line_items: lineItems,
-		mode: 'payment',
-		success_url: successUrl,
-		cancel_url: cancelUrl,
-		metadata: { userId: userId ?? '' },
-		locale: 'ja'
-	});
+		const session = await stripe.checkout.sessions.create({
+			payment_method_types: ['card'],
+			line_items: lineItems,
+			mode: 'payment',
+			success_url: successUrl,
+			cancel_url: cancelUrl,
+			metadata: { userId: userId ?? '' },
+			locale: 'ja'
+		});
 
-	return json({ url: session.url, sessionId: session.id });
+		return json({ url: session.url, sessionId: session.id });
+
+	} catch (err) {
+		// SvelteKit の HttpError はそのまま再スロー
+		if (err?.status) throw err;
+		// 予期しないエラーは詳細をレスポンスに含める
+		console.error('[create-checkout] Unexpected error:', err);
+		throw error(500, err?.message ?? String(err));
+	}
 }
