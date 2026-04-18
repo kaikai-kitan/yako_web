@@ -80,6 +80,9 @@
 	let qrErrorMsg = $state('');
 	let html5QrCode = null;
 
+	// 画像拡大表示
+	let enlargedImageUrl = $state('');
+
 	onMount(async () => {
 		const {
 			data: { session }
@@ -635,7 +638,17 @@
 										<div class="active-menu-list">
 											<p class="active-menu-label">本日のメニュー</p>
 											{#each activeItems as item}
+												{@const photoUrl = selectedStall.menuPhotoMap?.[item.name] ?? null}
 												<div class="active-menu-item">
+													{#if photoUrl}
+														<button
+															class="active-menu-img-btn"
+															onclick={() => (enlargedImageUrl = photoUrl)}
+															aria-label="{item.name}の画像を拡大"
+														>
+															<img src={photoUrl} alt={item.name} class="active-menu-img" />
+														</button>
+													{/if}
 													<div class="active-menu-item-info">
 														<span class="active-menu-name">{item.name}</span>
 														{#if item.description}
@@ -964,6 +977,21 @@
 	{/if}
 </div>
 
+<!-- 画像拡大ライトボックス -->
+{#if enlargedImageUrl}
+	<div
+		class="lightbox-overlay"
+		onclick={() => (enlargedImageUrl = '')}
+		onkeydown={(e) => e.key === 'Escape' && (enlargedImageUrl = '')}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<img src={enlargedImageUrl} alt="拡大画像" class="lightbox-img" />
+		<button class="lightbox-close" onclick={() => (enlargedImageUrl = '')}>×</button>
+	</div>
+{/if}
+
 <style>
 	:global(body) { margin: 0; padding: 0; font-family: sans-serif; }
 
@@ -1018,9 +1046,18 @@
 
 	/* Bottom Sheet */
 	.bottom-sheet {
-		position: absolute; bottom: 90px; left: 10px; right: 10px;
-		background: white; border-radius: 16px; padding: 20px;
-		box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 20;
+		position: absolute;
+		bottom: 90px;
+		left: 10px;
+		right: 10px;
+		max-height: 55svh;
+		overflow-y: auto;
+		background: white;
+		border-radius: 16px;
+		padding: 20px;
+		box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+		z-index: 20;
+		-webkit-overflow-scrolling: touch;
 	}
 	.close-btn {
 		position: absolute; top: 10px; right: 10px;
@@ -1056,11 +1093,18 @@
 	}
 	.active-menu-item {
 		display: flex; justify-content: space-between; align-items: flex-start;
-		padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06);
+		padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.06); gap: 8px;
 	}
 	.active-menu-item:last-child { border-bottom: none; }
 	.active-menu-item-info {
 		display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0;
+	}
+	.active-menu-img-btn {
+		background: none; border: none; padding: 0; cursor: pointer; flex-shrink: 0;
+	}
+	.active-menu-img {
+		width: 56px; height: 56px; border-radius: 8px; object-fit: cover;
+		display: block;
 	}
 	.active-menu-name { font-size: 0.88rem; color: #1e293b; font-weight: 500; }
 	.active-menu-desc {
@@ -1366,4 +1410,22 @@
 	.breakdown-row:last-child { border-bottom: none; }
 	.breakdown-count { font-weight: bold; color: #0f172a; }
 	.empty-history { color: #94a3b8; text-align: center; padding: 20px; }
+	/* ライトボックス */
+	.lightbox-overlay {
+		position: fixed; inset: 0; z-index: 9999;
+		background: rgba(0,0,0,0.85);
+		display: flex; align-items: center; justify-content: center;
+		padding: 20px;
+	}
+	.lightbox-img {
+		max-width: 100%; max-height: 80svh;
+		border-radius: 12px; object-fit: contain;
+	}
+	.lightbox-close {
+		position: fixed; top: 16px; right: 16px;
+		background: rgba(255,255,255,0.15); border: none;
+		color: white; font-size: 1.6rem; width: 40px; height: 40px;
+		border-radius: 50%; cursor: pointer; display: flex;
+		align-items: center; justify-content: center;
+	}
 </style>

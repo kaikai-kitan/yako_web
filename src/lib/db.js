@@ -39,14 +39,19 @@ export async function getActiveStalls() {
 
 	let bioMap = {};
 	let profileIconMap = {};
+	let menuPhotoMap = {}; // user_id → { 商品名 → photo_path }
 	if (opUserIds.length > 0) {
-		const { data: profiles } = await supabase
-			.from('user_profiles')
-			.select('user_id, bio, icon_path')
-			.in('user_id', opUserIds);
-		(profiles ?? []).forEach((p) => {
+		const [profilesRes, menuRes] = await Promise.all([
+			supabase.from('user_profiles').select('user_id, bio, icon_path').in('user_id', opUserIds),
+			supabase.from('my_menu_items').select('user_id, name, photo_path').in('user_id', opUserIds)
+		]);
+		(profilesRes.data ?? []).forEach((p) => {
 			bioMap[p.user_id] = p.bio ?? null;
 			profileIconMap[p.user_id] = p.icon_path ?? null;
+		});
+		(menuRes.data ?? []).forEach((m) => {
+			if (!menuPhotoMap[m.user_id]) menuPhotoMap[m.user_id] = {};
+			if (m.photo_path) menuPhotoMap[m.user_id][m.name] = m.photo_path;
 		});
 	}
 
@@ -64,7 +69,8 @@ export async function getActiveStalls() {
 			bio: bioMap[opUserId] ?? null,
 			image,
 			spaceName: r.rental_spaces.name,
-			plannedItems: r.planned_items ?? null
+			plannedItems: r.planned_items ?? null,
+			menuPhotoMap: menuPhotoMap[opUserId] ?? {}
 		};
 	});
 }
