@@ -294,9 +294,11 @@
 	}
 
 	// 予約フォーム state
+	let reservationMode = $state('space-first'); // 'space-first' | 'stall-first'
+	let needsStall = $state(false); // スペース優先フロー: 屋台も必要か
 	let reservationForm = $state({
 		spaceId: null, spaceName: '',
-		stallId: '',
+		stallId: '', stallName: '',
 		startDate: '', startTime: '10:00',
 		endDate: '', endTime: '22:00'
 	});
@@ -304,11 +306,14 @@
 	let isReserving = $state(false);
 	let reservationSuccess = $state(false);
 
+	/** Flow A: スペースから予約 */
 	function goReserve() {
+		reservationMode = 'space-first';
+		needsStall = false;
 		reservationForm = {
 			spaceId: selectedStall?.id ?? null,
 			spaceName: selectedStall?.name ?? '',
-			stallId: '',
+			stallId: '', stallName: '',
 			startDate: '', startTime: '10:00',
 			endDate: '', endTime: '22:00'
 		};
@@ -318,10 +323,14 @@
 		currentView = 'reserve';
 	}
 
+	/** Flow B: 屋台から予約（スペース不要） */
 	function goReserveFromStall() {
+		reservationMode = 'stall-first';
+		needsStall = false;
 		reservationForm = {
 			spaceId: null, spaceName: '',
 			stallId: selectedStall?.id ?? '',
+			stallName: selectedStall?.name ?? '',
 			startDate: '', startTime: '10:00',
 			endDate: '', endTime: '22:00'
 		};
@@ -351,12 +360,22 @@
 
 	async function submitReservation() {
 		reservationError = '';
-		if (!reservationForm.stallId) {
-			reservationError = '使用する屋台を選択してください'; return;
+
+		if (reservationMode === 'stall-first') {
+			// Flow B: 屋台のみ必須
+			if (!reservationForm.stallId) {
+				reservationError = '使用する屋台を選択してください'; return;
+			}
+		} else {
+			// Flow A: スペース必須、屋台は「はい」選択時のみ必須
+			if (!reservationForm.spaceId) {
+				reservationError = '利用するスペースを選択してください'; return;
+			}
+			if (needsStall && !reservationForm.stallId) {
+				reservationError = '使用する屋台を選択してください'; return;
+			}
 		}
-		if (!reservationForm.spaceId) {
-			reservationError = '利用するスペースを選択してください'; return;
-		}
+
 		if (!reservationForm.startDate || !reservationForm.endDate) {
 			reservationError = '利用日を入力してください'; return;
 		}
@@ -376,8 +395,10 @@
 			const startDatetime = `${reservationForm.startDate}T${reservationForm.startTime}:00`;
 			const endDatetime   = `${reservationForm.endDate}T${reservationForm.endTime}:00`;
 			await createReservation(currentUser.id, {
-				rentalSpaceId: reservationForm.spaceId,
-				stallId: reservationForm.stallId,
+				rentalSpaceId: reservationForm.spaceId || null,
+				stallId: (reservationMode === 'space-first' && !needsStall)
+					? null
+					: (reservationForm.stallId || null),
 				startDatetime, endDatetime,
 				plannedItems: plannedItemsJson
 			});
@@ -780,7 +801,7 @@
 			<div class="full-screen-modal reserve-modal" transition:fly={{ y: '100%', duration: 300 }}>
 				<div class="reserve-header">
 					<button class="back-text-btn" onclick={() => { currentView = 'map'; }}>← 戻る</button>
-					<h2>予約する</h2>
+					<h2>{reservationMode === 'stall-first' ? '屋台を予約する' : 'スペースを予約する'}</h2>
 				</div>
 
 				{#if reservationSuccess}
@@ -790,46 +811,62 @@
 					</div>
 				{:else}
 					<div class="reserve-form">
-						<!-- スペース選択 -->
-						<div class="form-section">
-							<label class="form-label" for="space-select">
-								利用するスペース <span class="req">*</span>
-							</label>
-							{#if reservationForm.spaceId}
-								<div class="form-value">📍 {reservationForm.spaceName}</div>
-							{:else}
-								<select id="space-select" bind:value={reservationForm.spaceId} class="form-select">
-									<option value={null}>スペースを選択してください</option>
-									{#each availableSpaces as space}
-										<option value={space.id}>
-											{space.name}（{space.address ?? '住所未設定'}）
-										</option>
-									{/each}
-								</select>
-							{/if}
-						</div>
 
-						<!-- 屋台選択 -->
-						<div class="form-section">
-							<label class="form-label" for="stall-select">
-								使用する屋台 <span class="req">*</span>
-							</label>
-							{#if reservationForm.stallId && selectedStall?.status === 'stall'}
-								<div class="form-value">🏮 {selectedStall.name}</div>
-							{:else}
-								<select id="stall-select" bind:value={reservationForm.stallId} class="form-select">
-									<option value="">屋台を選択してください</option>
-									{#each availableStallsList as stall}
-										{@const isBooked = bookedStallIds.has(stall.id) && !myUserReservations.some(r => r.stall_id === stall.id)}
-										<option value={stall.id} disabled={isBooked}>
-											{stall.stall_name}（{stall.operators?.business_name ?? ''}）
-											— ¥{(stall.rental_fee ?? 0).toLocaleString()}/日
-											{#if isBooked}（予約済み）{/if}
-										</option>
-									{/each}
-								</select>
+						{#if reservationMode === 'space-first'}
+							<!-- ===== Flow A: スペース優先 ===== -->
+							<div class="form-section">
+								<span class="form-label">予約スペース</span>
+								<div class="form-value">📍 {reservationForm.spaceName}</div>
+							</div>
+
+							<!-- 屋台も必要か？ -->
+							<div class="form-section">
+								<span class="form-label">屋台も必要ですか？</span>
+								<div class="flow-toggle">
+									<button
+										type="button"
+										class="flow-toggle-btn"
+										class:selected={!needsStall}
+										onclick={() => { needsStall = false; reservationForm.stallId = ''; }}
+									>いいえ（スペースのみ）</button>
+									<button
+										type="button"
+										class="flow-toggle-btn"
+										class:selected={needsStall}
+										onclick={() => (needsStall = true)}
+									>はい（屋台も借りる）</button>
+								</div>
+							</div>
+
+							{#if needsStall}
+								<div class="form-section">
+									<label class="form-label" for="stall-select">
+										使用する屋台 <span class="req">*</span>
+									</label>
+									<select id="stall-select" bind:value={reservationForm.stallId} class="form-select">
+										<option value="">屋台を選択してください</option>
+										{#each availableStallsList as stall}
+											{@const isBooked = bookedStallIds.has(stall.id) && !myUserReservations.some(r => r.stall_id === stall.id)}
+											<option value={stall.id} disabled={isBooked}>
+												{stall.stall_name}（{stall.operators?.business_name ?? ''}）
+												— ¥{(stall.rental_fee ?? 0).toLocaleString()}/日
+												{#if isBooked}（予約済み）{/if}
+											</option>
+										{/each}
+									</select>
+								</div>
 							{/if}
-						</div>
+
+						{:else}
+							<!-- ===== Flow B: 屋台優先 ===== -->
+							<div class="form-section">
+								<span class="form-label">予約屋台</span>
+								<div class="form-value">🏮 {reservationForm.stallName}</div>
+							</div>
+							<div class="flow-info-box">
+								スペースは当日現地で空きを確認して使用してください。スペース予約が必要な場合はマップからスペースピンを選択してください。
+							</div>
+						{/if}
 
 						<!-- 利用開始 -->
 						<div class="form-section">
@@ -1330,6 +1367,26 @@
 		cursor: pointer; font-family: inherit;
 	}
 	.add-item-btn:hover { border-color: #facc15; color: #0f172a; }
+
+	/* 予約フロー切替トグル */
+	.flow-toggle {
+		display: flex; gap: 8px; margin-top: 6px;
+	}
+	.flow-toggle-btn {
+		flex: 1; padding: 10px 8px;
+		border: 1.5px solid #e2ddd8; border-radius: 8px;
+		background: white; color: #64748b;
+		font-size: 0.82rem; font-family: inherit; cursor: pointer;
+		transition: all 0.15s;
+	}
+	.flow-toggle-btn.selected {
+		border-color: #facc15; background: #fef9c3; color: #0f172a; font-weight: 700;
+	}
+	.flow-info-box {
+		background: #f8fafc; border-radius: 8px;
+		padding: 10px 12px; font-size: 0.8rem; color: #64748b;
+		line-height: 1.5; margin-bottom: 8px;
+	}
 
 	.load-menu-btn {
 		width: 100%; padding: 8px 12px; margin-bottom: 8px;
