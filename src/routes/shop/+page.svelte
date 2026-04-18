@@ -89,7 +89,10 @@
 				})
 			});
 
-			if (!res.ok) throw new Error('決済処理に失敗しました');
+			if (!res.ok) {
+				const errBody = await res.text();
+				throw new Error(`決済エラー(${res.status}): ${errBody}`);
+			}
 			const { url } = await res.json();
 			window.location.href = url;
 		} catch (e) {
