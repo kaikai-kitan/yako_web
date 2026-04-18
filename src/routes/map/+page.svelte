@@ -541,21 +541,34 @@
 				async (text) => {
 					stopQrCamera();
 					qrScanPhase = 'verifying';
-					// QRコードの内容を検証（space_idまたはstall_idが一致するか、または同サイトのQRなら許可）
-					let valid = false;
+
+					// QRコードからスペースIDを抽出
+					let scannedSpaceId = null;
 					try {
 						const url = new URL(text);
-						if (url.origin === window.location.origin) valid = true;
+						scannedSpaceId = url.searchParams.get('space');
 					} catch {
-						// UUID直接の場合も許可
-						valid = text.trim().length > 0;
+						// URLでない場合はそのままIDとして扱う
+						scannedSpaceId = text.trim() || null;
 					}
-					if (valid) {
-						await unlockStall();
-					} else {
+
+					if (!scannedSpaceId) {
 						qrScanPhase = 'error';
-						qrErrorMsg = '無効なQRコードです。このサービスのQRコードを読み取ってください。';
+						qrErrorMsg = '無効なQRコードです。スペースのQRコードを読み取ってください。';
+						return;
 					}
+
+					// 予約のスペースIDと照合
+					const currentRes = myUserReservations.find((r) => r.id === currentReservationId);
+					const expectedSpaceId = currentRes?.rental_space_id;
+
+					if (expectedSpaceId && scannedSpaceId !== expectedSpaceId) {
+						qrScanPhase = 'error';
+						qrErrorMsg = '予約したスペースのQRコードではありません。正しいスペースのQRコードを読み取ってください。';
+						return;
+					}
+
+					await unlockStall();
 				},
 				() => {} // フレームエラーは無視
 			);
