@@ -259,13 +259,21 @@
 	let isCancelling = $state('');
 
 	// ---- QRコード表示 ----
-	let qrModalSpace = $state(null); // { id, name }
+	let qrModalSpace = $state(null); // { id, name, type: 'space'|'stall' }
 	let qrDataUrl = $state('');
 
 	async function showSpaceQR(space) {
-		qrModalSpace = space;
+		qrModalSpace = { ...space, type: 'space' };
 		qrDataUrl = '';
 		const url = `${window.location.origin}/scan?space=${space.id}`;
+		const QRCode = (await import('qrcode')).default;
+		qrDataUrl = await QRCode.toDataURL(url, { width: 280, margin: 2 });
+	}
+
+	async function showStallQR(stall) {
+		qrModalSpace = { ...stall, name: stall.stall_name, type: 'stall' };
+		qrDataUrl = '';
+		const url = `${window.location.origin}/scan?yatai=${stall.id}`;
 		const QRCode = (await import('qrcode')).default;
 		qrDataUrl = await QRCode.toDataURL(url, { width: 280, margin: 2 });
 	}
@@ -463,6 +471,9 @@
 								</div>
 								<div class="item-detail">{stall.specs ?? 'スペック未設定'}</div>
 								<div class="item-detail">¥{(stall.rental_fee ?? 0).toLocaleString()} / 日</div>
+								<button class="qr-btn" onclick={() => showStallQR(stall)}>
+									QRコードを表示（印刷用）
+								</button>
 							</div>
 						{/each}
 					</div>

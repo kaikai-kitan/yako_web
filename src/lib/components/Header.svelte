@@ -4,34 +4,49 @@
     import { signOut } from '$lib/db.js';
     import { goto } from '$app/navigation';
 
-    let isOpen = false;
+    let isMenuOpen = $state(false);
 
     function toggleMenu() {
-        isOpen = !isOpen;
+        isMenuOpen = !isMenuOpen;
+    }
+
+    function closeMenu() {
+        isMenuOpen = false;
     }
 
     async function handleSignOut() {
         await signOut();
+        closeMenu();
         goto(`${base}/`);
-        isOpen = false;
     }
 </script>
 
+<!-- 背景オーバーレイ（メニュー外クリックで閉じる） -->
+{#if isMenuOpen}
+    <div
+        class="menu-overlay"
+        onclick={closeMenu}
+        onkeydown={(e) => e.key === 'Escape' && closeMenu()}
+        role="button"
+        tabindex="-1"
+        aria-label="メニューを閉じる"
+    ></div>
+{/if}
+
 <header>
-    <div 
-        class="hamburger" 
-        class:active={isOpen} 
-        on:click={toggleMenu} 
-        on:keydown={(e) => e.key === 'Enter' && toggleMenu()}
-        role="button" 
-        tabindex="0"
+    <button
+        class="hamburger"
+        class:active={isMenuOpen}
+        onclick={toggleMenu}
+        aria-label="メニュー"
+        aria-expanded={isMenuOpen}
     >
         <span></span>
         <span></span>
         <span></span>
-    </div>
+    </button>
 
-    <nav class:open={isOpen}>
+    <nav class:open={isMenuOpen}>
         <ul>
             <li>
                 <div class="navicon">
@@ -39,50 +54,52 @@
                         href="https://www.instagram.com/delta_yako?igsh=MTYxZmJzZG5yZHZieA%3D%3D&utm_source=qr"
                         target="_blank"
                         rel="noopener noreferrer"
-                        ><img
+                        onclick={closeMenu}
+                    >
+                        <img
                             src="{base}/images/icon.png"
                             alt="微小夜行電灯のメニュー一覧用画像"
                             class="iconmenu"
-                        /></a
-                    >
+                        />
+                    </a>
                 </div>
             </li>
             <li>
                 <div class="navbutton">
-                    <a href="{base}/" class="btn">微小夜行電灯</a>
+                    <a href="{base}/" class="btn" onclick={closeMenu}>微小夜行電灯</a>
                 </div>
             </li>
             <li>
                 <div class="navbutton">
-                    <a href="{base}/menu" class="btn">メニュー</a>
+                    <a href="{base}/menu" class="btn" onclick={closeMenu}>メニュー</a>
                 </div>
             </li>
             <li>
                 <div class="navbutton">
-                    <a href="{base}/map" class="btn">屋台貸し出し</a>
+                    <a href="{base}/map" class="btn" onclick={closeMenu}>屋台貸し出し</a>
                 </div>
             </li>
             <li>
                 <div class="navbutton">
-                    <a href="{base}/shop" class="btn">ショップ</a>
+                    <a href="{base}/shop" class="btn" onclick={closeMenu}>ショップ</a>
                 </div>
             </li>
             <li>
                 <div class="navbutton">
-                    <a href="{base}/company" class="btn">事業内容</a>
+                    <a href="{base}/company" class="btn" onclick={closeMenu}>事業内容</a>
                 </div>
             </li>
             <li>
                 <div class="navbutton">
-                    <a href="{base}/directory" class="btn">夜行人図鑑</a>
+                    <a href="{base}/directory" class="btn" onclick={closeMenu}>夜行人図鑑</a>
                 </div>
             </li>
             <li>
                 <div class="navbutton">
                     {#if $session}
-                        <button class="btn auth-btn" on:click={handleSignOut}>ログアウト</button>
+                        <button class="btn auth-btn" onclick={handleSignOut}>ログアウト</button>
                     {:else}
-                        <a href="{base}/auth" class="btn auth-link">ログイン / 登録</a>
+                        <a href="{base}/auth" class="btn auth-link" onclick={closeMenu}>ログイン / 登録</a>
                     {/if}
                 </div>
             </li>
@@ -102,7 +119,7 @@
 
     nav ul {
         display: flex;
-        justify-content: space-around; /*アイテムの均等配置*/
+        justify-content: space-around;
         align-items: center;
         list-style-type: none;
         padding: 0;
@@ -139,6 +156,8 @@
         cursor: pointer;
         font-size: inherit;
         font-family: inherit;
+        padding: 10px;
+        color: #26201a;
     }
 
     .auth-link {
@@ -150,89 +169,106 @@
         display: none;
     }
 
+    .menu-overlay {
+        display: none;
+    }
+
     @media screen and (max-width: 768px) {
-        /* ▼ ここから追加・修正 ▼ */
-        
-        /* スマホ画面ではデフォルトでナビゲーションを非表示にする */
-        nav {
-            display: none;
-            position: absolute;
-            top: 70px; /* ヘッダーの高さに合わせて調整してください */
-            left: 0;
-            width: 100%;
-            background-color: rgba(255, 255, 255, 0.95); /* 背景色を設定して見やすく */
-            z-index: 9999;
-            padding-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        /* オーバーレイ */
+        .menu-overlay {
+            display: block;
+            position: fixed;
+            inset: 0;
+            z-index: 998;
+            background: transparent;
         }
 
-        /* メニューが開いている（openクラスがついた）時は表示する */
+        /* ナビゲーション（固定、スクロール影響なし） */
+        nav {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100dvh;
+            background-color: rgba(255, 255, 255, 0.97);
+            z-index: 999;
+            overflow-y: auto;
+            padding: 80px 0 40px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
         nav.open {
             display: block;
         }
 
-        /* スマホ画面ではメニューを縦並びにする */
         nav ul {
             flex-direction: column;
+            align-items: stretch;
         }
 
         nav li {
-            margin: 10px 0;
+            margin: 0;
+            border-bottom: 1px solid #f0ebe4;
         }
 
         .navbutton {
-            text-align: center; /* スマホでは中央揃えの方が見栄えが良いことが多いです */
+            text-align: center;
         }
-        /* ▲ ここまで追加・修正 ▲ */
 
-        /* ハンバーガーメニュー */
+        .btn {
+            padding: 16px 24px;
+            font-size: 1rem;
+        }
+
+        .navicon {
+            display: flex;
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        /* ハンバーガーボタン（固定表示） */
         .hamburger {
-            display: block;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
             position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 30px;
-            height: 24px;
-            z-index: 10000;
+            top: 16px;
+            right: 16px;
+            width: 44px;
+            height: 44px;
+            z-index: 1000;
             cursor: pointer;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 8px;
             padding: 10px;
-            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
 
         .hamburger span {
             display: block;
-            position: absolute;
-            left: 10px;
-            width: 30px;
+            width: 22px;
             height: 2px;
             background-color: #26201a;
-            transition: 0.3s ease-in-out;
+            transition: transform 0.25s ease, opacity 0.25s ease;
+            transform-origin: center;
         }
 
-        .hamburger span:nth-child(1) {
-            top: 10px;
-        }
-
-        .hamburger span:nth-child(2) {
-            top: 21px;
-        }
-
-        .hamburger span:nth-child(3) {
-            top: 32px;
-        }
-
-        /* ハンバーガーメニューがアクティブ時の調整 */
+        /* ×アイコン（アクティブ時） */
         .hamburger.active span:nth-child(1) {
-            transform: translateY(11px) rotate(-45deg);
+            transform: translateY(7px) rotate(45deg);
         }
 
         .hamburger.active span:nth-child(2) {
             opacity: 0;
+            transform: scaleX(0);
         }
 
         .hamburger.active span:nth-child(3) {
-            transform: translateY(-11px) rotate(45deg);
+            transform: translateY(-7px) rotate(-45deg);
         }
     }
 </style>
