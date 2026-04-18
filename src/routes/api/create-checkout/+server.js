@@ -18,6 +18,9 @@ export async function POST({ request }) {
 		throw error(400, 'カートが空です');
 	}
 
+	if (!env.STRIPE_SECRET_KEY) {
+		throw error(500, 'STRIPE_SECRET_KEY が未設定です。Vercelの環境変数を確認してください。');
+	}
 	const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
 	const lineItems = items.map((item) => ({
