@@ -120,6 +120,43 @@
 				} else {
 					monthlySalesItems = await getMySalesThisMonth(currentUser.id);
 				}
+
+				// Stripe決済完了後の返却処理
+				const urlParams = new URLSearchParams(window.location.search);
+				const rentalDoneId = urlParams.get('rental_done');
+				const stripeSessionId = urlParams.get('session_id');
+
+				if (rentalDoneId && stripeSessionId) {
+					window.history.replaceState({}, '', '/map');
+					try {
+						const activateRes = await fetch('/api/activate-rental', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({
+								sessionId: stripeSessionId,
+								reservationId: rentalDoneId,
+								userId: currentUser.id
+							})
+						});
+						if (activateRes.ok) {
+							[myUserReservations, activeStalls] = await Promise.all([
+								getUserReservations(currentUser.id),
+								getActiveStalls()
+							]);
+							currentReservationId = rentalDoneId;
+							const activatedRes = myUserReservations.find((r) => r.id === rentalDoneId);
+							if (activatedRes) {
+								plannedItemsList = parsePlannedItems(activatedRes.planned_items);
+								salesData = Object.fromEntries(
+									plannedItemsList.map((item) => [item.name, { count: 0, price: item.price || 0 }])
+								);
+							}
+							currentView = 'active';
+						}
+					} catch (e) {
+						console.error('activate rental error:', e);
+					}
+				}
 			}
 		} catch (e) {
 			console.error('DB fetch error:', e);
@@ -398,11 +435,35 @@
 		salesData[name] = { ...current, count: Math.max(0, current.count + delta) };
 	}
 
-	/** QR解錠成功 → DB ステータスを active に変更、品目リストを設定 */
+	/** QR解錠成功 → Stripe決済へリダイレクト（無料の場合は直接アクティブ化） */
 	async function unlockStall() {
-		if (currentReservationId) {
-			try {
-				await startRental(currentReservationId);
+		if (!currentReservationId || !currentUser) return;
+		qrScanPhase = 'verifying';
+
+		try {
+			const origin = window.location.origin;
+			const res = await fetch('/api/create-rental-checkout', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					reservationId: currentReservationId,
+					userId: currentUser.id,
+					successUrl: `${origin}/map?rental_done=${currentReservationId}&session_id={CHECKOUT_SESSION_ID}`,
+					cancelUrl: `${origin}/map`
+				})
+			});
+
+			if (!res.ok) {
+				const msg = await res.text();
+				qrScanPhase = 'error';
+				qrErrorMsg = `決済エラー: ${msg}`;
+				return;
+			}
+
+			const { url, free } = await res.json();
+
+			if (free) {
+				// 無料の場合は直接アクティブ化
 				const currentRes = myUserReservations.find((r) => r.id === currentReservationId);
 				plannedItemsList = parsePlannedItems(currentRes?.planned_items);
 				salesData = Object.fromEntries(
@@ -411,13 +472,15 @@
 				myUserReservations = myUserReservations.map((r) =>
 					r.id === currentReservationId ? { ...r, status: 'active' } : r
 				);
-				// 出店中マップを更新するためアクティブ一覧を再取得
 				activeStalls = await getActiveStalls();
-			} catch (e) {
-				console.error('startRental error:', e);
+				currentView = 'active';
+			} else {
+				window.location.href = url;
 			}
+		} catch (e) {
+			qrScanPhase = 'error';
+			qrErrorMsg = '決済処理に失敗しました: ' + e.message;
 		}
-		setTimeout(() => { currentView = 'active'; }, 500);
 	}
 
 	function startReturn() { currentView = 'return'; }
