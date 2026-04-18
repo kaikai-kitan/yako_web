@@ -521,6 +521,17 @@
 		}, 3000);
 	}
 
+	/** アクティブな予約を再開して売上管理画面へ */
+	function resumeActive(reservation) {
+		currentReservationId = reservation.id;
+		plannedItemsList = parsePlannedItems(reservation.planned_items);
+		salesData = Object.fromEntries(
+			plannedItemsList.map((item) => [item.name, { count: 0, price: item.price || 0 }])
+		);
+		selectedStall = null;
+		currentView = 'active';
+	}
+
 	async function goQR(reservationId) {
 		currentReservationId = reservationId;
 		qrScanPhase = 'idle';
@@ -655,9 +666,14 @@
 							{#if selectedStall.specs}<p class="specs">{selectedStall.specs}</p>{/if}
 							<p class="price">¥{(selectedStall.price ?? 0).toLocaleString()} / 日</p>
 							{#if currentUser}
-								{@const pendingRes = myUserReservations.find((r) => r.stall_id === selectedStall.id)}
-								{@const bookedByOther = bookedStallIds.has(selectedStall.id) && !pendingRes}
-								{#if pendingRes}
+								{@const activeRes = myUserReservations.find((r) => r.stall_id === selectedStall.id && r.status === 'active')}
+								{@const pendingRes = myUserReservations.find((r) => r.stall_id === selectedStall.id && r.status === 'pending')}
+								{@const bookedByOther = bookedStallIds.has(selectedStall.id) && !pendingRes && !activeRes}
+								{#if activeRes}
+									<button class="action-btn primary" onclick={() => resumeActive(activeRes)}>
+										🏮 利用中・売上管理へ
+									</button>
+								{:else if pendingRes}
 									<button class="action-btn primary" onclick={() => goQR(pendingRes.id)}>
 										📱 QRで受け取りを開始
 									</button>
@@ -684,8 +700,13 @@
 							</div>
 							<p class="price">¥{(selectedStall.price ?? 0).toLocaleString()} / 泊</p>
 							{#if currentUser}
-								{@const pendingRes = myUserReservations.find((r) => r.rental_space_id === selectedStall.id)}
-								{#if pendingRes}
+								{@const activeRes = myUserReservations.find((r) => r.rental_space_id === selectedStall.id && r.status === 'active')}
+								{@const pendingRes = myUserReservations.find((r) => r.rental_space_id === selectedStall.id && r.status === 'pending')}
+								{#if activeRes}
+									<button class="action-btn primary" onclick={() => resumeActive(activeRes)}>
+										🏮 利用中・売上管理へ
+									</button>
+								{:else if pendingRes}
 									<button class="action-btn primary" onclick={() => goQR(pendingRes.id)}>
 										📱 QRで受け取りを開始
 									</button>

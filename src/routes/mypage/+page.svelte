@@ -12,6 +12,7 @@
 		createOwnerProfile,
 		createOperatorProfile,
 		cancelReservation,
+		completeRental,
 		updateUserProfile,
 		getMyMenuItems,
 		addMenuItem,
@@ -269,6 +270,23 @@
 		qrDataUrl = await QRCode.toDataURL(url, { width: 280, margin: 2 });
 	}
 
+	let isReturning = $state('');
+
+	async function handleReturn(reservationId) {
+		if (!confirm('返却手続きを行いますか？\n（売上入力なしで利用を終了します）')) return;
+		isReturning = reservationId;
+		try {
+			await completeRental(reservationId, userId, {});
+			myReservations = myReservations.map((r) =>
+				r.id === reservationId ? { ...r, status: 'completed' } : r
+			);
+		} catch (e) {
+			alert('返却処理に失敗しました: ' + e.message);
+		} finally {
+			isReturning = '';
+		}
+	}
+
 	async function handleCancel(reservationId) {
 		if (!confirm('予約をキャンセルしますか？')) return;
 		isCancelling = reservationId;
@@ -482,6 +500,15 @@
 								>
 									📷 QRスキャンで借り出し開始
 								</a>
+							{/if}
+							{#if res.status === 'active'}
+								<button
+									class="return-res-btn"
+									onclick={() => handleReturn(res.id)}
+									disabled={isReturning === res.id}
+								>
+									{isReturning === res.id ? '処理中…' : '🔄 返却する'}
+								</button>
 							{/if}
 							{#if canCancel(res.start_datetime, res.status)}
 								<button
@@ -959,6 +986,21 @@
 	}
 
 	.cancel-res-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+	.return-res-btn {
+		margin-top: 8px;
+		padding: 8px 14px;
+		background: #ef4444;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		font-size: 0.82rem;
+		font-family: inherit;
+		cursor: pointer;
+		width: 100%;
+		font-weight: 600;
+	}
+	.return-res-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 	.scan-res-btn {
 		display: block;
