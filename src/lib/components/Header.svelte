@@ -94,8 +94,25 @@
         </div>
         <ul>
             <li><a href="{base}/" onclick={closeMenu}>トップ</a></li>
-            <li><a href="{base}/map" onclick={closeMenu}>🏮 YATAKARI</a></li>
-            <li><a href="{base}/shop" onclick={closeMenu}>🛒 オンラインストア</a></li>
+            <li>
+                <a href="{base}/map" class="drawer-item-with-icon" onclick={closeMenu}>
+                    <svg class="drawer-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                    YATAKARI
+                </a>
+            </li>
+            <li>
+                <a href="{base}/shop" class="drawer-item-with-icon" onclick={closeMenu}>
+                    <svg class="drawer-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="9" cy="21" r="1"/>
+                        <circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                    </svg>
+                    オンラインストア
+                </a>
+            </li>
             <li><a href="{base}/menu" onclick={closeMenu}>メニュー</a></li>
             <li><a href="{base}/company" onclick={closeMenu}>事業内容</a></li>
             <li><a href="{base}/directory" onclick={closeMenu}>夜行人図鑑</a></li>
@@ -312,6 +329,18 @@
         transition: background 0.15s;
     }
     .drawer-menu a:hover { background: #faf8f5; }
+
+    .drawer-item-with-icon {
+        display: flex !important;
+        align-items: center;
+        gap: 10px;
+    }
+    .drawer-nav-icon {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        stroke: #26201a;
+    }
 
     .drawer-auth {
         margin-top: auto;
