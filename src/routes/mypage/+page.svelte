@@ -8,11 +8,8 @@
 		getMyProfile,
 		getMySpaces,
 		getMyStalls,
-		getMyReservations,
 		createOwnerProfile,
 		createOperatorProfile,
-		cancelReservation,
-		completeRental,
 		updateUserProfile,
 		getMyMenuItems,
 		addMenuItem,
@@ -25,7 +22,6 @@
 	let profile = $state(null);
 	let mySpaces = $state([]);
 	let myStalls = $state([]);
-	let myReservations = $state([]);
 	let myMenuItems = $state([]);
 	let isLoading = $state(true);
 	let userId = $state('');
@@ -77,7 +73,6 @@
 		editIconPreview = profile.icon_path ?? '';
 
 		const tasks = [
-			getMyReservations(userId).then((d) => (myReservations = d)),
 			getMyMenuItems(userId).then((d) => (myMenuItems = d))
 		];
 		if (profile.owners) tasks.push(getMySpaces(userId).then((d) => (mySpaces = d)));
@@ -223,41 +218,6 @@
 		}
 	}
 
-	// ---- 予約 ----
-	function formatDate(isoString) {
-		return new Date(isoString).toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' });
-	}
-
-	function formatPlannedItems(text) {
-		if (!text) return '';
-		try {
-			const parsed = JSON.parse(text);
-			if (Array.isArray(parsed)) {
-				return parsed
-					.map((i) => (typeof i === 'string' ? i : `${i.name}(¥${(i.price ?? 0).toLocaleString()})`))
-					.join('、');
-			}
-		} catch {}
-		return text;
-	}
-
-	function canCancel(startDatetime, status) {
-		if (status === 'completed' || status === 'cancelled' || status === 'active') return false;
-		const threeDaysBefore = new Date(startDatetime);
-		threeDaysBefore.setDate(threeDaysBefore.getDate() - 3);
-		return new Date() < threeDaysBefore;
-	}
-
-	function statusLabel(status) {
-		return { pending: '予約中', active: '利用中', completed: '完了', cancelled: 'キャンセル済み' }[status] ?? '予約中';
-	}
-
-	function statusClass(status) {
-		return { pending: 'res-pending', active: 'res-active', completed: 'res-done', cancelled: 'res-cancelled' }[status] ?? 'res-pending';
-	}
-
-	let isCancelling = $state('');
-
 	// ---- QRコード表示 ----
 	let qrModalSpace = $state(null); // { id, name, type: 'space'|'stall' }
 	let qrDataUrl = $state('');
@@ -278,37 +238,7 @@
 		qrDataUrl = await QRCode.toDataURL(url, { width: 280, margin: 2 });
 	}
 
-	let isReturning = $state('');
 
-	async function handleReturn(reservationId) {
-		if (!confirm('返却手続きを行いますか？\n（売上入力なしで利用を終了します）')) return;
-		isReturning = reservationId;
-		try {
-			await completeRental(reservationId, userId, {});
-			myReservations = myReservations.map((r) =>
-				r.id === reservationId ? { ...r, status: 'completed' } : r
-			);
-		} catch (e) {
-			alert('返却処理に失敗しました: ' + e.message);
-		} finally {
-			isReturning = '';
-		}
-	}
-
-	async function handleCancel(reservationId) {
-		if (!confirm('予約をキャンセルしますか？')) return;
-		isCancelling = reservationId;
-		try {
-			await cancelReservation(reservationId);
-			myReservations = myReservations.map((r) =>
-				r.id === reservationId ? { ...r, status: 'cancelled' } : r
-			);
-		} catch (e) {
-			alert('キャンセルに失敗しました: ' + e.message);
-		} finally {
-			isCancelling = '';
-		}
-	}
 </script>
 
 <div class="page">
@@ -480,61 +410,6 @@
 				{/if}
 			</section>
 		{/if}
-
-		<!-- ===== 予約履歴 ===== -->
-		<section class="section">
-			<h3 class="section-title">📅 予約履歴</h3>
-			{#if myReservations.length === 0}
-				<p class="empty-msg">予約履歴はありません</p>
-				<a href="{base}/map" class="map-link">マップから予約する →</a>
-			{:else}
-				<div class="card-list">
-					{#each myReservations as res}
-						<div class="item-card">
-							<div class="item-header">
-								<span class="item-name">{res.rental_spaces?.name ?? '不明'}</span>
-								<span class="status-badge {statusClass(res.status)}">{statusLabel(res.status)}</span>
-							</div>
-							{#if res.stall_specs}
-								<div class="item-detail">🏮 {res.stall_specs.stall_name}</div>
-							{/if}
-							{#if res.planned_items}
-								<div class="item-detail">品目: {formatPlannedItems(res.planned_items)}</div>
-							{/if}
-							<div class="item-detail">
-								{formatDate(res.start_datetime)} 〜 {formatDate(res.end_datetime)}
-							</div>
-							{#if res.status === 'pending' && res.rental_space_id}
-								<a
-									href="{base}/scan?space={res.rental_space_id}"
-									class="scan-res-btn"
-								>
-									📷 QRスキャンで借り出し開始
-								</a>
-							{/if}
-							{#if res.status === 'active'}
-								<button
-									class="return-res-btn"
-									onclick={() => handleReturn(res.id)}
-									disabled={isReturning === res.id}
-								>
-									{isReturning === res.id ? '処理中…' : '🔄 返却する'}
-								</button>
-							{/if}
-							{#if canCancel(res.start_datetime, res.status)}
-								<button
-									class="cancel-res-btn"
-									onclick={() => handleCancel(res.id)}
-									disabled={isCancelling === res.id}
-								>
-									{isCancelling === res.id ? 'キャンセル中…' : 'キャンセルする'}
-								</button>
-							{/if}
-						</div>
-					{/each}
-				</div>
-			{/if}
-		</section>
 
 		<!-- ===== ログアウト ===== -->
 		<div class="logout-section">
@@ -980,50 +855,6 @@
 
 	.status-badge.available { background: #dcfce7; color: #166534; }
 	.status-badge.stall { background: #fef9c3; color: #92400e; }
-	.status-badge.res-pending { background: #dbeafe; color: #1d4ed8; }
-	.status-badge.res-active { background: #dcfce7; color: #166534; }
-	.status-badge.res-done { background: #f1f5f9; color: #64748b; }
-	.status-badge.res-cancelled { background: #fee2e2; color: #dc2626; }
-
-	.cancel-res-btn {
-		margin-top: 8px;
-		padding: 6px 14px;
-		background: none;
-		border: 1px solid #fca5a5;
-		color: #dc2626;
-		border-radius: 6px;
-		font-size: 0.78rem;
-		cursor: pointer;
-	}
-
-	.cancel-res-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-	.return-res-btn {
-		margin-top: 8px;
-		padding: 8px 14px;
-		background: #ef4444;
-		color: white;
-		border: none;
-		border-radius: 8px;
-		font-size: 0.82rem;
-		font-family: inherit;
-		cursor: pointer;
-		width: 100%;
-		font-weight: 600;
-	}
-	.return-res-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-	.scan-res-btn {
-		display: block;
-		margin-top: 8px;
-		padding: 8px 14px;
-		background: #26201a;
-		color: #fff;
-		border-radius: 8px;
-		font-size: 0.82rem;
-		text-decoration: none;
-		text-align: center;
-	}
 
 	.qr-btn {
 		margin-top: 10px;
@@ -1078,14 +909,6 @@
 	}
 
 	.empty-msg { color: #94a3b8; font-size: 0.9rem; padding: 12px 0; }
-
-	.map-link {
-		display: inline-block;
-		color: #0f172a;
-		font-size: 0.9rem;
-		font-weight: bold;
-		margin-top: 4px;
-	}
 
 	/* ===== ログアウト ===== */
 	.logout-section { text-align: center; margin-top: 16px; }
