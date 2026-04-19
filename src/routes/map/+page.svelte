@@ -1681,27 +1681,22 @@
 	/* Bottom Nav */
 	.bottom-nav {
 		height: 70px; background: white; display: flex;
-		justify-content: space-around; align-items: center;
+		justify-content: space-around; align-items: stretch;
 		border-top: 1px solid #e2e8f0; z-index: 30;
 	}
 	.nav-item {
 		background: none; border: none; display: flex; flex-direction: column;
-		align-items: center; color: #94a3b8; font-size: 0.7rem; gap: 4px;
+		align-items: center; justify-content: center;
+		color: #94a3b8; font-size: 0.7rem; gap: 4px;
 		cursor: pointer; text-decoration: none;
-		position: relative; padding-bottom: 6px;
+		padding: 0 16px;
+		border-bottom: 3px solid transparent;
+		transition: color 0.15s, border-color 0.15s;
 	}
-	.nav-item::after {
-		content: '';
-		position: absolute;
-		bottom: 0; left: 50%;
-		transform: translateX(-50%) scaleX(0);
-		width: 28px; height: 3px;
-		background: #f97316;
-		border-radius: 2px;
-		transition: transform 0.2s ease;
+	.nav-item.active {
+		color: #0f172a;
+		border-bottom-color: #f97316;
 	}
-	.nav-item.active { color: #0f172a; }
-	.nav-item.active::after { transform: translateX(-50%) scaleX(1); }
 	.nav-icon { width: 24px; height: 24px; object-fit: contain; }
 
 	/* Dashboard Modal */
