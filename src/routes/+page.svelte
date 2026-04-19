@@ -2,6 +2,7 @@
 <script>
 	import ImageSlideshow from '$lib/components/ImageSlideshow.svelte';
 	import SplashView from '$lib/components/SplashView.svelte';
+	import { base } from '$app/paths';
 	import { onMount } from 'svelte';
 
 	import homeData from '$lib/assets/data/home.json';
@@ -68,6 +69,15 @@ let splash = $state();
 
 <SplashView bind:this={splash} />
 
+<section class="hero">
+	<div class="hero-overlay"></div>
+	<div class="hero-content">
+		<h1 class="hero-title">微小夜行電灯</h1>
+		<p class="hero-subtitle">京都・鴨川の屋台シェアリング</p>
+		<a href="{base}/map" class="hero-cta">マップで予約する →</a>
+	</div>
+</section>
+
 <main>
 	<div class="top-gallery-mask" bind:this={gallery} onscroll={onScrollGallery}>
 		<div class="top-gallery">
@@ -100,6 +110,70 @@ let splash = $state();
 </main>
 
 <style>
+	.hero {
+		position: relative;
+		width: 100%;
+		min-height: 70svh;
+		background-image: url('/images/back_yatai_road.png');
+		background-size: cover;
+		background-position: center;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	.hero-overlay {
+		position: absolute;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.45);
+	}
+
+	.hero-content {
+		position: relative;
+		z-index: 1;
+		text-align: center;
+		color: #fff;
+		padding: 0 24px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 16px;
+	}
+
+	.hero-title {
+		font-size: clamp(2rem, 8vw, 3.5rem);
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		line-height: 1.2;
+		text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+	}
+
+	.hero-subtitle {
+		font-size: clamp(0.9rem, 3vw, 1.2rem);
+		letter-spacing: 0.05em;
+		opacity: 0.9;
+	}
+
+	.hero-cta {
+		display: inline-block;
+		margin-top: 8px;
+		padding: 14px 32px;
+		background: #d56d04;
+		color: #fff;
+		text-decoration: none;
+		border-radius: 100px;
+		font-size: 1rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+		transition: background 0.2s;
+	}
+
+	.hero-cta:hover {
+		background: #b85c03;
+	}
+
 	main {
 		width: 100%;
 		box-sizing: border-box;

@@ -43,15 +43,19 @@
 	}
 
 	.menu-section-container {
-    width: 100%;
-		display: flex;
-		flex-direction: row;
-    gap: 10px;
-		justify-content: flex-start;
-		align-items: flex-start;
+		width: 100%;
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 10px;
 	}
 
-  .menu-cell-container {
-    width: 33.33%;
-  }
+	@media (max-width: 480px) {
+		.menu-section-container {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	.menu-cell-container {
+		width: 100%;
+	}
 </style>

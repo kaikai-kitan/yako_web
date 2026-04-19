@@ -12,7 +12,9 @@
 
 <style>
 	main {
-    max-width: 15cm;
-    margin: auto;
+		max-width: 15cm;
+		margin: auto;
+		padding: 0 20px;
+		box-sizing: border-box;
 	}
 </style>

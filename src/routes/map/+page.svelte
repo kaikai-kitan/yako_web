@@ -354,7 +354,8 @@
 		reservationItems = myMenuItems.map((m) => ({
 			name: m.name,
 			price: m.price ?? 0,
-			description: m.description ?? ''
+			description: m.description ?? '',
+			photoUrl: m.photo_path ?? ''
 		}));
 	}
 
@@ -386,7 +387,8 @@
 			? JSON.stringify(validItems.map((i) => ({
 				name: i.name.trim(),
 				price: parseInt(String(i.price)) || 0,
-				description: i.description?.trim() || ''
+				description: i.description?.trim() || '',
+				photoUrl: i.photoUrl?.trim() || ''
 			})))
 			: null;
 
@@ -432,11 +434,12 @@
 				return parsed
 					.map((i) =>
 						typeof i === 'string'
-							? { name: i, price: 0, description: '' }
+							? { name: i, price: 0, description: '', photoUrl: '' }
 							: {
 									name: String(i.name || ''),
 									price: Number(i.price) || 0,
-									description: String(i.description || '')
+									description: String(i.description || ''),
+									photoUrl: String(i.photoUrl || '')
 								}
 					)
 					.filter((i) => i.name);
@@ -764,7 +767,7 @@
 										<div class="active-menu-list">
 											<p class="active-menu-label">本日のメニュー</p>
 											{#each activeItems as item}
-												{@const photoUrl = selectedStall.menuPhotoMap?.[item.name] ?? null}
+												{@const photoUrl = item.photoUrl || selectedStall.menuPhotoMap?.[item.name] || null}
 												<div class="active-menu-item">
 													{#if photoUrl}
 														<button
@@ -1138,12 +1141,12 @@
 	:global(body) { margin: 0; padding: 0; font-family: sans-serif; }
 
 	.app-container {
-		width: 100%; height: 100vh;
+		width: 100%; height: calc(100svh - 60px);
 		display: flex; flex-direction: column;
 		background: #f1f5f9; position: relative; overflow: hidden;
 	}
 
-	.app-header { position: absolute; top: 80px; right: 20px; z-index: 10; }
+	.app-header { position: absolute; top: 16px; right: 16px; z-index: 10; }
 
 	.toggle-switch {
 		background: white; border-radius: 30px; padding: 4px;
