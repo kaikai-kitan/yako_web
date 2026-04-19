@@ -7,9 +7,13 @@
 	let imageModalView = $state();
 </script>
 
+<div class="company-hero">
+	<div class="company-hero-overlay"></div>
+	<h1 class="company-hero-title">事業内容</h1>
+</div>
+
 <main>
 	<div class="summary-container">
-		<h1 class="summary-name">事業内容</h1>
 		<p class="summary">{company.summary}</p>
 	</div>
 
@@ -34,18 +38,44 @@
 </main>
 
 <style>
+	.company-hero {
+		position: relative;
+		width: 100%;
+		height: 260px;
+		background-image: url('/images/shop/yatai.jpg');
+		background-size: cover;
+		background-position: center;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	.company-hero-overlay {
+		position: absolute;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+	}
+
+	.company-hero-title {
+		position: relative;
+		z-index: 1;
+		color: #fff;
+		font-size: 2rem;
+		letter-spacing: 0.15em;
+		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+		margin: 0;
+	}
+
 	main {
 		max-width: 15cm;
 		margin: auto;
+		padding: 0 20px;
 	}
 
 	.summary-container {
+		margin-top: 2.5rem;
 		margin-bottom: 3rem;
-	}
-
-	.summary-name {
-		text-align: center;
-		margin-bottom: 1.5rem;
 	}
 
 	.business-container {
