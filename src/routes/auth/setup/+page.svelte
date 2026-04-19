@@ -33,19 +33,19 @@
 		{
 			id: '利用者',
 			icon: '🛒',
-			label: '屋台利用者',
+			label: 'さすらい屋台人',
 			description: '屋台・場所を借りて出店したい方'
 		},
 		{
 			id: '場所提供者',
 			icon: '📍',
-			label: '場所提供者',
+			label: '土地貸し出し人',
 			description: '出店できる場所を提供したい方'
 		},
 		{
 			id: '屋台提供者',
 			icon: '🏮',
-			label: '屋台提供者',
+			label: '屋台主',
 			description: '屋台本体を貸し出したい方'
 		}
 	];
