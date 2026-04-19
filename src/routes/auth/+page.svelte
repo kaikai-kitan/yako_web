@@ -9,6 +9,7 @@
 	let mode = $state('signin'); // 'signin' | 'signup'
 	let email = $state('');
 	let password = $state('');
+	let agreedToTerms = $state(false);
 	let errorMessage = $state('');
 	let successMessage = $state('');
 	let isLoading = $state(false);
@@ -26,6 +27,11 @@
 
 		if (!isSupabaseConfigured) {
 			errorMessage = 'Supabase が未設定です。.env ファイルに VITE_SUPABASE_URL と VITE_SUPABASE_ANON_KEY を設定してください。';
+			return;
+		}
+
+		if (mode === 'signup' && !agreedToTerms) {
+			errorMessage = '利用規約・特定商取引法に基づく表記に同意してください';
 			return;
 		}
 
@@ -105,7 +111,17 @@
 				/>
 			</label>
 
-			<button type="submit" class="submit-btn" disabled={isLoading}>
+			{#if mode === 'signup'}
+				<label class="terms-check">
+					<input type="checkbox" bind:checked={agreedToTerms} />
+					<span>
+						<a href="/terms" target="_blank" rel="noopener">利用規約</a>および
+						<a href="/tokusho" target="_blank" rel="noopener">特定商取引法に基づく表記</a>に同意する
+					</span>
+				</label>
+			{/if}
+
+			<button type="submit" class="submit-btn" disabled={isLoading || (mode === 'signup' && !agreedToTerms)}>
 				{#if isLoading}
 					処理中…
 				{:else if mode === 'signup'}
@@ -225,6 +241,31 @@
 	.field-input:focus {
 		outline: none;
 		border-color: #facc15;
+	}
+
+	.terms-check {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		font-size: 0.82rem;
+		color: #475569;
+		text-align: left;
+		margin-bottom: 12px;
+		line-height: 1.5;
+		cursor: pointer;
+	}
+	.terms-check input[type='checkbox'] {
+		margin-top: 2px;
+		flex-shrink: 0;
+		width: 16px;
+		height: 16px;
+		accent-color: #facc15;
+		cursor: pointer;
+	}
+	.terms-check a {
+		color: #26201a;
+		font-weight: 600;
+		text-decoration: underline;
 	}
 
 	.submit-btn {
