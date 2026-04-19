@@ -107,6 +107,8 @@
                     onclick={closeMenu}
                 >Instagram</a>
             </li>
+            <li><a href="{base}/terms" onclick={closeMenu}>利用規約</a></li>
+            <li><a href="{base}/tokusho" onclick={closeMenu}>特定商取引法に基づく表記</a></li>
             <li class="drawer-auth">
                 {#if $session}
                     <button class="drawer-auth-btn" onclick={handleSignOut}>ログアウト</button>

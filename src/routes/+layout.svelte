@@ -33,14 +33,48 @@
 {@render children?.()}
 
 <footer>
-	<small>&copy;2025 All rights reserved</small>
+	<nav class="footer-links">
+		<a href="{base}/terms">利用規約</a>
+		<span class="sep">|</span>
+		<a href="{base}/tokusho">特定商取引法に基づく表記</a>
+	</nav>
+	<small class="footer-copy">&copy;2025 微小夜行電灯 All rights reserved</small>
 </footer>
 
 <style>
 	footer {
 		width: 100%;
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
+		gap: 6px;
+		padding: 24px 16px 32px;
+		border-top: 1px solid #ede8e0;
+		background: #faf8f5;
+	}
+	.footer-links {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+	.footer-links a {
+		font-size: 0.8rem;
+		color: #7a6f67;
+		text-decoration: none;
+	}
+	.footer-links a:hover {
+		color: #26201a;
+		text-decoration: underline;
+	}
+	.sep {
+		font-size: 0.75rem;
+		color: #c4b8b0;
+	}
+	.footer-copy {
+		font-size: 0.75rem;
+		color: #9e9289;
 	}
 </style>
