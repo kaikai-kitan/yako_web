@@ -161,3 +161,57 @@ DROP POLICY IF EXISTS "Public shop images read" ON storage.objects;
 CREATE POLICY "Public shop images read"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'shop-images');
+
+-- =====================================================
+-- スペース・屋台写真 & 料金ロック機能
+-- =====================================================
+
+-- 屋台写真カラム
+ALTER TABLE public.stall_specs
+  ADD COLUMN IF NOT EXISTS photo_path text;
+
+-- 予約時料金ロックカラム（提供者が後から料金変更しても既予約は影響しない）
+ALTER TABLE public.reservations
+  ADD COLUMN IF NOT EXISTS locked_space_fee integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS locked_stall_fee integer NOT NULL DEFAULT 0;
+
+-- スペース写真用バケット
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES
+  ('space-images', 'space-images', true, 10485760,
+   ARRAY['image/jpeg','image/png','image/webp','image/gif']),
+  ('stall-images', 'stall-images', true, 10485760,
+   ARRAY['image/jpeg','image/png','image/webp','image/gif'])
+ON CONFLICT (id) DO NOTHING;
+
+-- 公開読み取りポリシー
+DROP POLICY IF EXISTS "Public space images read" ON storage.objects;
+CREATE POLICY "Public space images read"
+  ON storage.objects FOR SELECT
+  USING (bucket_id IN ('space-images', 'stall-images'));
+
+-- 認証ユーザーのアップロードポリシー
+DROP POLICY IF EXISTS "Auth users upload space images" ON storage.objects;
+CREATE POLICY "Auth users upload space images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    auth.role() = 'authenticated' AND
+    bucket_id IN ('space-images', 'stall-images')
+  );
+
+-- 自分のフォルダのファイルのみ更新・削除可能
+DROP POLICY IF EXISTS "Users update own space images" ON storage.objects;
+CREATE POLICY "Users update own space images"
+  ON storage.objects FOR UPDATE
+  USING (
+    auth.uid()::text = (storage.foldername(name))[1] AND
+    bucket_id IN ('space-images', 'stall-images')
+  );
+
+DROP POLICY IF EXISTS "Users delete own space images" ON storage.objects;
+CREATE POLICY "Users delete own space images"
+  ON storage.objects FOR DELETE
+  USING (
+    auth.uid()::text = (storage.foldername(name))[1] AND
+    bucket_id IN ('space-images', 'stall-images')
+  );
