@@ -11,6 +11,8 @@
 		getAvailableStallsList,
 		createReservation,
 		getUserReservations,
+		getMyReservations,
+		cancelReservation,
 		startRental,
 		completeRental,
 		getMyProfile,
@@ -61,6 +63,12 @@
 	// ダッシュボードデータ（役割別）
 	let monthlySalesItems = $state({});
 	let providerStats = $state({ count: 0, grossRevenue: 0, netRevenue: 0 });
+
+	// 予約確認パネル
+	let isReservationOpen = $state(false);
+	let allReservations = $state([]);
+	let isCancellingRes = $state('');
+	let isReturningRes = $state('');
 
 	// 売上集計（derived）
 	let salesTotalRevenue = $derived(
@@ -115,6 +123,7 @@
 				myUserReservations = results[5] ?? [];
 				userProfile = results[6];
 				myMenuItems = results[7] ?? [];
+				allReservations = await getMyReservations(currentUser.id);
 
 				if (userProfile?.owners || userProfile?.operators) {
 					providerStats = await getMyProviderMonthlyStats(currentUser.id);
@@ -628,6 +637,75 @@
 	}
 
 	function closeDetail() { selectedStall = null; }
+
+	// ===== 予約確認パネル用ヘルパー =====
+	function formatDate(isoString) {
+		return new Date(isoString).toLocaleDateString('ja-JP', {
+			year: 'numeric', month: 'short', day: 'numeric'
+		});
+	}
+
+	function formatPlannedItems(text) {
+		if (!text) return '';
+		try {
+			const parsed = JSON.parse(text);
+			if (Array.isArray(parsed)) {
+				return parsed
+					.map((i) => (typeof i === 'string' ? i : `${i.name}(¥${(i.price ?? 0).toLocaleString()})`))
+					.join('、');
+			}
+		} catch {}
+		return text;
+	}
+
+	function resStatusLabel(status) {
+		return { pending: '予約中', active: '利用中', completed: '完了', cancelled: 'キャンセル済み' }[status] ?? '予約中';
+	}
+
+	function resStatusClass(status) {
+		return { pending: 'res-pending', active: 'res-active', completed: 'res-done', cancelled: 'res-cancelled' }[status] ?? 'res-pending';
+	}
+
+	function canCancel(startDatetime, status) {
+		if (status === 'completed' || status === 'cancelled' || status === 'active') return false;
+		const threeDaysBefore = new Date(startDatetime);
+		threeDaysBefore.setDate(threeDaysBefore.getDate() - 3);
+		return new Date() < threeDaysBefore;
+	}
+
+	async function handleCancelReservation(reservationId) {
+		if (!confirm('予約をキャンセルしますか？')) return;
+		isCancellingRes = reservationId;
+		try {
+			await cancelReservation(reservationId);
+			allReservations = allReservations.map((r) =>
+				r.id === reservationId ? { ...r, status: 'cancelled' } : r
+			);
+			myUserReservations = myUserReservations.filter((r) => r.id !== reservationId);
+		} catch (e) {
+			alert('キャンセルに失敗しました: ' + e.message);
+		} finally {
+			isCancellingRes = '';
+		}
+	}
+
+	async function handleReturnReservation(reservationId) {
+		if (!confirm('返却手続きを行いますか？\n（売上入力なしで利用を終了します）')) return;
+		isReturningRes = reservationId;
+		try {
+			await completeRental(reservationId, currentUser.id, {});
+			allReservations = allReservations.map((r) =>
+				r.id === reservationId ? { ...r, status: 'completed' } : r
+			);
+			myUserReservations = myUserReservations.filter((r) => r.id !== reservationId);
+			[activeStalls, bookedStallIds] = await Promise.all([getActiveStalls(), getBookedStallIds()]);
+			updateMarkers(mapInstance);
+		} catch (e) {
+			alert('返却処理に失敗しました: ' + e.message);
+		} finally {
+			isReturningRes = '';
+		}
+	}
 </script>
 
 <svelte:head>
@@ -1104,8 +1182,8 @@
 	<!-- ボトムナビゲーション -->
 	{#if currentView === 'map'}
 		<nav class="bottom-nav">
-			<button class="nav-item" class:active={!isDashboardOpen}
-				onclick={() => { currentView = 'map'; isDashboardOpen = false; }}>
+			<button class="nav-item" class:active={isReservationOpen}
+				onclick={() => { isReservationOpen = true; isDashboardOpen = false; }}>
 				<img src="{base}/images/map_icon/calendar.jpg" alt="予約確認" class="nav-icon" />
 				<span>予約確認</span>
 			</button>
@@ -1121,6 +1199,75 @@
 		</nav>
 	{/if}
 </div>
+
+<!-- 予約確認パネル -->
+{#if isReservationOpen}
+	<div
+		class="modal-overlay"
+		onclick={(e) => e.target === e.currentTarget && (isReservationOpen = false)}
+		onkeydown={(e) => e.key === 'Escape' && (isReservationOpen = false)}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div class="modal-content">
+			<button class="modal-close-btn" onclick={() => (isReservationOpen = false)}>×</button>
+			<h2 class="dashboard-title">📅 予約確認</h2>
+
+			{#if !currentUser}
+				<p class="empty-history">ログインすると予約履歴を確認できます</p>
+			{:else if allReservations.length === 0}
+				<p class="empty-history">予約履歴はありません</p>
+				<p class="empty-history" style="margin-top:0">マップから屋台・スペースを予約してみましょう</p>
+			{:else}
+				<div class="res-list">
+					{#each allReservations as res}
+						<div class="res-card">
+							<div class="res-card-header">
+								<span class="res-space-name">{res.rental_spaces?.name ?? '不明'}</span>
+								<span class="res-badge {resStatusClass(res.status)}">{resStatusLabel(res.status)}</span>
+							</div>
+							{#if res.stall_specs?.stall_name}
+								<div class="res-detail">🏮 {res.stall_specs.stall_name}</div>
+							{/if}
+							{#if res.planned_items}
+								<div class="res-detail">品目: {formatPlannedItems(res.planned_items)}</div>
+							{/if}
+							<div class="res-detail">
+								{formatDate(res.start_datetime)} 〜 {formatDate(res.end_datetime)}
+							</div>
+							<div class="res-actions">
+								{#if res.status === 'pending' && res.rental_space_id}
+									<a href="{base}/scan?space={res.rental_space_id}" class="res-action-btn res-action-scan">
+										📷 QRスキャンで借り出し開始
+									</a>
+								{/if}
+								{#if res.status === 'active'}
+									<button
+										class="res-action-btn res-action-return"
+										onclick={() => handleReturnReservation(res.id)}
+										disabled={isReturningRes === res.id}
+									>
+										{isReturningRes === res.id ? '処理中…' : '🔄 返却する'}
+									</button>
+								{/if}
+								{#if canCancel(res.start_datetime, res.status)}
+									<button
+										class="res-action-btn res-action-cancel"
+										onclick={() => handleCancelReservation(res.id)}
+										disabled={isCancellingRes === res.id}
+									>
+										{isCancellingRes === res.id ? 'キャンセル中…' : 'キャンセルする'}
+									</button>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	</div>
+{/if}
 
 <!-- 画像拡大ライトボックス -->
 {#if enlargedImageUrl}
@@ -1575,6 +1722,43 @@
 	.breakdown-row:last-child { border-bottom: none; }
 	.breakdown-count { font-weight: bold; color: #0f172a; }
 	.empty-history { color: #94a3b8; text-align: center; padding: 20px; }
+	/* 予約確認パネル */
+	.modal-close-btn {
+		position: absolute; top: 16px; right: 16px;
+		background: none; border: none; font-size: 1.6rem;
+		cursor: pointer; color: #64748b; line-height: 1;
+	}
+	.res-list { display: flex; flex-direction: column; gap: 12px; }
+	.res-card {
+		background: white; border-radius: 12px; padding: 14px 16px;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+	}
+	.res-card-header {
+		display: flex; justify-content: space-between; align-items: center;
+		margin-bottom: 8px;
+	}
+	.res-space-name { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
+	.res-badge {
+		font-size: 0.7rem; font-weight: 700; padding: 3px 10px;
+		border-radius: 20px; white-space: nowrap;
+	}
+	.res-pending  { background: #dbeafe; color: #1d4ed8; }
+	.res-active   { background: #dcfce7; color: #15803d; }
+	.res-done     { background: #f1f5f9; color: #475569; }
+	.res-cancelled { background: #fee2e2; color: #b91c1c; }
+	.res-detail { font-size: 0.82rem; color: #475569; margin-bottom: 4px; }
+	.res-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+	.res-action-btn {
+		width: 100%; padding: 10px; border-radius: 8px;
+		font-size: 0.85rem; font-weight: 600; font-family: inherit;
+		cursor: pointer; border: none; text-align: center; text-decoration: none;
+		display: block;
+	}
+	.res-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+	.res-action-scan  { background: #0f172a; color: white; }
+	.res-action-return { background: #0f172a; color: white; }
+	.res-action-cancel { background: none; border: 1.5px solid #cbd5e1; color: #64748b; }
+
 	/* ライトボックス */
 	.lightbox-overlay {
 		position: fixed; inset: 0; z-index: 9999;
