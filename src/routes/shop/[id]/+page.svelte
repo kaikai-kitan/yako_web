@@ -90,7 +90,11 @@
 		<a href="{base}/shop" class="back-link">← 一覧に戻る</a>
 		<span class="header-title">オンラインストア</span>
 		<button class="cart-btn" onclick={() => (isCartOpen = true)} aria-label="カートを開く">
-			🛒
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="cart-svg" aria-hidden="true">
+				<circle cx="9" cy="21" r="1"/>
+				<circle cx="20" cy="21" r="1"/>
+				<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+			</svg>
 			{#if $cartCount > 0}
 				<span class="cart-badge">{$cartCount}</span>
 			{/if}
@@ -245,8 +249,10 @@
 	.header-title { font-size: 1rem; font-weight: 700; color: #26201a; }
 	.cart-btn {
 		position: relative; background: none; border: none;
-		font-size: 1.4rem; cursor: pointer; padding: 4px; flex-shrink: 0;
+		cursor: pointer; padding: 4px; flex-shrink: 0;
+		display: flex; align-items: center;
 	}
+	.cart-svg { width: 24px; height: 24px; stroke: #26201a; }
 	.cart-badge {
 		position: absolute; top: -4px; right: -6px;
 		background: #e53e3e; color: white; font-size: 0.65rem;
