@@ -5,7 +5,7 @@
 	import { base } from '$app/paths';
 	import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 	import { supabase } from '$lib/supabase.js';
-	import { createStallSpec, getMyProfile } from '$lib/db.js';
+	import { createStallSpec, getMyProfile, uploadImage } from '$lib/db.js';
 
 	let mapContainer = $state();
 	let isLoading = $state(true);
@@ -21,6 +21,8 @@
 	let rentalFee = $state('');
 	let lat = $state(null);
 	let lng = $state(null);
+	let photoFile = $state(null);
+	let photoPreview = $state('');
 
 	onMount(async () => {
 		const {
@@ -72,6 +74,13 @@
 		}
 	}
 
+	function onPhotoChange(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		photoFile = file;
+		photoPreview = URL.createObjectURL(file);
+	}
+
 	async function handleSubmit() {
 		errorMessage = '';
 		if (!stallName.trim()) { errorMessage = '屋台名を入力してください'; return; }
@@ -79,12 +88,17 @@
 
 		isSaving = true;
 		try {
+			let photoPath = null;
+			if (photoFile) {
+				photoPath = await uploadImage(userId, photoFile, 'stall-images');
+			}
 			await createStallSpec(userId, {
 				stall_name: stallName.trim(),
 				specs: specs.trim() || null,
 				rental_fee: rentalFee ? parseInt(rentalFee) : 0,
 				lat,
-				lng
+				lng,
+				photo_path: photoPath
 			});
 			successMessage = '屋台を登録しました！';
 			setTimeout(() => goto(`${base}/mypage`), 1500);
@@ -124,6 +138,19 @@
 			{#if successMessage}
 				<p class="success-msg">✓ {successMessage}</p>
 			{/if}
+
+			<!-- 写真アップロード -->
+			<div class="photo-section">
+				<p class="field-label-text">屋台の写真</p>
+				{#if photoPreview}
+					<img src={photoPreview} alt="屋台写真" class="photo-preview" />
+				{:else}
+					<label class="photo-upload-label" for="stall-photo">
+						<div class="photo-placeholder">📷 写真を追加</div>
+					</label>
+				{/if}
+				<input id="stall-photo" type="file" accept="image/*" class="hidden-file" onchange={onPhotoChange} />
+			</div>
 
 			<label class="field-label">
 				屋台名 <span class="req">*</span>
@@ -221,4 +248,17 @@
 	}
 
 	.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+	.photo-section { margin-bottom: 16px; }
+	.field-label-text { font-size: 0.85rem; color: #475569; margin-bottom: 8px; }
+	.photo-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 10px; border: 1.5px solid #e2e8f0; display: block; }
+	.photo-upload-label { cursor: pointer; display: block; }
+	.photo-placeholder {
+		width: 100%; height: 120px;
+		background: #f1f5f9; border: 2px dashed #cbd5e1;
+		border-radius: 10px; display: flex;
+		align-items: center; justify-content: center;
+		font-size: 0.9rem; color: #94a3b8;
+	}
+	.hidden-file { display: none; }
 </style>
