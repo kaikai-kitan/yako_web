@@ -283,7 +283,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 24px 20px 16px;
+        padding: 80px 20px 16px; /* 上部60px固定ヘッダー + 余白20px */
         border-bottom: 1px solid #ede8e0;
     }
     .drawer-logo {
