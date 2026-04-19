@@ -1,10 +1,13 @@
 <script>
     import { base } from '$app/paths';
+    import { page } from '$app/stores';
     import { session } from '$lib/auth.js';
     import { signOut } from '$lib/db.js';
     import { goto } from '$app/navigation';
 
     let isMenuOpen = $state(false);
+
+    let currentPath = $derived($page.url.pathname);
 
     function toggleMenu() {
         isMenuOpen = !isMenuOpen;
@@ -31,14 +34,14 @@
 
     <!-- プライマリナビ（常時表示） -->
     <nav class="primary-nav" aria-label="主要ナビゲーション">
-        <a href="{base}/map" class="primary-nav-item" onclick={closeMenu}>
+        <a href="{base}/map" class="primary-nav-item" class:nav-active={currentPath.startsWith('/map')} onclick={closeMenu}>
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                 <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
             <span>YATAKARI</span>
         </a>
-        <a href="{base}/shop" class="primary-nav-item" onclick={closeMenu}>
+        <a href="{base}/shop" class="primary-nav-item" class:nav-active={currentPath.startsWith('/shop')} onclick={closeMenu}>
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="9" cy="21" r="1"/>
                 <circle cx="20" cy="21" r="1"/>
@@ -208,6 +211,19 @@
     }
     .primary-nav-item:hover {
         background: #f5f0ea;
+    }
+    .primary-nav-item.nav-active {
+        color: #26201a;
+        position: relative;
+    }
+    .primary-nav-item.nav-active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 20%; right: 20%;
+        height: 3px;
+        background: #f97316;
+        border-radius: 2px;
     }
 
     .nav-icon {
