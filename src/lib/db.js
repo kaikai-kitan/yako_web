@@ -112,7 +112,7 @@ export async function getAvailableStallPins() {
 	requireSupabase();
 	const { data, error } = await supabase
 		.from('stall_specs')
-		.select(`id, stall_name, specs, rental_fee, lat, lng, operators ( business_name, icon_path )`)
+		.select(`id, stall_name, specs, rental_fee, lat, lng, photo_path, operators ( business_name, icon_path )`)
 		.not('lat', 'is', null)
 		.not('lng', 'is', null);
 
@@ -127,7 +127,7 @@ export async function getAvailableStallPins() {
 		owner: s.operators?.business_name ?? '未設定',
 		specs: s.specs ?? '',
 		price: s.rental_fee,
-		image: s.operators?.icon_path ?? null
+		image: s.photo_path ?? s.operators?.icon_path ?? null
 	}));
 }
 
@@ -475,6 +475,7 @@ export async function completeRental(reservationId, userId, salesItems) {
 		.from('reservations')
 		.select(`
 			id, start_datetime, end_datetime,
+			locked_space_fee, locked_stall_fee,
 			stall_specs ( rental_fee, user_id, operators ( business_name ) ),
 			rental_spaces ( space_fee, user_id, owners ( owner_name ) )
 		`)
@@ -489,8 +490,11 @@ export async function completeRental(reservationId, userId, salesItems) {
 			(new Date(res.end_datetime) - new Date(res.start_datetime)) / (1000 * 60 * 60 * 24)
 		)
 	);
-	const stallFee = (res.stall_specs?.rental_fee ?? 0) * days;
-	const spaceFee = (res.rental_spaces?.space_fee ?? 0) * days;
+	// 予約時にロックされた料金を優先、なければ現在の料金にフォールバック
+	const lockedStallFee = res.locked_stall_fee ?? null;
+	const lockedSpaceFee = res.locked_space_fee ?? null;
+	const stallFee = (lockedStallFee !== null ? lockedStallFee : (res.stall_specs?.rental_fee ?? 0)) * days;
+	const spaceFee = (lockedSpaceFee !== null ? lockedSpaceFee : (res.rental_spaces?.space_fee ?? 0)) * days;
 
 	// 予約ステータスを完了に更新
 	const { error: updateError } = await supabase
@@ -560,7 +564,7 @@ export async function getMonthlyRevenue(userId) {
 /** 予約を作成（屋台のダブルブッキングチェック付き） */
 export async function createReservation(
 	userId,
-	{ rentalSpaceId, stallId, startDatetime, endDatetime, plannedItems }
+	{ rentalSpaceId, stallId, startDatetime, endDatetime, plannedItems, lockedSpaceFee, lockedStallFee }
 ) {
 	requireSupabase();
 	// 屋台がすでに他の予約と重複していないか確認
@@ -581,7 +585,9 @@ export async function createReservation(
 		stall_id: stallId || null,
 		start_datetime: startDatetime,
 		end_datetime: endDatetime,
-		planned_items: plannedItems || null
+		planned_items: plannedItems || null,
+		locked_space_fee: lockedSpaceFee ?? 0,
+		locked_stall_fee: lockedStallFee ?? 0
 	});
 	if (error) throw error;
 }
@@ -603,5 +609,34 @@ export async function createStallSpec(userId, stallData) {
 	const { error } = await supabase
 		.from('stall_specs')
 		.insert({ user_id: userId, ...stallData });
+	if (error) throw error;
+}
+
+/** レンタルスペースを更新（場所提供者） */
+export async function updateRentalSpace(spaceId, { name, address, spaceFee, groundType, areaCategory, fireUseAllowed, maxStalls, capacity, photosPath }) {
+	const updates = {};
+	if (name !== undefined) updates.name = name;
+	if (address !== undefined) updates.address = address;
+	if (spaceFee !== undefined) updates.space_fee = spaceFee;
+	if (groundType !== undefined) updates.ground_type = groundType;
+	if (areaCategory !== undefined) updates.area_category = areaCategory;
+	if (fireUseAllowed !== undefined) updates.fire_use_allowed = fireUseAllowed;
+	if (maxStalls !== undefined) updates.max_stalls = maxStalls;
+	if (capacity !== undefined) updates.capacity = capacity;
+	if (photosPath !== undefined) updates.photos_path = photosPath;
+	const { error } = await supabase.from('rental_spaces').update(updates).eq('id', spaceId);
+	if (error) throw error;
+}
+
+/** 屋台スペックを更新（屋台提供者） */
+export async function updateStallSpec(stallId, { stallName, specs, rentalFee, lat, lng, photoPath }) {
+	const updates = {};
+	if (stallName !== undefined) updates.stall_name = stallName;
+	if (specs !== undefined) updates.specs = specs;
+	if (rentalFee !== undefined) updates.rental_fee = rentalFee;
+	if (lat !== undefined) updates.lat = lat;
+	if (lng !== undefined) updates.lng = lng;
+	if (photoPath !== undefined) updates.photo_path = photoPath;
+	const { error } = await supabase.from('stall_specs').update(updates).eq('id', stallId);
 	if (error) throw error;
 }

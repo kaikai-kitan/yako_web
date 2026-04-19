@@ -1,11 +1,14 @@
-<!-- スペース登録ページ（場所提供者用） -->
+<!-- スペース編集ページ（場所提供者用） -->
 <script>
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
+	import { page } from '$app/stores';
 	import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 	import { supabase } from '$lib/supabase.js';
-	import { createRentalSpace, getMyProfile, uploadImage } from '$lib/db.js';
+	import { getMyProfile, updateRentalSpace, uploadImage } from '$lib/db.js';
+
+	const spaceId = $derived($page.params.id);
 
 	let mapContainer = $state();
 	let isLoading = $state(true);
@@ -26,22 +29,46 @@
 	let capacity = $state(10);
 	let lat = $state(null);
 	let lng = $state(null);
+
+	// 写真
 	let photoFile = $state(null);
 	let photoPreview = $state('');
+	let existingPhotos = $state([]);
 
 	onMount(async () => {
-		const {
-			data: { session }
-		} = await supabase.auth.getSession();
+		const { data: { session } } = await supabase.auth.getSession();
 		if (!session) { goto(`${base}/auth`); return; }
 		userId = session.user.id;
 
-		// 場所提供者権限チェック
 		const profile = await getMyProfile(userId);
-		if (!profile?.owners) {
+		if (!profile?.owners) { goto(`${base}/mypage`); return; }
+
+		// スペースデータを取得
+		const { data: space, error } = await supabase
+			.from('rental_spaces')
+			.select('*')
+			.eq('id', spaceId)
+			.eq('user_id', userId)
+			.single();
+
+		if (error || !space) {
 			goto(`${base}/mypage`);
 			return;
 		}
+
+		// フォームに初期値をセット
+		name = space.name ?? '';
+		address = space.address ?? '';
+		spaceFee = space.space_fee?.toString() ?? '';
+		groundType = space.ground_type ?? '';
+		areaCategory = space.area_category ?? '';
+		fireUseAllowed = space.fire_use_allowed ?? false;
+		maxStalls = space.max_stalls ?? 1;
+		capacity = space.capacity ?? 10;
+		lat = space.lat ?? null;
+		lng = space.lng ?? null;
+		existingPhotos = space.photos_path ?? [];
+		if (existingPhotos.length > 0) photoPreview = existingPhotos[0];
 
 		isLoading = false;
 		await initMap();
@@ -57,22 +84,23 @@
 			const { Map } = await importLibrary('maps');
 			const { AdvancedMarkerElement } = await importLibrary('marker');
 
+			const center = lat !== null ? { lat, lng } : { lat: 35.009, lng: 135.772 };
 			const map = new Map(mapContainer, {
-				center: { lat: 35.009, lng: 135.772 },
+				center,
 				zoom: 15,
 				mapId: 'dc1ab66880d245ef156be95a'
 			});
 
-			// クリックでピンを設置
+			// 既存位置にピンを表示
+			if (lat !== null) {
+				pickerMarker = new AdvancedMarkerElement({ map, position: { lat, lng } });
+			}
+
 			map.addListener('click', (e) => {
 				lat = parseFloat(e.latLng.lat().toFixed(6));
 				lng = parseFloat(e.latLng.lng().toFixed(6));
-
 				if (pickerMarker) pickerMarker.setMap(null);
-				pickerMarker = new AdvancedMarkerElement({
-					map,
-					position: { lat, lng }
-				});
+				pickerMarker = new AdvancedMarkerElement({ map, position: { lat, lng } });
 			});
 		} catch (e) {
 			console.error('Map init error:', e);
@@ -86,6 +114,12 @@
 		photoPreview = URL.createObjectURL(file);
 	}
 
+	function removePhoto() {
+		photoFile = null;
+		photoPreview = '';
+		existingPhotos = [];
+	}
+
 	async function handleSubmit() {
 		errorMessage = '';
 		if (!name.trim()) { errorMessage = 'スペース名を入力してください'; return; }
@@ -93,39 +127,43 @@
 
 		isSaving = true;
 		try {
-			let photosPath = [];
+			let photosPath = existingPhotos;
 			if (photoFile) {
 				const url = await uploadImage(userId, photoFile, 'space-images');
 				photosPath = [url];
+			} else if (photoPreview === '') {
+				photosPath = [];
 			}
-			await createRentalSpace(userId, {
+
+			await updateRentalSpace(spaceId, {
 				name: name.trim(),
 				address: address.trim() || null,
-				lat,
-				lng,
-				space_fee: spaceFee ? parseInt(spaceFee) : 0,
-				ground_type: groundType.trim() || null,
-				area_category: areaCategory.trim() || null,
-				fire_use_allowed: fireUseAllowed,
-				max_stalls: maxStalls ? parseInt(maxStalls) : 1,
+				spaceFee: spaceFee ? parseInt(spaceFee) : 0,
+				groundType: groundType.trim() || null,
+				areaCategory: areaCategory.trim() || null,
+				fireUseAllowed,
+				maxStalls: maxStalls ? parseInt(maxStalls) : 1,
 				capacity: capacity ? parseInt(capacity) : 10,
-				status: 'available',
-				photos_path: photosPath.length > 0 ? photosPath : null
+				photosPath
 			});
-			successMessage = 'スペースを登録しました！';
-			setTimeout(() => goto(`${base}/mypage`), 1500);
+			successMessage = '変更を保存しました！';
+			setTimeout(() => goto(`${base}/mypage`), 1200);
 		} catch (e) {
-			errorMessage = '登録に失敗しました: ' + e.message;
+			errorMessage = '保存に失敗しました: ' + e.message;
 		} finally {
 			isSaving = false;
 		}
 	}
 </script>
 
+<svelte:head>
+	<title>スペースを編集 | 微小夜行電灯</title>
+</svelte:head>
+
 <div class="page">
 	<div class="page-header">
 		<a href="{base}/mypage" class="back-link">← マイページ</a>
-		<h2>スペースを登録</h2>
+		<h2>スペースを編集</h2>
 	</div>
 
 	{#if isLoading}
@@ -134,7 +172,7 @@
 		<!-- 地図ピン設定 -->
 		<div class="map-section">
 			<p class="map-instruction">
-				📍 地図をタップして場所を指定してください
+				📍 地図をタップして場所を指定
 				{#if lat !== null}
 					<span class="coords">({lat}, {lng})</span>
 				{/if}
@@ -142,7 +180,6 @@
 			<div class="map-container" bind:this={mapContainer}></div>
 		</div>
 
-		<!-- フォーム -->
 		<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="form">
 			{#if errorMessage}
 				<p class="error-msg">{errorMessage}</p>
@@ -155,7 +192,10 @@
 			<div class="photo-section">
 				<p class="field-label-text">スペース写真</p>
 				{#if photoPreview}
-					<img src={photoPreview} alt="スペース写真" class="photo-preview" />
+					<div class="photo-preview-wrap">
+						<img src={photoPreview} alt="スペース写真" class="photo-preview" />
+						<button type="button" class="photo-remove-btn" onclick={removePhoto}>× 削除</button>
+					</div>
 				{:else}
 					<label class="photo-upload-label" for="space-photo">
 						<div class="photo-placeholder">📷 写真を追加</div>
@@ -190,12 +230,12 @@
 			</label>
 
 			<label class="field-label">
-				貸出可能台数（屋台の最大同時出店数）
+				貸出可能台数
 				<input type="number" bind:value={maxStalls} class="field-input" placeholder="1" min="1" />
 			</label>
 
 			<label class="field-label">
-				利用可能人数（スペースの最大収容人数）
+				利用可能人数
 				<input type="number" bind:value={capacity} class="field-input" placeholder="10" min="1" />
 			</label>
 
@@ -205,113 +245,39 @@
 			</label>
 
 			<button type="submit" class="submit-btn" disabled={isSaving || lat === null}>
-				{isSaving ? '登録中…' : '📍 スペースを登録する'}
+				{isSaving ? '保存中…' : '✓ 変更を保存する'}
 			</button>
 		</form>
 	{/if}
 </div>
 
 <style>
-	.page {
-		max-width: 600px;
-		margin: 0 auto;
-		padding: 20px 16px 60px;
-	}
-
-	.page-header {
-		margin-bottom: 20px;
-	}
-
-	.back-link {
-		display: inline-block;
-		font-size: 0.85rem;
-		color: #64748b;
-		text-decoration: none;
-		margin-bottom: 8px;
-	}
-
-	.page-header h2 {
-		font-size: 1.3rem;
-		color: #0f172a;
-		margin: 0;
-	}
-
+	.page { max-width: 600px; margin: 0 auto; padding: 20px 16px 60px; }
+	.page-header { margin-bottom: 20px; }
+	.back-link { display: inline-block; font-size: 0.85rem; color: #64748b; text-decoration: none; margin-bottom: 8px; }
+	.page-header h2 { font-size: 1.3rem; color: #0f172a; margin: 0; }
 	.loading { color: #64748b; text-align: center; padding: 40px; }
 
-	/* 地図 */
 	.map-section { margin-bottom: 24px; }
+	.map-instruction { font-size: 0.85rem; color: #475569; margin-bottom: 8px; }
+	.coords { font-family: monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; color: #166534; }
+	.map-container { width: 100%; height: 260px; border-radius: 12px; overflow: hidden; border: 2px solid #e2e8f0; }
 
-	.map-instruction {
-		font-size: 0.85rem;
-		color: #475569;
-		margin-bottom: 8px;
-	}
-
-	.coords {
-		font-family: monospace;
-		background: #f1f5f9;
-		padding: 2px 6px;
-		border-radius: 4px;
-		font-size: 0.8rem;
-		color: #166534;
-	}
-
-	.map-container {
-		width: 100%;
-		height: 260px;
-		border-radius: 12px;
-		overflow: hidden;
-		border: 2px solid #e2e8f0;
-	}
-
-	/* フォーム */
 	.form { display: flex; flex-direction: column; gap: 4px; }
+	.error-msg { background: #fee2e2; color: #dc2626; border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; }
+	.success-msg { background: #dcfce7; color: #166534; border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; }
 
-	.error-msg {
-		background: #fee2e2; color: #dc2626;
-		border-radius: 8px; padding: 10px 14px; font-size: 0.85rem;
-	}
-
-	.success-msg {
-		background: #dcfce7; color: #166534;
-		border-radius: 8px; padding: 10px 14px; font-size: 0.85rem;
-	}
-
-	.field-label {
-		display: block; font-size: 0.85rem; color: #475569; margin-bottom: 12px;
-	}
-
-	.req { color: #ef4444; }
-
-	.field-input {
-		display: block; width: 100%; margin-top: 5px;
-		padding: 10px 12px; border: 1.5px solid #e2e8f0;
-		border-radius: 8px; font-size: 0.95rem; box-sizing: border-box;
-	}
-
-	.field-input:focus { outline: none; border-color: #facc15; }
-
-	.checkbox-label {
-		display: flex; align-items: center; gap: 10px;
-		font-size: 0.9rem; color: #334155; margin-bottom: 16px;
-		cursor: pointer;
-	}
-
-	.checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: #facc15; }
-
-	.submit-btn {
-		width: 100%; padding: 14px;
-		background: #facc15; color: #0f172a;
-		border: none; border-radius: 10px;
-		font-size: 1rem; font-weight: bold;
-		cursor: pointer; margin-top: 8px;
-	}
-
-	.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
+	/* 写真 */
 	.photo-section { margin-bottom: 16px; }
 	.field-label-text { font-size: 0.85rem; color: #475569; margin-bottom: 8px; }
+	.photo-preview-wrap { position: relative; display: inline-block; }
 	.photo-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 10px; border: 1.5px solid #e2e8f0; display: block; }
+	.photo-remove-btn {
+		position: absolute; top: 8px; right: 8px;
+		background: rgba(0,0,0,0.55); color: white;
+		border: none; border-radius: 6px;
+		font-size: 0.8rem; padding: 4px 10px; cursor: pointer;
+	}
 	.photo-upload-label { cursor: pointer; display: block; }
 	.photo-placeholder {
 		width: 100%; height: 120px;
@@ -321,4 +287,22 @@
 		font-size: 0.9rem; color: #94a3b8;
 	}
 	.hidden-file { display: none; }
+
+	.field-label { display: block; font-size: 0.85rem; color: #475569; margin-bottom: 12px; }
+	.req { color: #ef4444; }
+	.field-input {
+		display: block; width: 100%; margin-top: 5px;
+		padding: 10px 12px; border: 1.5px solid #e2e8f0;
+		border-radius: 8px; font-size: 0.95rem; box-sizing: border-box;
+	}
+	.field-input:focus { outline: none; border-color: #facc15; }
+	.checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #334155; margin-bottom: 16px; cursor: pointer; }
+	.checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: #facc15; }
+	.submit-btn {
+		width: 100%; padding: 14px;
+		background: #facc15; color: #0f172a;
+		border: none; border-radius: 10px;
+		font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 8px;
+	}
+	.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

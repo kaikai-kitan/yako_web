@@ -363,6 +363,9 @@
 					<div class="card-list">
 						{#each mySpaces as space}
 							<div class="item-card">
+								{#if space.photos_path?.[0]}
+									<img src={space.photos_path[0]} alt={space.name} class="item-photo" />
+								{/if}
 								<div class="item-header">
 									<span class="item-name">{space.name}</span>
 									<span class="status-badge available">公開中</span>
@@ -372,9 +375,12 @@
 									¥{(space.space_fee ?? 0).toLocaleString()} / 泊　{space.ground_type ?? ''}
 									{space.fire_use_allowed ? '🔥 火気可' : '🚫 火気不可'}
 								</div>
-								<button class="qr-btn" onclick={() => showSpaceQR(space)}>
-									QRコードを表示（印刷用）
-								</button>
+								<div class="item-actions">
+									<a href="{base}/mypage/edit-space/{space.id}" class="edit-btn">編集</a>
+									<button class="qr-btn" onclick={() => showSpaceQR(space)}>
+										QRコードを表示
+									</button>
+								</div>
 							</div>
 						{/each}
 					</div>
@@ -395,15 +401,21 @@
 					<div class="card-list">
 						{#each myStalls as stall}
 							<div class="item-card">
+								{#if stall.photo_path}
+									<img src={stall.photo_path} alt={stall.stall_name} class="item-photo" />
+								{/if}
 								<div class="item-header">
 									<span class="item-name">{stall.stall_name}</span>
 									<span class="status-badge stall">登録済み</span>
 								</div>
 								<div class="item-detail">{stall.specs ?? 'スペック未設定'}</div>
 								<div class="item-detail">¥{(stall.rental_fee ?? 0).toLocaleString()} / 日</div>
-								<button class="qr-btn" onclick={() => showStallQR(stall)}>
-									QRコードを表示（印刷用）
-								</button>
+								<div class="item-actions">
+									<a href="{base}/mypage/edit-stall/{stall.id}" class="edit-btn">編集</a>
+									<button class="qr-btn" onclick={() => showStallQR(stall)}>
+										QRコードを表示
+									</button>
+								</div>
 							</div>
 						{/each}
 					</div>
@@ -832,9 +844,23 @@
 	.item-card {
 		background: white;
 		border-radius: 12px;
-		padding: 14px 16px;
+		overflow: hidden;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 	}
+
+	.item-photo {
+		width: 100%; height: 140px;
+		object-fit: cover; display: block;
+	}
+
+	.item-header,
+	.item-detail,
+	.item-actions {
+		padding-left: 16px;
+		padding-right: 16px;
+	}
+
+	.item-header { padding-top: 14px; }
 
 	.item-header {
 		display: flex;
@@ -856,8 +882,27 @@
 	.status-badge.available { background: #dcfce7; color: #166534; }
 	.status-badge.stall { background: #fef9c3; color: #92400e; }
 
-	.qr-btn {
+	.item-actions {
+		display: flex;
+		gap: 8px;
+		padding-bottom: 14px;
 		margin-top: 10px;
+	}
+
+	.edit-btn {
+		padding: 6px 16px;
+		background: #f1f5f9;
+		color: #334155;
+		border-radius: 6px;
+		font-size: 0.78rem;
+		font-weight: 600;
+		text-decoration: none;
+		display: flex;
+		align-items: center;
+	}
+
+	.qr-btn {
+		flex: 1;
 		padding: 6px 14px;
 		background: none;
 		border: 1.5px solid #26201a;
@@ -866,7 +911,6 @@
 		font-size: 0.78rem;
 		cursor: pointer;
 		font-family: inherit;
-		width: 100%;
 	}
 
 	.qr-modal { align-items: center; text-align: center; }

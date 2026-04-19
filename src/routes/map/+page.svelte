@@ -405,13 +405,22 @@
 		try {
 			const startDatetime = `${reservationForm.startDate}T${reservationForm.startTime}:00`;
 			const endDatetime   = `${reservationForm.endDate}T${reservationForm.endTime}:00`;
+
+			// 予約時点の料金をロック（スペース・屋台それぞれ）
+			const selectedSpace = availableSpaces.find((s) => s.id === reservationForm.spaceId);
+			const selectedStallForRes = availableStallsList.find((s) => s.id === reservationForm.stallId);
+			const lockedSpaceFee = selectedSpace?.price ?? 0;
+			const lockedStallFee = selectedStallForRes?.rental_fee ?? 0;
+
 			await createReservation(currentUser.id, {
 				rentalSpaceId: reservationForm.spaceId || null,
 				stallId: (reservationMode === 'space-first' && !needsStall)
 					? null
 					: (reservationForm.stallId || null),
 				startDatetime, endDatetime,
-				plannedItems: plannedItemsJson
+				plannedItems: plannedItemsJson,
+				lockedSpaceFee,
+				lockedStallFee
 			});
 			reservationSuccess = true;
 			// 予約一覧・予約済み屋台を再取得
