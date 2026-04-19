@@ -69,15 +69,6 @@ let splash = $state();
 
 <SplashView bind:this={splash} />
 
-<section class="hero">
-	<div class="hero-overlay"></div>
-	<div class="hero-content">
-		<h1 class="hero-title">微小夜行電灯</h1>
-		<p class="hero-subtitle">京都・鴨川の屋台シェアリング</p>
-		<a href="{base}/map" class="hero-cta">マップで予約する →</a>
-	</div>
-</section>
-
 <main>
 	<div class="top-gallery-mask" bind:this={gallery} onscroll={onScrollGallery}>
 		<div class="top-gallery">
@@ -108,6 +99,15 @@ let splash = $state();
 
 	</div>
 </main>
+
+<section class="hero">
+	<div class="hero-overlay"></div>
+	<div class="hero-content">
+		<h1 class="hero-title">YATAKARI</h1>
+		<p class="hero-subtitle">京都・鴨川の屋台シェアリングサービス</p>
+		<a href="{base}/map" class="hero-cta">マップで予約する →</a>
+	</div>
+</section>
 
 <style>
 	.hero {

@@ -631,9 +631,9 @@
 </script>
 
 <svelte:head>
-	<title>屋台貸し出しマップ | 微小夜行電灯</title>
+	<title>YATAKARI マップ | 微小夜行電灯</title>
 	<meta name="description" content="京都・鴨川河川敷の屋台・スペースをマップから検索して予約。QRコードで簡単に借り出し開始。" />
-	<meta property="og:title" content="屋台貸し出しマップ | 微小夜行電灯" />
+	<meta property="og:title" content="YATAKARI マップ | 微小夜行電灯" />
 	<meta property="og:description" content="京都・鴨川河川敷の屋台・スペースをマップから検索して予約。" />
 </svelte:head>
 
@@ -1057,7 +1057,7 @@
 						<p class="empty-history">ログインするとデータが表示されます</p>
 					{:else if userProfile?.owners || userProfile?.operators}
 						<p class="dashboard-role-label">
-							{#if userProfile?.owners}📍 場所提供者{:else}🏮 屋台提供者{/if}
+							{#if userProfile?.owners}📍 土地貸し出し人{:else}🏮 屋台主{/if}
 						</p>
 						<div class="kpi-container">
 							<div class="kpi-card">
@@ -1073,7 +1073,7 @@
 							総額 ¥{providerStats.grossRevenue.toLocaleString()} × 70% = ¥{providerStats.netRevenue.toLocaleString()}
 						</p>
 					{:else}
-						<p class="dashboard-role-label">🛒 屋台利用者</p>
+						<p class="dashboard-role-label">🛒 さすらい屋台人</p>
 						<div class="kpi-container">
 							<div class="kpi-card highlight">
 								<span class="kpi-label">今月の販売個数合計</span>

@@ -335,9 +335,9 @@
 
 			<!-- バッジ -->
 			<div class="badge-row-small">
-				<span class="badge user">屋台利用者</span>
-				{#if profile.owners}<span class="badge owner">場所提供者</span>{/if}
-				{#if profile.operators}<span class="badge operator">屋台提供者</span>{/if}
+				<span class="badge user">さすらい屋台人</span>
+				{#if profile.owners}<span class="badge owner">土地貸し出し人</span>{/if}
+				{#if profile.operators}<span class="badge operator">屋台主</span>{/if}
 			</div>
 
 			<!-- 名前 -->
@@ -408,12 +408,12 @@
 				<div class="role-add-row">
 					<button class="role-add-btn" onclick={() => openRoleModal('場所提供者')}>
 						<span class="role-icon">📍</span>
-						<span class="role-text"><strong>場所提供者</strong>として登録</span>
+						<span class="role-text"><strong>土地貸し出し人</strong>として登録</span>
 						<span class="arrow">›</span>
 					</button>
 					<button class="role-add-btn" onclick={() => openRoleModal('屋台提供者')}>
 						<span class="role-icon">🏮</span>
-						<span class="role-text"><strong>屋台提供者</strong>として登録</span>
+						<span class="role-text"><strong>屋台主</strong>として登録</span>
 						<span class="arrow">›</span>
 					</button>
 				</div>

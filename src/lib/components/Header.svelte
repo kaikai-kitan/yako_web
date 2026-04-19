@@ -36,7 +36,7 @@
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                 <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
-            <span>屋台貸し出し</span>
+            <span>YATAKARI</span>
         </a>
         <a href="{base}/shop" class="primary-nav-item" onclick={closeMenu}>
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -94,7 +94,7 @@
         </div>
         <ul>
             <li><a href="{base}/" onclick={closeMenu}>トップ</a></li>
-            <li><a href="{base}/map" onclick={closeMenu}>🏮 屋台貸し出し</a></li>
+            <li><a href="{base}/map" onclick={closeMenu}>🏮 YATAKARI</a></li>
             <li><a href="{base}/shop" onclick={closeMenu}>🛒 オンラインストア</a></li>
             <li><a href="{base}/menu" onclick={closeMenu}>メニュー</a></li>
             <li><a href="{base}/company" onclick={closeMenu}>事業内容</a></li>
@@ -161,6 +161,7 @@
         font-weight: 700;
         letter-spacing: 0.03em;
         white-space: nowrap;
+        display: none; /* モバイルでは非表示 */
     }
 
     /* プライマリナビ */
@@ -169,6 +170,8 @@
         align-items: center;
         gap: 4px;
         margin-left: auto;
+        min-width: 0; /* 縮小可能にしてハンバーガーを押し出さない */
+        overflow: hidden;
     }
 
     .primary-nav-item {
@@ -230,7 +233,7 @@
         gap: 5px;
         width: 40px;
         height: 40px;
-        flex-shrink: 0;
+        flex-shrink: 0; /* 絶対に縮まない */
         cursor: pointer;
         background: none;
         border: none;
@@ -339,7 +342,7 @@
             gap: 16px;
         }
 
-        .logo-text { font-size: 1rem; }
+        .logo-text { display: block; font-size: 1rem; }
 
         /* デスクトップではアイコン付き2項目 + テキストリンク群を横並び */
         .primary-nav { gap: 8px; }
