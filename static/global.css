@@ -1,6 +1,12 @@
 html {
-  scrollbar-gutter: stable;
   overflow-x: clip; /* ピンチズーム時の横余白を防ぐ（sticky を壊さない） */
+}
+
+/* スクロールバー確保はデスクトップのみ（モバイルでは右余白の原因になる） */
+@media (hover: hover) and (pointer: fine) {
+  html {
+    scrollbar-gutter: stable;
+  }
 }
 
 body {
@@ -11,6 +17,7 @@ body {
   color: #26201a;
   margin: 0;
   padding: 0;
+  max-width: 100%;
 }
 
 .display-font {

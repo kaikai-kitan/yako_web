@@ -32,7 +32,7 @@
 		<span class="sep">|</span>
 		<a href="{base}/tokusho">特定商取引法に基づく表記</a>
 	</nav>
-	<small class="footer-copy">&copy;2025 微小夜行電灯 All rights reserved</small>
+	<small class="footer-copy">&copy;2024-2026 微小夜行電灯 All rights reserved</small>
 </footer>
 
 <style>
