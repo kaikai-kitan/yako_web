@@ -9,63 +9,87 @@
 	import directoryList from '$lib/assets/data/directory.json';
 
 	let splash = $state();
-	let phrase1;
-	let phrase2;
-	let phrase3;
+	let phrase1, phrase2, phrase3;
+	let gallerySection;
 	let networkSection;
 	let linesVisible = $state(false);
 
-	// SVG viewBox: 0 0 400 280
+	// ── 夜行人図鑑ノード ──
 	const NODE_SVG = [
-		{ x: 60,  y: 70  },  // 0: タオ
-		{ x: 300, y: 55  },  // 1: カイドウ
-		{ x: 55,  y: 215 },  // 2: ヤニー
-		{ x: 192, y: 155 },  // 3: ASKR
-		{ x: 335, y: 210 },  // 4: ダー本
+		{ x: 60,  y: 70  },
+		{ x: 300, y: 55  },
+		{ x: 55,  y: 215 },
+		{ x: 192, y: 155 },
+		{ x: 335, y: 210 },
 	];
 	const EDGES = [[0,1],[0,2],[1,3],[2,3],[3,4],[1,4]];
 
+	// ── スプラッシュ ──
 	function showSplashInNecessary() {
-		const noSplashExpirationKey = 'no_splash_expiration_key';
-		const noSplashExpirationValue = localStorage.getItem(noSplashExpirationKey);
-		if (noSplashExpirationValue !== null) {
-			if (noSplashExpirationValue > Date.now()) return;
-		}
+		const KEY = 'no_splash_expiration_key';
+		const val = localStorage.getItem(KEY);
+		if (val !== null && val > Date.now()) return;
 		splash.showSplash();
-		const nextExpiration = Date.now() + (24 * 60 * 60 * 1000);
-		localStorage.setItem(noSplashExpirationKey, nextExpiration);
+		localStorage.setItem(KEY, Date.now() + 24 * 60 * 60 * 1000);
 	}
 
+	// ── ギャラリースクロール ──
 	function onScrollGallery() {
-		function updateStyle(rate, element) {
-			element.style.opacity = `${rate}`;
-			element.style.filter = rate >= 0.99 ? '' : `blur(${(1 - rate) * 10}px)`;
-		}
+		if (!gallerySection) return;
 
-		const centerY = window.innerHeight / 2;
-		// 視野の中心±38%の範囲のみくっきり、それ以外はボケる
-		const range = window.innerHeight * 0.38;
-		[phrase1, phrase2, phrase3].forEach(phrase => {
-			const rect = phrase.getBoundingClientRect();
-			const phraseCenter = rect.y + rect.height / 2;
-			const dist = Math.abs(phraseCenter - centerY);
-			const rate = Math.max(0, 1 - Math.pow(dist / range, 1.5));
-			updateStyle(rate, phrase);
+		const HEADER_H = 60;
+		const stickyH   = window.innerHeight - HEADER_H;
+		const rect       = gallerySection.getBoundingClientRect();
+		const totalTravel = gallerySection.offsetHeight - stickyH;
+		if (totalTravel <= 0) return;
+
+		// progress: 0(セクション上端が sticky 上端に到達) → 1(セクション下端が sticky 下端に到達)
+		const scrolled  = -(rect.top - HEADER_H);
+		const progress  = Math.max(0, Math.min(1, scrolled / totalTravel));
+
+		const phrases   = [phrase1, phrase2, phrase3];
+		const n         = phrases.length;
+		const travel    = stickyH * 0.58; // フレーズが上下に移動する最大距離
+		const fadeRange = stickyH * 0.42; // 中心からこの距離で完全に透明
+
+		phrases.forEach((el, i) => {
+			if (!el) return;
+
+			// このフレーズの局所 progress (0 = 入場開始, 0.5 = 中央, 1 = 退場完了)
+			const pp = (progress - i / n) / (1 / n);
+
+			// 範囲外は完全に非表示（負の progress = まだ来ていない, > 1 = 通過済み）
+			if (pp < -0.5 || pp > 1.5) {
+				el.style.opacity = '0';
+				el.style.filter  = '';
+				return;
+			}
+
+			// Y = 0 で中央, 正で下, 負で上
+			const clampedPp = Math.max(-0.5, Math.min(1.5, pp));
+			const Y = travel * (1 - 2 * clampedPp);
+
+			// 距離ベースの不透明度・ブラー
+			const dist    = Math.abs(Y);
+			const opacity = Math.max(0, 1 - Math.pow(dist / fadeRange, 1.3));
+			const blur    = opacity < 0.99 ? (1 - opacity) * 8 : 0;
+
+			el.style.transform = `translate(-50%, calc(-50% + ${Y}px))`;
+			el.style.opacity   = `${opacity}`;
+			el.style.filter    = blur > 0 ? `blur(${blur}px)` : '';
 		});
-		// タイマーリセットなし: スクロール停止時もその時点の透明度を維持する
 	}
 
 	onMount(() => {
 		showSplashInNecessary();
+
+		// 初期位置をセット（ロード時にフレーズが一瞬見えるのを防ぐ）
+		onScrollGallery();
 		window.addEventListener('scroll', onScrollGallery, { passive: true });
 
+		// 夜行人ネットワーク: 画面内に入ったら線を描画
 		const observer = new IntersectionObserver(
-			([entry]) => {
-				if (entry.isIntersecting) {
-					linesVisible = true;
-					observer.disconnect();
-				}
-			},
+			([entry]) => { if (entry.isIntersecting) { linesVisible = true; observer.disconnect(); } },
 			{ threshold: 0.15 }
 		);
 		if (networkSection) observer.observe(networkSection);
@@ -88,31 +112,38 @@
 <SplashView bind:this={splash} />
 
 <main>
-	<!-- ナビとの間に余白 -->
-	<div class="top-gallery-mask">
-		<div class="top-gallery">
-			<div class="slideshow-container">
-				<div class="slideshow">
-					<ImageSlideshow images={homeData.images} />
-				</div>
+	<!--
+		gallery-section の高さ = sticky が解除されるまでのスクロール量を決める。
+		高さ = sticky コンテナの高さ + (各フレーズの見せたい時間 × フレーズ数)
+		280svh → sticky(≈100svh) + 各フレーズ60svh × 3
+	-->
+	<section class="gallery-section" bind:this={gallerySection}>
+		<div class="gallery-sticky">
+
+			<!-- 画像: 常に sticky エリアの中央に固定 -->
+			<div class="image-area">
+				<ImageSlideshow images={homeData.images} />
 			</div>
-			<div class="description-container">
-				<div class="phrase-container phrase-1" bind:this={phrase1}>
+
+			<!-- フレーズ: JS がスクロール進捗に応じて Y 位置・透明度・ブラーを制御 -->
+			<div class="phrase-layer">
+				<div class="phrase-wrap phrase-1" bind:this={phrase1}>
 					<span class="description-text">微小夜行電灯</span>
 				</div>
-				<div class="phrase-container phrase-2" bind:this={phrase2}>
+				<div class="phrase-wrap phrase-2" bind:this={phrase2}>
 					<span class="description-text">京都に流れる鴨川の河川敷で </span>
 					<span class="description-text">ゆったりとした時間を過ごせる </span>
 				</div>
-				<div class="phrase-container phrase-3" bind:this={phrase3}>
+				<div class="phrase-wrap phrase-3" bind:this={phrase3}>
 					<span class="description-text">
 						<strong>おもろい空間</strong>を作りたいと思い、
 					</span>
 					<span class="description-text">京都府を中心に活動をする夜行人です </span>
 				</div>
 			</div>
+
 		</div>
-	</div>
+	</section>
 </main>
 
 <!-- 夜行人図鑑ネットワーク -->
@@ -124,7 +155,6 @@
 	</div>
 
 	<div class="network-wrap">
-		<!-- SVG 接続線 viewBox 0 0 400 280 -->
 		<svg
 			class="network-svg"
 			class:animate={linesVisible}
@@ -135,16 +165,13 @@
 			{#each EDGES as [from, to], i}
 				<line
 					class="network-edge"
-					x1={NODE_SVG[from].x}
-					y1={NODE_SVG[from].y}
-					x2={NODE_SVG[to].x}
-					y2={NODE_SVG[to].y}
+					x1={NODE_SVG[from].x} y1={NODE_SVG[from].y}
+					x2={NODE_SVG[to].x}   y2={NODE_SVG[to].y}
 					style="transition-delay: {i * 0.18}s"
 				/>
 			{/each}
 		</svg>
 
-		<!-- ノード -->
 		{#each directoryList.slice(0, NODE_SVG.length) as person, i}
 			<a
 				href="{base}/directory"
@@ -187,130 +214,97 @@
 		justify-content: center;
 		overflow: hidden;
 	}
-	.hero-overlay {
-		position: absolute;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.45);
-	}
+	.hero-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); }
 	.hero-content {
-		position: relative;
-		z-index: 1;
-		text-align: center;
-		color: #fff;
-		padding: 0 24px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 16px;
+		position: relative; z-index: 1; text-align: center; color: #fff;
+		padding: 0 24px; display: flex; flex-direction: column;
+		align-items: center; gap: 16px;
 	}
 	.hero-title {
 		font-size: clamp(2rem, 8vw, 3.5rem);
-		font-weight: 700;
-		letter-spacing: 0.1em;
-		line-height: 1.2;
-		text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+		font-weight: 700; letter-spacing: 0.1em; line-height: 1.2;
+		text-shadow: 0 2px 12px rgba(0,0,0,0.5);
 	}
-	.hero-subtitle {
-		font-size: clamp(0.9rem, 3vw, 1.2rem);
-		letter-spacing: 0.05em;
-		opacity: 0.9;
-	}
+	.hero-subtitle { font-size: clamp(0.9rem, 3vw, 1.2rem); letter-spacing: 0.05em; opacity: 0.9; }
 	.hero-cta {
-		display: inline-block;
-		margin-top: 8px;
-		padding: 14px 32px;
-		background: #d56d04;
-		color: #fff;
-		text-decoration: none;
-		border-radius: 100px;
-		font-size: 1rem;
-		font-weight: 700;
-		letter-spacing: 0.05em;
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+		display: inline-block; margin-top: 8px; padding: 14px 32px;
+		background: #d56d04; color: #fff; text-decoration: none;
+		border-radius: 100px; font-size: 1rem; font-weight: 700;
+		letter-spacing: 0.05em; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 		transition: background 0.2s;
 	}
 	.hero-cta:hover { background: #b85c03; }
 
-	/* ===== MAIN / GALLERY ===== */
-	main {
-		width: 100%;
-		box-sizing: border-box;
-	}
+	/* ===== MAIN ===== */
+	main { width: 100%; box-sizing: border-box; }
 
-	.top-gallery-mask {
-		width: 100%;
-		padding-top: 16px; /* ナビとの間の余白 */
-	}
-
-	.top-gallery {
-		display: flex;
+	/* ===== GALLERY SECTION =====
+	   高さがスクロール持続時間を決める:
+	     section height = sticky高さ(≈100svh) + フレーズ通過時間(≈60svh × 3)
+	   sticky は section が viewport を抜けるまで解除されない。
+	   画像の下に余白が生まれないのは、gallery-sticky が height:calc(100svh-60px) で
+	   画面いっぱいを占有し、余分な空間を作らないため。
+	============================= */
+	.gallery-section {
+		height: 280svh;
 		position: relative;
-		justify-content: center;
-		/* column-gap 削除: 左ズレの原因になる可能性 */
 	}
 
-	.slideshow-container {
-		flex-grow: 1;
-		width: 100%;
-		max-width: 800px;
-		height: 1600px;
-	}
-
-	.slideshow {
+	/* sticky コンテナ: ヘッダー下から画面いっぱいを占有 */
+	.gallery-sticky {
 		position: sticky;
-		top: 10%;
+		top: 60px; /* 固定ヘッダーの高さ分だけ下 */
+		height: calc(100svh - 60px);
+		overflow: hidden; /* 画面外のフレーズをクリップ */
+		background: #faf8f5;
 	}
 
-	/* フレーズ: position:absolute でオーバーフロークリップを回避 */
-	.description-container {
+	/* 画像: sticky エリアの中央に配置 */
+	.image-area {
 		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		margin: auto;
-		width: 100%;
-		max-width: 800px;
-		height: 2000px;
-		overflow: hidden;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 12px 0;
 	}
 
-	.phrase-container {
+	/* フレーズ層: 画像の上に重ねる */
+	.phrase-layer {
 		position: absolute;
-		left: 0;
-		right: 0;
-		margin: 0 auto;
-		width: 80%;
+		inset: 0;
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	/* 各フレーズ: JS が transform/opacity/filter を上書きする */
+	.phrase-wrap {
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		/* 初期値: 画面外 (JS が onMount で正しい位置に設定) */
+		opacity: 0;
+		width: 90%;
 		display: flex;
 		gap: 1rem;
 		flex-direction: row-reverse;
 	}
-
-	.phrase-1 {
-		top: calc(10vh + min(28.125vw, 225px) - 150px);
-		justify-content: flex-end;
-	}
-	.phrase-2 {
-		top: 650px;
-		justify-content: flex-start;
-	}
-	.phrase-3 {
-		top: 1100px;
-		justify-content: flex-end;
-	}
+	.phrase-1 { justify-content: flex-end; }
+	.phrase-2 { justify-content: flex-start; }
+	.phrase-3 { justify-content: flex-end; }
 
 	.description-text {
 		writing-mode: vertical-rl;
 		font-size: 20px;
 		text-align: center;
 		padding: 30px 2px;
-		background-color: #ffffff;
+		background-color: rgba(255, 255, 255, 0.92);
 		box-shadow: 0 10px 10px rgba(0, 0, 0, 0.3);
 	}
 	.description-text:nth-child(even) {
 		transform: translateY(2rem);
 	}
 
-	/* スマホ: テキストを小さく */
 	@media (max-width: 480px) {
 		.description-text {
 			font-size: 14px;
@@ -324,34 +318,17 @@
 		background: #faf8f5;
 		text-align: center;
 	}
-
 	.section-header {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 8px;
-		margin-bottom: 32px;
+		display: flex; flex-direction: column; align-items: center;
+		gap: 8px; margin-bottom: 32px;
 	}
 	.section-sep {
-		display: block;
-		width: 40px;
-		height: 2px;
-		background: #d56d04;
-		border-radius: 2px;
+		display: block; width: 40px; height: 2px;
+		background: #d56d04; border-radius: 2px;
 	}
-	.section-title {
-		font-size: 1.3rem;
-		font-weight: 700;
-		color: #26201a;
-		letter-spacing: 0.1em;
-	}
-	.section-desc {
-		font-size: 0.85rem;
-		color: #7a6f67;
-		letter-spacing: 0.03em;
-	}
+	.section-title { font-size: 1.3rem; font-weight: 700; color: #26201a; letter-spacing: 0.1em; }
+	.section-desc  { font-size: 0.85rem; color: #7a6f67; letter-spacing: 0.03em; }
 
-	/* ネットワーク図コンテナ */
 	.network-wrap {
 		position: relative;
 		width: 100%;
@@ -359,97 +336,48 @@
 		aspect-ratio: 400 / 280;
 		margin: 0 auto;
 	}
-
-	/* SVG 接続線 */
 	.network-svg {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
+		position: absolute; inset: 0; width: 100%; height: 100%;
 	}
 	.network-edge {
-		stroke: #d56d04;
-		stroke-width: 1.5;
-		fill: none;
-		stroke-dasharray: 600;
-		stroke-dashoffset: 600;
+		stroke: #d56d04; stroke-width: 1.5; fill: none;
+		stroke-dasharray: 600; stroke-dashoffset: 600;
 		transition: stroke-dashoffset 0.9s ease;
 	}
-	.network-svg.animate .network-edge {
-		stroke-dashoffset: 0;
-	}
+	.network-svg.animate .network-edge { stroke-dashoffset: 0; }
 
-	/* ノード */
 	.node {
 		position: absolute;
 		transform: translate(-50%, -50%);
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 4px;
-		text-decoration: none;
-		color: #26201a;
-		z-index: 1;
+		display: flex; flex-direction: column; align-items: center;
+		gap: 4px; text-decoration: none; color: #26201a; z-index: 1;
 	}
 	.node-img {
-		width: 56px;
-		height: 56px;
-		border-radius: 50%;
-		object-fit: cover;
-		border: 2px solid #e8e0d8;
-		background: #f5f0ea;
-		transition: border-color 0.2s, transform 0.2s;
+		width: 56px; height: 56px; border-radius: 50%;
+		object-fit: cover; border: 2px solid #e8e0d8;
+		background: #f5f0ea; transition: border-color 0.2s, transform 0.2s;
 	}
 	.node-placeholder {
-		width: 56px;
-		height: 56px;
-		border-radius: 50%;
-		background: #f5f0ea;
-		border: 2px solid #e8e0d8;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: #7a6f67;
+		width: 56px; height: 56px; border-radius: 50%;
+		background: #f5f0ea; border: 2px solid #e8e0d8;
+		display: flex; align-items: center; justify-content: center;
+		font-size: 1.1rem; font-weight: 700; color: #7a6f67;
 		transition: border-color 0.2s, transform 0.2s;
 	}
 	.node:hover .node-img,
-	.node:hover .node-placeholder {
-		border-color: #d56d04;
-		transform: scale(1.1);
-	}
-	.node-label {
-		font-size: 0.7rem;
-		color: #7a6f67;
-		white-space: nowrap;
-		letter-spacing: 0.02em;
-	}
+	.node:hover .node-placeholder { border-color: #d56d04; transform: scale(1.1); }
+	.node-label { font-size: 0.7rem; color: #7a6f67; white-space: nowrap; letter-spacing: 0.02em; }
 
 	.directory-more {
-		display: inline-block;
-		margin-top: 28px;
-		font-size: 0.9rem;
-		color: #d56d04;
-		text-decoration: none;
-		letter-spacing: 0.05em;
-		border-bottom: 1px solid transparent;
+		display: inline-block; margin-top: 28px;
+		font-size: 0.9rem; color: #d56d04; text-decoration: none;
+		letter-spacing: 0.05em; border-bottom: 1px solid transparent;
 		transition: border-color 0.2s;
 	}
-	.directory-more:hover {
-		border-bottom-color: #d56d04;
-	}
+	.directory-more:hover { border-bottom-color: #d56d04; }
 
-	/* スマホでのノードサイズ縮小 */
 	@media (max-width: 480px) {
-		.node-img,
-		.node-placeholder {
-			width: 42px;
-			height: 42px;
-			font-size: 0.9rem;
-		}
-		.node-label {
-			font-size: 0.6rem;
-		}
+		.node-img, .node-placeholder { width: 42px; height: 42px; font-size: 0.9rem; }
+		.node-label { font-size: 0.6rem; }
 	}
 </style>
