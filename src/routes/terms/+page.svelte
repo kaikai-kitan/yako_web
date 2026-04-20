@@ -166,7 +166,7 @@
 		</ol>
 	</section>
 
-	<p class="update-date">制定日：2025年[XX]月[XX]日<br>最終更新日：2025年[XX]月[XX]日</p>
+	<p class="update-date">制定日：2026年4月1日</p>
 </div>
 
 <style>
