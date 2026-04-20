@@ -35,10 +35,7 @@
     <!-- プライマリナビ（常時表示） -->
     <nav class="primary-nav" aria-label="主要ナビゲーション">
         <a href="{base}/map" class="primary-nav-item" class:nav-active={currentPath.startsWith('/map')} onclick={closeMenu}>
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
+            <img src="{base}/images/yatakari_icon.png" alt="" class="nav-icon yatakari-icon" aria-hidden="true" />
             <span>YATAKARI</span>
         </a>
         <a href="{base}/shop" class="primary-nav-item" class:nav-active={currentPath.startsWith('/shop')} onclick={closeMenu}>
@@ -98,10 +95,7 @@
             <li><a href="{base}/" onclick={closeMenu}>トップ</a></li>
             <li>
                 <a href="{base}/map" class="drawer-item-with-icon" onclick={closeMenu}>
-                    <svg class="drawer-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                        <polyline points="9 22 9 12 15 12 15 22"/>
-                    </svg>
+                    <img src="{base}/images/yatakari_icon.png" alt="" class="drawer-nav-icon yatakari-icon" aria-hidden="true" />
                     YATAKARI
                 </a>
             </li>
@@ -229,6 +223,10 @@
         height: 22px;
         stroke: #26201a;
     }
+    .nav-icon.yatakari-icon {
+        object-fit: contain;
+        stroke: none;
+    }
 
     /* デスクトップ専用リンク（モバイルでは非表示） */
     .desktop-nav-item {
@@ -354,6 +352,10 @@
         height: 20px;
         flex-shrink: 0;
         stroke: #26201a;
+    }
+    .drawer-nav-icon.yatakari-icon {
+        object-fit: contain;
+        stroke: none;
     }
 
     .drawer-auth {
