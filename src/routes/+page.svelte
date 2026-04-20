@@ -3,7 +3,7 @@
 	import ImageSlideshow from '$lib/components/ImageSlideshow.svelte';
 	import SplashView from '$lib/components/SplashView.svelte';
 	import { base } from '$app/paths';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 
 	import homeData from '$lib/assets/data/home.json';
 let splash = $state();
@@ -60,11 +60,10 @@ let splash = $state();
 	onMount(() => {
 		showSplashInNecessary();
 		window.addEventListener('scroll', onScrollGallery, { passive: true });
-	});
-
-	onDestroy(() => {
-		window.removeEventListener('scroll', onScrollGallery);
-		clearTimeout(scrollTimer);
+		return () => {
+			window.removeEventListener('scroll', onScrollGallery);
+			clearTimeout(scrollTimer);
+		};
 	});
 
 </script>
