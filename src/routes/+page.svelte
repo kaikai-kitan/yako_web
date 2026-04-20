@@ -60,8 +60,9 @@
 
 			// 範囲外は完全に非表示（負の progress = まだ来ていない, > 1 = 通過済み）
 			if (pp < -0.5 || pp > 1.5) {
-				el.style.opacity = '0';
-				el.style.filter  = '';
+				el.style.opacity   = '0';
+				el.style.filter    = '';
+				el.style.transform = 'translate(-50%, -50%)'; // 中央に戻す（右への layout overflow を防ぐ）
 				return;
 			}
 
@@ -282,7 +283,8 @@
 		position: absolute;
 		left: 50%;
 		top: 50%;
-		/* 初期値: 画面外 (JS が onMount で正しい位置に設定) */
+		/* 初期値: 中央揃え・非表示 (JS 実行前の右 overflow を防ぐ) */
+		transform: translate(-50%, -50%);
 		opacity: 0;
 		width: 90%;
 		display: flex;
