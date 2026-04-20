@@ -242,6 +242,8 @@
 </script>
 
 <div class="page">
+	<a href="{base}/map" class="back-to-map">← マップに戻る</a>
+
 	{#if isLoading}
 		<div class="loading">読み込み中…</div>
 	{:else if profile}
@@ -582,6 +584,18 @@
 		margin: 0 auto;
 		padding: 20px 16px 80px;
 	}
+
+	.back-to-map {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		margin-bottom: 20px;
+		font-size: 0.88rem;
+		color: #64748b;
+		text-decoration: none;
+		padding: 6px 0;
+	}
+	.back-to-map:hover { color: #0f172a; }
 
 	.loading { text-align: center; padding: 60px; color: #64748b; }
 

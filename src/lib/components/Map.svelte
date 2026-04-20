@@ -1,50 +1,34 @@
 <script>
 	import { onMount } from 'svelte';
-	import { importLibrary } from '@googlemaps/js-api-loader';
 	import { fly } from 'svelte/transition';
 
-	let { spaces = [], mapId } = $props(); // Svelte 5のprops取得方法
+	let { spaces = [] } = $props();
 	let mapContainer;
-	let selectedSpace = $state(null); // Svelte 5のステート管理
-	let mapInstance;
+	let selectedSpace = $state(null);
 
 	onMount(async () => {
 		try {
-			const { Map } = await importLibrary('maps');
-			const { AdvancedMarkerElement } = await importLibrary('marker');
-
-			mapInstance = new Map(mapContainer, {
-				center: { lat: 35.009, lng: 135.772 },
+			const L = (await import('leaflet')).default;
+			const map = L.map(mapContainer, {
+				center: [35.009, 135.772],
 				zoom: 15,
-				disableDefaultUI: false,
-				clickableIcons: false,
-				mapId: mapId // 親コンポーネントから渡されたIDを使用
 			});
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+				maxZoom: 19,
+			}).addTo(map);
 
 			spaces.forEach((space) => {
-				const marker = new AdvancedMarkerElement({
-					map: mapInstance,
-					position: { lat: space.lat, lng: space.lng },
-					title: space.name
-				});
-
-				marker.content.addEventListener('click', () => {
+				const marker = L.marker([space.lat, space.lng], { title: space.name }).addTo(map);
+				marker.on('click', () => {
 					selectedSpace = space;
-					if(mapInstance) {
-						mapInstance.panTo(marker.position);
-					}
+					map.panTo([space.lat, space.lng]);
 				});
 			});
 
-			mapInstance.addListener('click', (e) => {
-				// マーカーのクリックイベントがマップに伝播しないようにする
-				if (e.target instanceof HTMLElement && e.target.closest('gmp-advanced-marker')) {
-      				return;
-    			}
-				selectedSpace = null;
-			});
+			map.on('click', () => { selectedSpace = null; });
 		} catch (error) {
-			console.error('Google Maps Load Error:', error);
+			console.error('Leaflet Map Load Error:', error);
 		}
 	});
 

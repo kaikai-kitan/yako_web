@@ -2,6 +2,9 @@
   "permissions": {
     "additionalDirectories": [
       "/Users/iwatakaidou/微小夜行電灯/yako_web/src/routes/mypage/edit-space"
+    ],
+    "allow": [
+      "Bash(git commit -m ' *)"
     ]
   }
 }

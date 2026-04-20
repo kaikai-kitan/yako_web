@@ -4,7 +4,6 @@
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
-	import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 	import { supabase } from '$lib/supabase.js';
 	import { getMyProfile, updateRentalSpace, uploadImage } from '$lib/db.js';
 
@@ -76,31 +75,24 @@
 
 	async function initMap() {
 		try {
-			setOptions({
-				apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-				version: 'weekly',
-				libraries: ['maps', 'marker']
-			});
-			const { Map } = await importLibrary('maps');
-			const { AdvancedMarkerElement } = await importLibrary('marker');
-
-			const center = lat !== null ? { lat, lng } : { lat: 35.009, lng: 135.772 };
-			const map = new Map(mapContainer, {
-				center,
-				zoom: 15,
-				mapId: 'dc1ab66880d245ef156be95a'
-			});
+			const L = (await import('leaflet')).default;
+			const center = lat !== null ? [lat, lng] : [35.009, 135.772];
+			const map = L.map(mapContainer, { center, zoom: 15 });
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+				maxZoom: 19,
+			}).addTo(map);
 
 			// 既存位置にピンを表示
 			if (lat !== null) {
-				pickerMarker = new AdvancedMarkerElement({ map, position: { lat, lng } });
+				pickerMarker = L.marker([lat, lng]).addTo(map);
 			}
 
-			map.addListener('click', (e) => {
-				lat = parseFloat(e.latLng.lat().toFixed(6));
-				lng = parseFloat(e.latLng.lng().toFixed(6));
-				if (pickerMarker) pickerMarker.setMap(null);
-				pickerMarker = new AdvancedMarkerElement({ map, position: { lat, lng } });
+			map.on('click', (e) => {
+				lat = parseFloat(e.latlng.lat.toFixed(6));
+				lng = parseFloat(e.latlng.lng.toFixed(6));
+				if (pickerMarker) pickerMarker.remove();
+				pickerMarker = L.marker([lat, lng]).addTo(map);
 			});
 		} catch (e) {
 			console.error('Map init error:', e);

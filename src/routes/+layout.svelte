@@ -2,6 +2,7 @@
 <script>
 	import { base } from '$app/paths';
 	import favicon from '$lib/assets/favicon.png';
+	import 'leaflet/dist/leaflet.css';
 
 	import Header from '$lib/components/Header.svelte';
 
