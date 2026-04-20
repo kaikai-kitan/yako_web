@@ -1294,7 +1294,7 @@
 {/if}
 
 <style>
-	:global(body) { margin: 0; padding: 0; font-family: sans-serif; }
+	:global(body) { margin: 0; padding: 0; }
 
 	.app-container {
 		width: 100%; height: calc(100svh - 60px);
