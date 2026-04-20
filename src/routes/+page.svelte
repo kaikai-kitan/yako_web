@@ -49,14 +49,14 @@
 
 		const phrases   = [phrase1, phrase2, phrase3];
 		const n         = phrases.length;
-		const travel    = stickyH * 0.58; // フレーズが上下に移動する最大距離
-		const fadeRange = stickyH * 0.42; // 中心からこの距離で完全に透明
+		const travel    = stickyH * 0.65; // フレーズが上下に移動する最大距離
+		const fadeRange = stickyH * 0.58; // 中心からこの距離で完全に透明（大きいほどくっきり範囲が広い）
 
 		phrases.forEach((el, i) => {
 			if (!el) return;
 
-			// このフレーズの局所 progress (0 = 入場開始, 0.5 = 中央, 1 = 退場完了)
-			const pp = (progress - i / n) / (1 / n);
+			// pStart を 0.5/n だけ前にシフト → phrase-1 が progress=0 (セクション先頭) で中央に来る
+			const pp = (progress - (i - 0.5) / n) / (1 / n);
 
 			// 範囲外は完全に非表示（負の progress = まだ来ていない, > 1 = 通過済み）
 			if (pp < -0.5 || pp > 1.5) {
