@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 	import { fade, fly } from 'svelte/transition';
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase.js';
@@ -25,7 +26,8 @@
 	let mapContainer = $state();
 	let mapInstance = $state();
 	let markers = $state([]);
-	let leaflet = null; // Leaflet インスタンス（onMount で動的 import）
+	let AdvancedMarkerClass = null;
+	let isApiInitialized = false;
 
 	let currentView = $state('map'); // 'map'|'reserve'|'qr'|'active'|'return'|'finish'
 
@@ -176,66 +178,119 @@
 		}
 
 		try {
-			leaflet = (await import('leaflet')).default;
-			mapInstance = leaflet.map(mapContainer, {
-				center: [35.009, 135.772],
+			if (!isApiInitialized) {
+				setOptions({
+					apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+					version: 'weekly',
+					libraries: ['maps', 'marker']
+				});
+				isApiInitialized = true;
+			}
+			const { Map } = await importLibrary('maps');
+			const { AdvancedMarkerElement } = await importLibrary('marker');
+			AdvancedMarkerClass = AdvancedMarkerElement;
+			mapInstance = new Map(mapContainer, {
+				center: { lat: 35.009, lng: 135.772 },
 				zoom: 16,
-				zoomControl: true,
+				disableDefaultUI: true,
+				mapId: 'dc1ab66880d245ef156be95a'
 			});
-			leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
-				maxZoom: 19,
-			}).addTo(mapInstance);
 			updateMarkers(mapInstance);
 		} catch (e) {
-			console.error('Leaflet Map Load Error:', e);
+			console.error('Google Maps Load Error:', e);
 		}
 	});
 
 	function updateMarkers(map) {
-		if (!map || !leaflet) return;
-		const L = leaflet;
-		markers.forEach((m) => m.remove());
+		if (!map || !AdvancedMarkerClass) return;
+		markers.forEach((m) => m.setMap(null));
 		markers = [];
 
 		if (mapMode === 'available') {
 			availableSpaces.forEach((stall) => {
 				if (!stall.lat || !stall.lng) return;
-				const icon = L.divIcon({
-					html: `<div style="width:14px;height:14px;border-radius:50%;background:#3b82f6;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>`,
-					className: '', iconSize: [14, 14], iconAnchor: [7, 7]
+				const icon = document.createElement('img');
+				icon.src = 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+				const marker = new AdvancedMarkerClass({
+					map, position: { lat: stall.lat, lng: stall.lng },
+					title: stall.name, content: icon
 				});
-				const marker = L.marker([stall.lat, stall.lng], { icon }).addTo(map);
-				marker.on('click', () => { selectedStall = stall; });
+				marker.addListener('click', () => { selectedStall = stall; });
 				markers.push(marker);
 			});
 
 			stallPins.forEach((stall) => {
 				if (!stall.lat || !stall.lng) return;
-				const booked = bookedStallIds.has(stall.id);
-				const icon = L.divIcon({
-					html: `<div style="width:14px;height:14px;border-radius:50%;background:${booked ? '#94a3b8' : '#facc15'};border:2px solid ${booked ? '#64748b' : '#d97706'};box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>`,
-					className: '', iconSize: [14, 14], iconAnchor: [7, 7]
+				const icon = document.createElement('img');
+				// 予約済みの屋台はグレーピン、空き屋台は黄色ピン
+				icon.src = bookedStallIds.has(stall.id)
+					? 'http://maps.google.com/mapfiles/ms/icons/grey.png'
+					: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
+				const marker = new AdvancedMarkerClass({
+					map, position: { lat: stall.lat, lng: stall.lng },
+					title: stall.name, content: icon
 				});
-				const marker = L.marker([stall.lat, stall.lng], { icon }).addTo(map);
-				marker.on('click', () => { selectedStall = stall; });
+				marker.addListener('click', () => { selectedStall = stall; });
 				markers.push(marker);
 			});
 		} else {
 			activeStalls.forEach((stall) => {
 				if (!stall.lat || !stall.lng) return;
-				const imgHtml = stall.image
-					? `<img src="${stall.image}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🏮'" />`
-					: '🏮';
-				const icon = L.divIcon({
-					html: `<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer">
-						<div style="width:48px;height:48px;border-radius:50%;border:3px solid #ef4444;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.45);background:#fef2f2;display:flex;align-items:center;justify-content:center;font-size:22px">${imgHtml}</div>
-						<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid #ef4444;margin-top:-1px"></div>
-					</div>`,
-					className: '', iconSize: [54, 66], iconAnchor: [27, 66]
+
+				// 営業者アイコンをカスタムピンとして表示
+				const pin = document.createElement('div');
+				pin.style.cssText = [
+					'position:relative',
+					'display:flex',
+					'flex-direction:column',
+					'align-items:center',
+					'cursor:pointer'
+				].join(';');
+
+				const avatar = document.createElement('div');
+				avatar.style.cssText = [
+					'width:48px',
+					'height:48px',
+					'border-radius:50%',
+					'border:3px solid #ef4444',
+					'overflow:hidden',
+					'box-shadow:0 2px 10px rgba(0,0,0,0.45)',
+					'background:#fef2f2',
+					'display:flex',
+					'align-items:center',
+					'justify-content:center',
+					'font-size:22px'
+				].join(';');
+
+				if (stall.image) {
+					const img = document.createElement('img');
+					img.src = stall.image;
+					img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+					img.onerror = () => { img.remove(); avatar.textContent = '🏮'; };
+					avatar.appendChild(img);
+				} else {
+					avatar.textContent = '🏮';
+				}
+
+				// ピン下の三角形
+				const caret = document.createElement('div');
+				caret.style.cssText = [
+					'width:0',
+					'height:0',
+					'border-left:7px solid transparent',
+					'border-right:7px solid transparent',
+					'border-top:10px solid #ef4444',
+					'margin-top:-1px'
+				].join(';');
+
+				pin.appendChild(avatar);
+				pin.appendChild(caret);
+
+				const marker = new AdvancedMarkerClass({
+					map, position: { lat: stall.lat, lng: stall.lng },
+					title: stall.name, content: pin
 				});
-				const marker = L.marker([stall.lat, stall.lng], { icon }).addTo(map);
-				marker.on('click', () => { selectedStall = stall; });
+				marker.addListener('click', () => { selectedStall = stall; });
 				markers.push(marker);
 			});
 		}
