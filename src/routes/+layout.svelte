@@ -10,12 +10,6 @@
 
 <svelte:head>
 	<link rel="icon" href={base + favicon} />
-	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-	<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&display=swap" rel="stylesheet" />
-
-	<link rel="stylesheet" href="{base}/global.css" />
-
 	<!-- デフォルトSEO・OGP（各ページで上書き可能） -->
 	<title>微小夜行電灯</title>
 	<meta name="description" content="京都・鴨川河川敷で屋台を借りて出店できるシェアリングサービス。屋台・スペースの予約からオンラインショップまで。" />
