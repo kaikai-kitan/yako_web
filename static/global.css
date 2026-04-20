@@ -1,5 +1,6 @@
 html {
   scrollbar-gutter: stable;
+  overflow-x: clip; /* ピンチズーム時の横余白を防ぐ（sticky を壊さない） */
 }
 
 body {
