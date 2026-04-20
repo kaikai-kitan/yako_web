@@ -230,7 +230,7 @@ let splash = $state();
 	}
 
 	.phrase-1 {
-		top: 200px;
+		top: calc(10vh + min(28.125vw, 225px) - 150px);
 		justify-content: flex-end;
 	}
 
