@@ -3,15 +3,15 @@
 	import ImageSlideshow from '$lib/components/ImageSlideshow.svelte';
 	import SplashView from '$lib/components/SplashView.svelte';
 	import { base } from '$app/paths';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 
 	import homeData from '$lib/assets/data/home.json';
 let splash = $state();
 
-	let gallery;
 	let phrase1;
 	let phrase2;
 	let phrase3;
+	let scrollTimer;
 
 	function showSplashInNecessary() {
 		const noSplashExpirationKey = 'no_splash_expiration_key';
@@ -31,30 +31,40 @@ let splash = $state();
 	}
 
 	function onScrollGallery() {
-		function updateStyle(rate, element) {
-			const opacity = `${rate}`;
-			const blur = `blur(${(1 - rate) * 10}px)`;
+		clearTimeout(scrollTimer);
 
-			element.style["opacity"] = opacity;
-			element.style["filter"] = blur;
+		function updateStyle(rate, element) {
+			element.style.opacity = `${rate}`;
+			element.style.filter = rate >= 0.99 ? '' : `blur(${(1 - rate) * 10}px)`;
 		}
-		
-		const maskRect = gallery.getBoundingClientRect();
+
+		const centerY = window.innerHeight / 2;
+		const scale = Math.pow(window.innerHeight, 2) / 10;
 		[phrase1, phrase2, phrase3].forEach(phrase => {
 			const phraseRect = phrase.getBoundingClientRect();
-
-			const maskCenterY = maskRect.y + maskRect.height / 2;
 			const phraseCenterY = phraseRect.y + phraseRect.height / 2;
-			const maskHeight = Math.pow(maskRect.height, 2) / 10;
-			const delta = Math.pow(phraseCenterY - maskCenterY, 2) / maskHeight;
+			const delta = Math.pow(phraseCenterY - centerY, 2) / scale;
 			const rate = 1 - Math.min(1, delta / 5);
 			updateStyle(rate, phrase);
 		});
+
+		// Reset to full visibility after scrolling stops
+		scrollTimer = setTimeout(() => {
+			[phrase1, phrase2, phrase3].forEach(phrase => {
+				phrase.style.opacity = '1';
+				phrase.style.filter = '';
+			});
+		}, 200);
 	}
 
 	onMount(() => {
 		showSplashInNecessary();
-		onScrollGallery();
+		window.addEventListener('scroll', onScrollGallery, { passive: true });
+	});
+
+	onDestroy(() => {
+		window.removeEventListener('scroll', onScrollGallery);
+		clearTimeout(scrollTimer);
 	});
 
 </script>
@@ -70,7 +80,7 @@ let splash = $state();
 <SplashView bind:this={splash} />
 
 <main>
-	<div class="top-gallery-mask" bind:this={gallery} onscroll={onScrollGallery}>
+	<div class="top-gallery-mask">
 		<div class="top-gallery">
 			<div class="slideshow-container">
 				<div class="slideshow">
@@ -181,13 +191,6 @@ let splash = $state();
 
 	.top-gallery-mask {
 		width: 100%;
-		height: 600px;
-		overflow: scroll;
-		scrollbar-width: 0;
-	}
-
-	.top-gallery-mask::-webkit-scrollbar {
-		display: none;
 	}
 
 	.top-gallery {
@@ -233,12 +236,12 @@ let splash = $state();
 	}
 
 	.phrase-2 {
-		top: 250px;
+		top: 650px;
 		justify-content: flex-start;
 	}
 
 	.phrase-3 {
-		top: 300px;
+		top: 1100px;
 		justify-content: flex-end;
 	}
 
@@ -255,25 +258,4 @@ let splash = $state();
 		transform: translateY(2rem);
 	}
 
-	@keyframes blur-fade {
-		0% {
-			opacity: 0;
-			filter: blur(10px);
-		}
-
-		25% {
-			opacity: 1;
-			filter: blur(0);
-		}
-
-		75% {
-			opacity: 1;
-			filter: blur(0);
-		}
-
-		100% {
-			opacity: 0;
-			filter: blur(10px);
-		}
-	}
 </style>
