@@ -53,7 +53,6 @@
         <!-- デスクトップ用その他のリンク -->
         <a href="{base}/menu" class="desktop-nav-item" onclick={closeMenu}>メニュー</a>
         <a href="{base}/company" class="desktop-nav-item" onclick={closeMenu}>事業内容</a>
-        <a href="{base}/directory" class="desktop-nav-item" onclick={closeMenu}>夜行人図鑑</a>
         {#if $session}
             <button class="desktop-nav-item desktop-auth-btn" onclick={handleSignOut}>ログアウト</button>
         {:else}
@@ -118,7 +117,6 @@
             </li>
             <li><a href="{base}/menu" onclick={closeMenu}>メニュー</a></li>
             <li><a href="{base}/company" onclick={closeMenu}>事業内容</a></li>
-            <li><a href="{base}/directory" onclick={closeMenu}>夜行人図鑑</a></li>
             <li>
                 <a
                     href="https://www.instagram.com/delta_yako?igsh=MTYxZmJzZG5yZHZieA%3D%3D&utm_source=qr"

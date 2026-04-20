@@ -12,7 +12,6 @@
 	let phrase1;
 	let phrase2;
 	let phrase3;
-	let scrollTimer;
 	let networkSection;
 	let linesVisible = $state(false);
 
@@ -38,8 +37,6 @@
 	}
 
 	function onScrollGallery() {
-		clearTimeout(scrollTimer);
-
 		function updateStyle(rate, element) {
 			element.style.opacity = `${rate}`;
 			element.style.filter = rate >= 0.99 ? '' : `blur(${(1 - rate) * 10}px)`;
@@ -55,13 +52,7 @@
 			const rate = Math.max(0, 1 - Math.pow(dist / range, 1.5));
 			updateStyle(rate, phrase);
 		});
-
-		scrollTimer = setTimeout(() => {
-			[phrase1, phrase2, phrase3].forEach(phrase => {
-				phrase.style.opacity = '1';
-				phrase.style.filter = '';
-			});
-		}, 200);
+		// タイマーリセットなし: スクロール停止時もその時点の透明度を維持する
 	}
 
 	onMount(() => {
@@ -81,7 +72,6 @@
 
 		return () => {
 			window.removeEventListener('scroll', onScrollGallery);
-			clearTimeout(scrollTimer);
 			observer.disconnect();
 		};
 	});
