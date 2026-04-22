@@ -14,6 +14,29 @@
 	let networkSection;
 	let linesVisible = $state(false);
 
+	// ── 出店スケジュール ──
+	let scheduleEvents = $state([]);
+	let scheduleLoaded = $state(false);
+
+	const DAY_JA = ['日', '月', '火', '水', '木', '金', '土'];
+
+	function formatEventDate(start, end) {
+		const s = new Date(start);
+		const isAllDay = !start.includes('T');
+		const dateStr = `${s.getMonth() + 1}月${s.getDate()}日（${DAY_JA[s.getDay()]}）`;
+		if (isAllDay) return dateStr;
+		const pad = (n) => String(n).padStart(2, '0');
+		const startTime = `${pad(s.getHours())}:${pad(s.getMinutes())}`;
+		if (!end || !end.includes('T')) return `${dateStr} ${startTime}〜`;
+		const e = new Date(end);
+		const endTime = `${pad(e.getHours())}:${pad(e.getMinutes())}`;
+		return `${dateStr} ${startTime}〜${endTime}`;
+	}
+
+	function stripHtml(html) {
+		return html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
+	}
+
 	// ── 夜行人図鑑ノード ──
 	const NODE_SVG = [
 		{ x: 60,  y: 70  },
@@ -81,7 +104,7 @@
 		});
 	}
 
-	onMount(() => {
+	onMount(async () => {
 		showSplashInNecessary();
 
 		// 初期位置をセット（ロード時にフレーズが一瞬見えるのを防ぐ）
@@ -94,6 +117,17 @@
 			{ threshold: 0.15 }
 		);
 		if (networkSection) observer.observe(networkSection);
+
+		// 出店スケジュール取得
+		try {
+			const res = await fetch('/api/schedule');
+			if (res.ok) {
+				const data = await res.json();
+				scheduleEvents = data.events ?? [];
+			}
+		} catch { /* スケジュール取得失敗時は非表示 */ } finally {
+			scheduleLoaded = true;
+		}
 
 		return () => {
 			window.removeEventListener('scroll', onScrollGallery);
@@ -146,6 +180,46 @@
 		</div>
 	</section>
 </main>
+
+<!-- 出店スケジュール -->
+{#if scheduleLoaded}
+<section class="schedule-section">
+	<div class="section-header">
+		<span class="section-sep"></span>
+		<h2 class="section-title">出店スケジュール</h2>
+		<p class="section-desc">次の出店予定</p>
+	</div>
+
+	{#if scheduleEvents.length === 0}
+		<p class="schedule-empty">現在スケジュールはありません</p>
+	{:else}
+		<div class="schedule-list">
+			{#each scheduleEvents as event, i}
+				<div class="schedule-card" class:schedule-next={i === 0}>
+					{#if i === 0}<span class="schedule-badge">次回</span>{/if}
+					<p class="schedule-title">{event.title}</p>
+					<div class="schedule-row">
+						<span class="schedule-icon">📅</span>
+						<span>{formatEventDate(event.start, event.end)}</span>
+					</div>
+					{#if event.location}
+						<div class="schedule-row">
+							<span class="schedule-icon">📍</span>
+							<span>{event.location}</span>
+						</div>
+					{/if}
+					{#if event.description}
+						<div class="schedule-row">
+							<span class="schedule-icon">🍽</span>
+							<span class="schedule-menu">{stripHtml(event.description)}</span>
+						</div>
+					{/if}
+				</div>
+			{/each}
+		</div>
+	{/if}
+</section>
+{/if}
 
 <!-- 夜行人図鑑ネットワーク -->
 <section class="directory-network-section" bind:this={networkSection}>
@@ -312,6 +386,74 @@
 			font-size: 14px;
 			padding: 16px 2px;
 		}
+	}
+
+	/* ===== 出店スケジュール ===== */
+	.schedule-section {
+		padding: 48px 24px 40px;
+		background: #faf8f5;
+		text-align: center;
+	}
+	.schedule-empty {
+		font-size: 0.88rem;
+		color: #9e9289;
+		letter-spacing: 0.03em;
+	}
+	.schedule-list {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		max-width: 480px;
+		margin: 0 auto;
+		text-align: left;
+	}
+	.schedule-card {
+		position: relative;
+		background: #fff;
+		border: 1px solid #ede8e0;
+		border-radius: 12px;
+		padding: 18px 20px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.schedule-card.schedule-next {
+		border-color: #d56d04;
+		box-shadow: 0 2px 12px rgba(213, 109, 4, 0.12);
+	}
+	.schedule-badge {
+		position: absolute;
+		top: -10px;
+		left: 16px;
+		background: #d56d04;
+		color: #fff;
+		font-size: 0.7rem;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		padding: 2px 10px;
+		border-radius: 20px;
+	}
+	.schedule-title {
+		font-size: 1rem;
+		font-weight: 700;
+		color: #26201a;
+		margin: 0;
+	}
+	.schedule-row {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		font-size: 0.88rem;
+		color: #4a3f38;
+		line-height: 1.6;
+	}
+	.schedule-icon {
+		flex-shrink: 0;
+		width: 20px;
+		text-align: center;
+	}
+	.schedule-menu {
+		white-space: pre-wrap;
 	}
 
 	/* ===== 夜行人図鑑ネットワーク ===== */
