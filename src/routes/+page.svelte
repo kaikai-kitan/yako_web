@@ -331,7 +331,7 @@
 		top: 60px; /* 固定ヘッダーの高さ分だけ下 */
 		height: calc(100svh - 60px);
 		overflow: hidden; /* 画面外のフレーズをクリップ */
-		background: #faf8f5;
+		background: #fbf3ea;
 	}
 
 	/* 画像: sticky エリアの中央に配置 */
@@ -391,7 +391,7 @@
 	/* ===== 出店スケジュール ===== */
 	.schedule-section {
 		padding: 48px 24px 40px;
-		background: #faf8f5;
+		background: #fbf3ea;
 		text-align: center;
 	}
 	.schedule-empty {
@@ -459,7 +459,7 @@
 	/* ===== 夜行人図鑑ネットワーク ===== */
 	.directory-network-section {
 		padding: 48px 24px 40px;
-		background: #faf8f5;
+		background: #fbf3ea;
 		text-align: center;
 	}
 	.section-header {
