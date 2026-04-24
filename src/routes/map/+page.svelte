@@ -179,8 +179,8 @@
 			const L = (await import('leaflet')).default;
 			leafletLib = L;
 			mapInstance = L.map(mapContainer, {
-				center: [35.009, 135.772],
-				zoom: 16,
+				center: KSU_CENTER,
+				zoom: 15,
 				zoomControl: false,
 				attributionControl: false
 			});
@@ -189,11 +189,75 @@
 				maxZoom: 19
 			}).addTo(mapInstance);
 			L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
+			addExperimentOverlay(L, mapInstance);
 			updateMarkers(mapInstance);
 		} catch (e) {
 			console.error('Map Load Error:', e);
 		}
 	});
+
+	// ── 実証実験エリア（京都産業大学） ──
+	const KSU_CENTER = [35.0574, 135.7281];
+	const ACTIVE_RADIUS_M = 700;
+
+	function addExperimentOverlay(L, map) {
+		const [lat, lng] = KSU_CENTER;
+		const dLat = 0.0075, dLng = 0.010;
+
+		// 世界全体を覆う穴あきポリゴン（穴 = 実験エリア）
+		L.polygon([
+			[[-90, -180], [-90, 180], [90, 180], [90, -180]],
+			[
+				[lat - dLat, lng - dLng], [lat - dLat, lng + dLng],
+				[lat + dLat, lng + dLng], [lat + dLat, lng - dLng]
+			]
+		], {
+			fillColor: '#64748b',
+			fillOpacity: 0.48,
+			stroke: false,
+			interactive: false
+		}).addTo(map);
+
+		// 実験エリア境界（点線オレンジ）
+		L.circle(KSU_CENTER, {
+			radius: ACTIVE_RADIUS_M,
+			color: '#d56d04',
+			weight: 2.5,
+			dashArray: '10, 6',
+			fillColor: '#d56d04',
+			fillOpacity: 0.04,
+			interactive: false
+		}).addTo(map);
+
+		// 実証実験エリアバッジ
+		L.marker([lat + 0.0056, lng], {
+			icon: L.divIcon({
+				className: '',
+				html: '<div class="ksu-badge-active">🏮 実証実験エリア<br><small>京都産業大学</small></div>',
+				iconSize: [160, 44],
+				iconAnchor: [80, -6]
+			}),
+			interactive: false,
+			zIndexOffset: 1000
+		}).addTo(map);
+
+		// "エリア準備中" ラベル（グレーゾーン内の複数箇所）
+		[
+			[lat - 0.020, lng + 0.004],
+			[lat + 0.004, lng + 0.020],
+			[lat + 0.004, lng - 0.020]
+		].forEach(([plat, plng]) => {
+			L.marker([plat, plng], {
+				icon: L.divIcon({
+					className: '',
+					html: '<div class="ksu-badge-prep">エリア準備中</div>',
+					iconSize: [112, 28],
+					iconAnchor: [56, 14]
+				}),
+				interactive: false
+			}).addTo(map);
+		});
+	}
 
 	function makeMarkerEl(type, opts = {}) {
 		const el = document.createElement('div');
@@ -1308,6 +1372,42 @@
 		border-left: 7px solid transparent; border-right: 7px solid transparent;
 		border-top: 10px solid #ef4444; margin-top: -1px;
 	}
+	/* ── 実証実験エリアバッジ ── */
+	:global(.ksu-badge-active) {
+		background: #fff7e6;
+		border: 2px solid #d56d04;
+		color: #b85c03;
+		border-radius: 20px;
+		padding: 6px 16px;
+		font-size: 0.78rem;
+		font-weight: 700;
+		white-space: nowrap;
+		text-align: center;
+		line-height: 1.5;
+		box-shadow: 0 3px 14px rgba(213, 109, 4, 0.28);
+		pointer-events: none;
+		letter-spacing: 0.03em;
+	}
+	:global(.ksu-badge-active small) {
+		font-size: 0.66rem;
+		font-weight: 500;
+		opacity: 0.8;
+		display: block;
+	}
+	:global(.ksu-badge-prep) {
+		background: rgba(241, 245, 249, 0.92);
+		border: 1.5px solid #94a3b8;
+		color: #64748b;
+		border-radius: 20px;
+		padding: 5px 14px;
+		font-size: 0.72rem;
+		font-weight: 600;
+		white-space: nowrap;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+		pointer-events: none;
+		letter-spacing: 0.03em;
+	}
+
 	/* Leaflet ズームコントロールのスタイル調整 */
 	:global(.leaflet-control-zoom) { border: none !important; box-shadow: 0 2px 10px rgba(0,0,0,0.15) !important; border-radius: 10px !important; overflow: hidden; }
 	:global(.leaflet-control-zoom a) { border: none !important; color: #26201a !important; font-weight: 600 !important; width: 36px !important; height: 36px !important; line-height: 36px !important; }
