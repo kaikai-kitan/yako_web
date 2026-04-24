@@ -1,6 +1,5 @@
 <script>
 	import { onMount } from 'svelte';
-	import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 	import { fade, fly } from 'svelte/transition';
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase.js';
@@ -26,8 +25,7 @@
 	let mapContainer = $state();
 	let mapInstance = $state();
 	let markers = $state([]);
-	let AdvancedMarkerClass = null;
-	let isApiInitialized = false;
+	let leafletLib = null;
 
 	let currentView = $state('map'); // 'map'|'reserve'|'qr'|'active'|'return'|'finish'
 
@@ -178,120 +176,105 @@
 		}
 
 		try {
-			if (!isApiInitialized) {
-				setOptions({
-					apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-					version: 'weekly',
-					libraries: ['maps', 'marker']
-				});
-				isApiInitialized = true;
-			}
-			const { Map } = await importLibrary('maps');
-			const { AdvancedMarkerElement } = await importLibrary('marker');
-			AdvancedMarkerClass = AdvancedMarkerElement;
-			mapInstance = new Map(mapContainer, {
-				center: { lat: 35.009, lng: 135.772 },
+			const L = (await import('leaflet')).default;
+			leafletLib = L;
+			mapInstance = L.map(mapContainer, {
+				center: [35.009, 135.772],
 				zoom: 16,
-				disableDefaultUI: true,
-				mapId: 'dc1ab66880d245ef156be95a'
+				zoomControl: false,
+				attributionControl: false
 			});
+			L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+				subdomains: 'abcd',
+				maxZoom: 19
+			}).addTo(mapInstance);
+			L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 			updateMarkers(mapInstance);
 		} catch (e) {
-			console.error('Google Maps Load Error:', e);
+			console.error('Map Load Error:', e);
 		}
 	});
 
+	function makeMarkerEl(type, opts = {}) {
+		const el = document.createElement('div');
+		el.className = 'lmap-marker';
+
+		if (type === 'space') {
+			el.innerHTML = `
+				<div class="lmap-bubble lmap-space">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+				</div>
+				<div class="lmap-tip lmap-tip-space"></div>`;
+		} else if (type === 'stall') {
+			const booked = opts.booked;
+			el.innerHTML = `
+				<div class="lmap-bubble lmap-stall${booked ? ' lmap-booked' : ''}">
+					<span>🏮</span>
+				</div>
+				<div class="lmap-tip lmap-tip-stall${booked ? ' lmap-tip-booked' : ''}"></div>`;
+		} else if (type === 'active') {
+			const imgSrc = opts.image;
+			el.innerHTML = `
+				<div class="lmap-active-avatar">
+					${imgSrc
+						? `<img src="${imgSrc}" alt="" onerror="this.style.display='none';this.nextSibling.style.display='flex'" /><span style="display:none;align-items:center;justify-content:center;width:100%;height:100%;font-size:20px">🏮</span>`
+						: `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:20px">🏮</span>`
+					}
+				</div>
+				<div class="lmap-active-caret"></div>`;
+		}
+		return el;
+	}
+
 	function updateMarkers(map) {
-		if (!map || !AdvancedMarkerClass) return;
-		markers.forEach((m) => m.setMap(null));
+		if (!map || !leafletLib) return;
+		const L = leafletLib;
+
+		markers.forEach((m) => map.removeLayer(m));
 		markers = [];
 
 		if (mapMode === 'available') {
 			availableSpaces.forEach((stall) => {
 				if (!stall.lat || !stall.lng) return;
-				const icon = document.createElement('img');
-				icon.src = 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-				const marker = new AdvancedMarkerClass({
-					map, position: { lat: stall.lat, lng: stall.lng },
-					title: stall.name, content: icon
+				const icon = L.divIcon({
+					className: '',
+					html: makeMarkerEl('space').outerHTML,
+					iconSize: [44, 54],
+					iconAnchor: [22, 54]
 				});
-				marker.addListener('click', () => { selectedStall = stall; });
-				markers.push(marker);
+				const m = L.marker([stall.lat, stall.lng], { icon });
+				m.on('click', () => { selectedStall = stall; });
+				m.addTo(map);
+				markers.push(m);
 			});
 
 			stallPins.forEach((stall) => {
 				if (!stall.lat || !stall.lng) return;
-				const icon = document.createElement('img');
-				// 予約済みの屋台はグレーピン、空き屋台は黄色ピン
-				icon.src = bookedStallIds.has(stall.id)
-					? 'http://maps.google.com/mapfiles/ms/icons/grey.png'
-					: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
-				const marker = new AdvancedMarkerClass({
-					map, position: { lat: stall.lat, lng: stall.lng },
-					title: stall.name, content: icon
+				const booked = bookedStallIds.has(stall.id);
+				const icon = L.divIcon({
+					className: '',
+					html: makeMarkerEl('stall', { booked }).outerHTML,
+					iconSize: [44, 54],
+					iconAnchor: [22, 54]
 				});
-				marker.addListener('click', () => { selectedStall = stall; });
-				markers.push(marker);
+				const m = L.marker([stall.lat, stall.lng], { icon });
+				m.on('click', () => { selectedStall = stall; });
+				m.addTo(map);
+				markers.push(m);
 			});
 		} else {
 			activeStalls.forEach((stall) => {
 				if (!stall.lat || !stall.lng) return;
-
-				// 営業者アイコンをカスタムピンとして表示
-				const pin = document.createElement('div');
-				pin.style.cssText = [
-					'position:relative',
-					'display:flex',
-					'flex-direction:column',
-					'align-items:center',
-					'cursor:pointer'
-				].join(';');
-
-				const avatar = document.createElement('div');
-				avatar.style.cssText = [
-					'width:48px',
-					'height:48px',
-					'border-radius:50%',
-					'border:3px solid #ef4444',
-					'overflow:hidden',
-					'box-shadow:0 2px 10px rgba(0,0,0,0.45)',
-					'background:#fef2f2',
-					'display:flex',
-					'align-items:center',
-					'justify-content:center',
-					'font-size:22px'
-				].join(';');
-
-				if (stall.image) {
-					const img = document.createElement('img');
-					img.src = stall.image;
-					img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
-					img.onerror = () => { img.remove(); avatar.textContent = '🏮'; };
-					avatar.appendChild(img);
-				} else {
-					avatar.textContent = '🏮';
-				}
-
-				// ピン下の三角形
-				const caret = document.createElement('div');
-				caret.style.cssText = [
-					'width:0',
-					'height:0',
-					'border-left:7px solid transparent',
-					'border-right:7px solid transparent',
-					'border-top:10px solid #ef4444',
-					'margin-top:-1px'
-				].join(';');
-
-				pin.appendChild(avatar);
-				pin.appendChild(caret);
-
-				const marker = new AdvancedMarkerClass({
-					map, position: { lat: stall.lat, lng: stall.lng },
-					title: stall.name, content: pin
+				const icon = L.divIcon({
+					className: '',
+					html: makeMarkerEl('active', { image: stall.image }).outerHTML,
+					iconSize: [52, 62],
+					iconAnchor: [26, 62]
 				});
-				marker.addListener('click', () => { selectedStall = stall; });
-				markers.push(marker);
+				const m = L.marker([stall.lat, stall.lng], { icon });
+				m.on('click', () => { selectedStall = stall; });
+				m.addTo(map);
+				markers.push(m);
 			});
 		}
 	}
@@ -730,9 +713,9 @@
 		<header class="app-header">
 			<div class="toggle-switch" onclick={toggleMode} role="button" tabindex="0"
 				onkeydown={(e) => e.key === 'Enter' && toggleMode()}>
-				<div class="toggle-bg" style="left: {mapMode === 'active' ? '2px' : '50%'};"></div>
-				<span class:active={mapMode === 'active'}>出店中</span>
-				<span class:active={mapMode === 'available'}>予約可能</span>
+				<div class="toggle-bg" style="left: {mapMode === 'active' ? '3px' : 'calc(50% + 1px)'};"></div>
+				<span class:active={mapMode === 'active'}>🏮 出店中</span>
+				<span class:active={mapMode === 'available'}>📍 予約可能</span>
 			</div>
 		</header>
 	{/if}
@@ -1296,27 +1279,63 @@
 <style>
 	:global(body) { margin: 0; padding: 0; }
 
+	/* ── Leaflet マーカー（:global で DOM に直接挿入した要素に適用） ── */
+	:global(.lmap-marker) { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+	:global(.lmap-bubble) {
+		width: 42px; height: 42px; border-radius: 50%;
+		display: flex; align-items: center; justify-content: center;
+		box-shadow: 0 3px 10px rgba(0,0,0,0.22);
+		transition: transform 0.15s;
+	}
+	:global(.lmap-marker:hover .lmap-bubble) { transform: translateY(-3px) scale(1.08); }
+	:global(.lmap-space) { background: #e0f0ff; border: 2.5px solid #3b82f6; color: #2563eb; }
+	:global(.lmap-space svg) { width: 20px; height: 20px; }
+	:global(.lmap-stall) { background: #fff7e6; border: 2.5px solid #d56d04; font-size: 20px; }
+	:global(.lmap-booked) { background: #f1f5f9; border-color: #94a3b8; filter: grayscale(0.6); opacity: 0.65; }
+	:global(.lmap-tip) { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; margin-top: -1px; }
+	:global(.lmap-tip-space) { border-top: 9px solid #3b82f6; }
+	:global(.lmap-tip-stall) { border-top: 9px solid #d56d04; }
+	:global(.lmap-tip-booked) { border-top-color: #94a3b8; }
+	:global(.lmap-active-avatar) {
+		width: 50px; height: 50px; border-radius: 50%;
+		border: 3px solid #ef4444; overflow: hidden;
+		box-shadow: 0 3px 12px rgba(0,0,0,0.35);
+		background: #fef2f2;
+	}
+	:global(.lmap-active-avatar img) { width: 100%; height: 100%; object-fit: cover; }
+	:global(.lmap-active-caret) {
+		width: 0; height: 0;
+		border-left: 7px solid transparent; border-right: 7px solid transparent;
+		border-top: 10px solid #ef4444; margin-top: -1px;
+	}
+	/* Leaflet ズームコントロールのスタイル調整 */
+	:global(.leaflet-control-zoom) { border: none !important; box-shadow: 0 2px 10px rgba(0,0,0,0.15) !important; border-radius: 10px !important; overflow: hidden; }
+	:global(.leaflet-control-zoom a) { border: none !important; color: #26201a !important; font-weight: 600 !important; width: 36px !important; height: 36px !important; line-height: 36px !important; }
+	:global(.leaflet-bottom.leaflet-right) { bottom: 80px !important; right: 10px !important; }
+
 	.app-container {
 		width: 100%; height: calc(100svh - 60px);
 		display: flex; flex-direction: column;
-		background: #f1f5f9; position: relative; overflow: hidden;
+		background: #f8f5f0; position: relative; overflow: hidden;
 	}
 
-	.app-header { position: absolute; top: 16px; right: 16px; z-index: 10; }
+	/* z-index はすべて Leaflet のマーカーペイン(600)より高い 800+ に統一 */
+	.app-header { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 800; }
 
 	.toggle-switch {
 		background: white; border-radius: 30px; padding: 4px;
 		display: flex; position: relative;
-		box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-		cursor: pointer; width: 200px; height: 40px; align-items: center;
+		box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+		cursor: pointer; width: 210px; height: 42px; align-items: center;
 	}
 	.toggle-bg {
 		position: absolute; width: 50%; height: 80%;
-		background: #0f172a; border-radius: 25px; transition: left 0.3s ease;
+		background: #26201a; border-radius: 25px; transition: left 0.3s ease;
 	}
 	.toggle-switch span {
 		flex: 1; text-align: center; z-index: 1;
-		font-size: 0.85rem; font-weight: bold; color: #64748b; transition: color 0.3s;
+		font-size: 0.85rem; font-weight: 700; color: #94a3b8; transition: color 0.3s;
+		letter-spacing: 0.02em;
 	}
 	.toggle-switch span.active { color: white; }
 
@@ -1325,44 +1344,46 @@
 	.map-canvas { width: 100%; height: 100%; }
 
 	.legend {
-		position: absolute; bottom: 100px; left: 12px;
-		background: white; border-radius: 10px; padding: 8px 12px;
-		display: flex; gap: 10px; font-size: 0.73rem; color: #475569;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.12); z-index: 15;
+		position: absolute; bottom: 88px; left: 12px;
+		background: white; border-radius: 10px; padding: 7px 12px;
+		display: flex; gap: 10px; font-size: 0.72rem; color: #475569;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.12); z-index: 800;
 	}
 
 	.map-overlay {
-		position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+		position: absolute; bottom: 96px; left: 50%; transform: translateX(-50%);
 		background: white; border-radius: 12px; padding: 12px 20px;
 		box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 		display: flex; align-items: center; gap: 10px;
-		font-size: 0.9rem; color: #475569; z-index: 15;
+		font-size: 0.9rem; color: #475569; z-index: 800; white-space: nowrap;
 	}
 	.map-overlay.error { background: #fee2e2; color: #dc2626; }
 	.loading-spinner {
 		width: 18px; height: 18px; border: 2px solid #e2e8f0;
-		border-top-color: #facc15; border-radius: 50%; animation: spin 0.8s linear infinite;
+		border-top-color: #d56d04; border-radius: 50%; animation: spin 0.8s linear infinite;
 	}
 	@keyframes spin { to { transform: rotate(360deg); } }
 
 	/* Bottom Sheet */
 	.bottom-sheet {
 		position: absolute;
-		bottom: 90px;
-		left: 10px;
-		right: 10px;
-		max-height: 55svh;
+		bottom: 82px;
+		left: 12px;
+		right: 12px;
+		max-height: 58svh;
 		overflow-y: auto;
 		background: white;
-		border-radius: 16px;
-		padding: 20px;
-		box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-		z-index: 20;
+		border-radius: 20px;
+		padding: 24px 20px 20px;
+		box-shadow: 0 -2px 0 rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.18);
+		z-index: 800;
 		-webkit-overflow-scrolling: touch;
 	}
 	.close-btn {
-		position: absolute; top: 10px; right: 10px;
-		background: none; border: none; font-size: 1.5rem; cursor: pointer;
+		position: absolute; top: 12px; right: 14px;
+		background: #f1f5f9; border: none; font-size: 1rem; cursor: pointer;
+		width: 28px; height: 28px; border-radius: 50%; display: flex;
+		align-items: center; justify-content: center; color: #64748b;
 	}
 	.sheet-content { display: flex; gap: 15px; }
 	.stall-thumb { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
@@ -1570,7 +1591,7 @@
 	/* Full Screen Modals */
 	.full-screen-modal {
 		position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-		background: #0f172a; color: white; z-index: 100;
+		background: #0f172a; color: white; z-index: 1000;
 		display: flex; flex-direction: column; align-items: center;
 		justify-content: center; padding: 20px; box-sizing: border-box;
 	}
@@ -1625,7 +1646,7 @@
 	/* 利用中ダッシュボード */
 	.active-dashboard {
 		position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-		background: white; z-index: 50; padding: 20px; padding-top: 80px;
+		background: white; z-index: 1000; padding: 20px; padding-top: 80px;
 		box-sizing: border-box; display: flex; flex-direction: column; overflow-y: auto;
 	}
 	.status-bar {
@@ -1682,7 +1703,7 @@
 	.bottom-nav {
 		height: 70px; background: white; display: flex;
 		justify-content: space-around; align-items: stretch;
-		border-top: 1px solid #e2e8f0; z-index: 30;
+		border-top: 1px solid #e2e8f0; z-index: 800;
 	}
 	.nav-item {
 		background: none; border: none; display: flex; flex-direction: column;
@@ -1702,7 +1723,7 @@
 	/* Dashboard Modal */
 	.modal-overlay {
 		position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-		background: rgba(0,0,0,0.5); z-index: 60;
+		background: rgba(0,0,0,0.5); z-index: 1000;
 		display: flex; align-items: flex-end; justify-content: center;
 	}
 	.modal-content {
