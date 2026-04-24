@@ -197,7 +197,7 @@
 	});
 
 	// ── 実証実験エリア（京都産業大学） ──
-	const KSU_CENTER = [35.0574, 135.7281];
+	const KSU_CENTER = [35.0703, 135.7585];
 	const ACTIVE_RADIUS_M = 700;
 
 	function addExperimentOverlay(L, map) {
