@@ -238,7 +238,7 @@
 		<div class="schedule-list">
 			{#each scheduleEvents as event, i}
 				<div class="schedule-card" class:schedule-next={i === 0}>
-					{#if i === 0}<span class="schedule-badge">次回</span>{/if}
+					{#if i === 0}<span class="schedule-badge">NEXT</span>{/if}
 					<p class="schedule-title">{event.title}</p>
 					<div class="schedule-row">
 						<span class="schedule-icon">📅</span>
@@ -450,19 +450,14 @@
 	.event-appearance-card {
 		position: relative;
 		background: #fff;
-		border-top: 1.5px solid #e8c97a;
-		border-right: 1.5px solid #e8c97a;
-		border-bottom: 1.5px solid #e8c97a;
-		border-left: 4px solid #d56d04;
+		border: 1.5px solid #e8c97a;
 		border-radius: 14px;
-		padding: 18px 20px 18px 16px;
-		box-shadow: 0 2px 14px rgba(213, 109, 4, 0.08);
+		padding: 18px 20px;
+		box-shadow: inset 4px 0 0 #d56d04, 0 2px 14px rgba(213, 109, 4, 0.08);
 	}
 	.event-appearance-card.event-next {
-		border-top-color: #d56d04;
-		border-right-color: #d56d04;
-		border-bottom-color: #d56d04;
-		box-shadow: 0 4px 20px rgba(213, 109, 4, 0.18);
+		border-color: #d56d04;
+		box-shadow: inset 4px 0 0 #d56d04, 0 4px 20px rgba(213, 109, 4, 0.18);
 	}
 	.event-badge-next {
 		position: absolute;
