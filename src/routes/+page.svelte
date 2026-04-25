@@ -445,31 +445,28 @@
 		max-width: 480px;
 		margin: 0 auto;
 		text-align: left;
+		padding-top: 12px; /* NEXT バッジのはみ出し分 */
 	}
 	.event-appearance-card {
 		position: relative;
 		background: #fff;
-		border: 1.5px solid #e8c97a;
+		border-top: 1.5px solid #e8c97a;
+		border-right: 1.5px solid #e8c97a;
+		border-bottom: 1.5px solid #e8c97a;
+		border-left: 4px solid #d56d04;
 		border-radius: 14px;
-		padding: 18px 20px;
+		padding: 18px 20px 18px 16px;
 		box-shadow: 0 2px 14px rgba(213, 109, 4, 0.08);
-		overflow: hidden;
-	}
-	.event-appearance-card::before {
-		content: '';
-		position: absolute;
-		top: 0; left: 0;
-		width: 4px; height: 100%;
-		background: linear-gradient(180deg, #d56d04, #f4a94a);
-		border-radius: 14px 0 0 14px;
 	}
 	.event-appearance-card.event-next {
-		border-color: #d56d04;
+		border-top-color: #d56d04;
+		border-right-color: #d56d04;
+		border-bottom-color: #d56d04;
 		box-shadow: 0 4px 20px rgba(213, 109, 4, 0.18);
 	}
 	.event-badge-next {
 		position: absolute;
-		top: -10px; left: 20px;
+		top: -11px; left: 16px;
 		background: linear-gradient(90deg, #d56d04, #f4a94a);
 		color: #fff;
 		font-size: 0.65rem;
