@@ -16,6 +16,7 @@
 
 	// ── 出店スケジュール ──
 	let scheduleEvents = $state([]);
+	let eventAppearances = $state([]);
 	let scheduleLoaded = $state(false);
 
 	const DAY_JA = ['日', '月', '火', '水', '木', '金', '土'];
@@ -123,7 +124,8 @@
 			const res = await fetch('/api/schedule');
 			if (res.ok) {
 				const data = await res.json();
-				scheduleEvents = data.events ?? [];
+				scheduleEvents    = data.events          ?? [];
+				eventAppearances  = data.eventAppearances ?? [];
 			}
 		} catch { /* スケジュール取得失敗時は非表示 */ } finally {
 			scheduleLoaded = true;
@@ -180,6 +182,46 @@
 		</div>
 	</section>
 </main>
+
+<!-- イベント出店 -->
+{#if scheduleLoaded && eventAppearances.length > 0}
+<section class="event-appearance-section">
+	<div class="section-header">
+		<span class="section-sep event-sep"></span>
+		<h2 class="section-title">イベント出店</h2>
+		<p class="section-desc">特別なイベント・大規模出店の予定</p>
+	</div>
+	<div class="event-appearance-list">
+		{#each eventAppearances as ev, i}
+			<div class="event-appearance-card" class:event-next={i === 0}>
+				{#if i === 0}<span class="event-badge-next">NEXT</span>{/if}
+				<div class="event-appearance-inner">
+					<div class="event-star-col">★</div>
+					<div class="event-appearance-body">
+						<p class="event-appearance-title">{ev.title || 'イベント出店'}</p>
+						<div class="schedule-row">
+							<span class="schedule-icon">📅</span>
+							<span>{formatEventDate(ev.start, ev.end)}</span>
+						</div>
+						{#if ev.location}
+							<div class="schedule-row">
+								<span class="schedule-icon">📍</span>
+								<span>{ev.location}</span>
+							</div>
+						{/if}
+						{#if ev.description}
+							<div class="schedule-row">
+								<span class="schedule-icon">📝</span>
+								<span class="schedule-menu">{stripHtml(ev.description)}</span>
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/each}
+	</div>
+</section>
+{/if}
 
 <!-- 出店スケジュール -->
 {#if scheduleLoaded}
@@ -386,6 +428,74 @@
 			font-size: 14px;
 			padding: 16px 2px;
 		}
+	}
+
+	/* ===== イベント出店 ===== */
+	.event-appearance-section {
+		padding: 48px 24px 40px;
+		background: #fbf3ea;
+		text-align: center;
+	}
+	.event-sep { background: #d56d04; }
+
+	.event-appearance-list {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		max-width: 480px;
+		margin: 0 auto;
+		text-align: left;
+	}
+	.event-appearance-card {
+		position: relative;
+		background: #fff;
+		border: 1.5px solid #e8c97a;
+		border-radius: 14px;
+		padding: 18px 20px;
+		box-shadow: 0 2px 14px rgba(213, 109, 4, 0.08);
+		overflow: hidden;
+	}
+	.event-appearance-card::before {
+		content: '';
+		position: absolute;
+		top: 0; left: 0;
+		width: 4px; height: 100%;
+		background: linear-gradient(180deg, #d56d04, #f4a94a);
+		border-radius: 14px 0 0 14px;
+	}
+	.event-appearance-card.event-next {
+		border-color: #d56d04;
+		box-shadow: 0 4px 20px rgba(213, 109, 4, 0.18);
+	}
+	.event-badge-next {
+		position: absolute;
+		top: -10px; left: 20px;
+		background: linear-gradient(90deg, #d56d04, #f4a94a);
+		color: #fff;
+		font-size: 0.65rem;
+		font-weight: 800;
+		letter-spacing: 0.1em;
+		padding: 2px 10px;
+		border-radius: 20px;
+	}
+	.event-appearance-inner {
+		display: flex;
+		gap: 14px;
+		align-items: flex-start;
+	}
+	.event-star-col {
+		font-size: 1.4rem;
+		color: #d56d04;
+		flex-shrink: 0;
+		line-height: 1.3;
+	}
+	.event-appearance-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+	.event-appearance-title {
+		font-size: 1rem;
+		font-weight: 700;
+		color: #26201a;
+		margin: 0;
+		line-height: 1.4;
 	}
 
 	/* ===== 出店スケジュール ===== */
