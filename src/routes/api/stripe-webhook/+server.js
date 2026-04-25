@@ -30,7 +30,7 @@ async function sendOrderNotification({ items, totalAmount, shipping, orderId }) 
 		: '<p style="color:#999">配送先情報なし</p>';
 
 	await resend.emails.send({
-		from: 'noreply@yako-web.vercel.app',
+		from: 'onboarding@resend.dev',
 		to: operatorEmail,
 		subject: `【微小夜行電灯】新規注文 #${orderId.slice(-8).toUpperCase()}`,
 		html: `
