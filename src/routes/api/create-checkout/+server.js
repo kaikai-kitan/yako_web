@@ -49,7 +49,11 @@ export async function POST({ request }) {
 			success_url: successUrl,
 			cancel_url: cancelUrl,
 			metadata: { userId: userId ?? '' },
-			locale: 'ja'
+			locale: 'ja',
+			// 配送先住所をStripeの画面で収集（日本国内のみ）
+			shipping_address_collection: { allowed_countries: ['JP'] },
+			// 電話番号も収集（配送トラブル時の連絡用）
+			phone_number_collection: { enabled: true }
 		});
 
 		return json({ url: session.url, sessionId: session.id });
