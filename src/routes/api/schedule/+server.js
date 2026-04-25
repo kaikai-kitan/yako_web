@@ -7,7 +7,7 @@ export async function GET() {
 	const calendarId = env.GOOGLE_CALENDAR_ID;
 
 	if (!apiKey || !calendarId) {
-		return json({ events: [] });
+		return json({ events: [], _debug: 'env vars missing' });
 	}
 
 	const now = new Date().toISOString();
@@ -22,7 +22,10 @@ export async function GET() {
 
 	try {
 		const res = await fetch(url);
-		if (!res.ok) return json({ events: [] });
+		if (!res.ok) {
+			const errBody = await res.text();
+			return json({ events: [], _debug: `HTTP ${res.status}`, _error: errBody });
+		}
 
 		const data = await res.json();
 		const events = (data.items ?? []).map((e) => ({
@@ -34,8 +37,8 @@ export async function GET() {
 			description: e.description ?? '',
 		}));
 
-		return json({ events });
-	} catch {
-		return json({ events: [] });
+		return json({ events, _debug: `ok, ${data.items?.length ?? 0} items` });
+	} catch (e) {
+		return json({ events: [], _debug: 'fetch error', _error: String(e) });
 	}
 }
