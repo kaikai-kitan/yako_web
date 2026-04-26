@@ -40,7 +40,8 @@
 			name: c.product.name,
 			price: c.product.price,
 			quantity: c.quantity,
-			photoUrl: c.product.photo_url ?? null
+			photoUrl: c.product.photo_url ?? null,
+			productId: c.product.id ?? null
 		}));
 
 		try {

@@ -5,20 +5,18 @@ import { Resend } from 'resend';
 
 export const prerender = false;
 
-/** 事業者向け注文通知メール（個人情報は配送に必要な最小限のみ） */
-async function sendOrderNotification({ items, totalAmount, shipping, orderId }) {
-	const apiKey = env.RESEND_API_KEY;
-	const operatorEmail = env.OPERATOR_EMAIL;
-	if (!apiKey || !operatorEmail) return;
+const FROM_EMAIL = 'onboarding@resend.dev';
 
-	const resend = new Resend(apiKey);
-
+/** 出店者向け受注通知メール */
+async function sendOperatorNotification({ resend, toEmail, items, totalAmount, shipping, orderId }) {
 	const itemRows = items
-		.map((i) => `<tr>
+		.map(
+			(i) => `<tr>
 			<td style="padding:6px 12px;border-bottom:1px solid #f0ede8">${i.name}</td>
 			<td style="padding:6px 12px;border-bottom:1px solid #f0ede8;text-align:center">${i.quantity}</td>
 			<td style="padding:6px 12px;border-bottom:1px solid #f0ede8;text-align:right">¥${(i.price * i.quantity).toLocaleString()}</td>
-		</tr>`)
+		</tr>`
+		)
 		.join('');
 
 	const addr = shipping?.address ?? {};
@@ -30,9 +28,9 @@ async function sendOrderNotification({ items, totalAmount, shipping, orderId }) 
 		: '<p style="color:#999">配送先情報なし</p>';
 
 	await resend.emails.send({
-		from: 'onboarding@resend.dev',
-		to: operatorEmail,
-		subject: `【微小夜行電灯】新規注文 #${orderId.slice(-8).toUpperCase()}`,
+		from: FROM_EMAIL,
+		to: toEmail,
+		subject: `【微小夜行電灯】新規受注 #${orderId.slice(-8).toUpperCase()}`,
 		html: `
 			<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#26201a">
 				<h2 style="background:#fbf3ea;padding:16px 20px;margin:0;font-size:1rem;border-left:4px solid #d56d04">
@@ -62,9 +60,13 @@ async function sendOrderNotification({ items, totalAmount, shipping, orderId }) 
 						${shippingHtml}
 					</div>
 
+					<div style="background:#fffbf0;border:1px solid #f5d98a;border-radius:8px;padding:12px 16px;margin-top:16px;font-size:0.85rem">
+						<strong>次のステップ</strong><br/>
+						商品を発送後、出店者ダッシュボードから「発送済み」に変更してください。購入者へ自動で通知が届きます。
+					</div>
+
 					<p style="font-size:0.78rem;color:#94a3b8;margin-top:20px;padding-top:16px;border-top:1px solid #f0ede8">
-						※ このメールには配送に必要な情報のみ含まれています。<br/>
-						顧客のメールアドレス・電話番号は管理画面からご確認ください。<br/>
+						※ 購入者のメールアドレス・電話番号は管理画面からご確認ください。<br/>
 						注文ID: ${orderId}
 					</p>
 				</div>
@@ -97,64 +99,95 @@ export async function POST({ request }) {
 		const supabaseUrl = env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
 		const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
-		if (supabaseUrl && serviceKey) {
-			const supabase = createClient(supabaseUrl, serviceKey);
+		if (!supabaseUrl || !serviceKey) {
+			return new Response('OK', { status: 200 });
+		}
 
-			if (metadata.type === 'rental' && metadata.reservationId) {
-				// レンタル決済: 予約をアクティブ化
-				const { error } = await supabase
-					.from('reservations')
-					.update({ status: 'active' })
-					.eq('id', metadata.reservationId)
-					.in('status', ['pending', 'active']);
-				if (error) console.error('Reservation activate error:', error);
-			} else {
-				// ショップ注文: 注文レコードを記録
-				const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
-				const items = lineItems.data.map((li) => ({
-					name: li.description,
-					price: Math.round(li.amount_total / li.quantity),
-					quantity: li.quantity
-				}));
+		const supabase = createClient(supabaseUrl, serviceKey);
 
-				// Stripeが収集した配送先住所
-				const shipping = session.shipping_details ?? null;
+		if (metadata.type === 'rental' && metadata.reservationId) {
+			// レンタル決済: 予約をアクティブ化
+			const { error } = await supabase
+				.from('reservations')
+				.update({ status: 'active' })
+				.eq('id', metadata.reservationId)
+				.in('status', ['pending', 'active']);
+			if (error) console.error('Reservation activate error:', error);
+		} else {
+			// ショップ注文: 出店者を特定して受注データを記録
+			const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+			const items = lineItems.data.map((li) => ({
+				name: li.description,
+				price: Math.round(li.amount_total / li.quantity),
+				quantity: li.quantity
+			}));
 
-				const { error } = await supabase.from('shop_orders').upsert(
-					{
-						stripe_session_id: session.id,
-						stripe_payment_intent_id: session.payment_intent,
-						user_id: metadata?.userId || null,
-						items,
-						total_amount: session.amount_total,
-						status: 'paid',
-						customer_email: session.customer_details?.email ?? null,
-						shipping_address: shipping
-							? {
-									name:        shipping.name,
-									postal_code: shipping.address?.postal_code,
-									state:       shipping.address?.state,
-									city:        shipping.address?.city,
-									line1:       shipping.address?.line1,
-									line2:       shipping.address?.line2 ?? null,
-									phone:       session.customer_details?.phone ?? null
-								}
-							: null
-					},
-					{ onConflict: 'stripe_session_id' }
-				);
-				if (error) console.error('Order upsert error:', error);
+			const shipping = session.shipping_details ?? null;
 
-				// 事業者へメール通知
+			// メタデータの商品IDから出店者を特定
+			let operatorId = null;
+			let operatorEmail = null;
+			const productIds = (metadata.productIds ?? '')
+				.split(',')
+				.map((s) => s.trim())
+				.filter(Boolean);
+
+			if (productIds.length > 0) {
+				const { data: products } = await supabase
+					.from('shop_products')
+					.select('operator_id, operators(email)')
+					.in('id', productIds)
+					.not('operator_id', 'is', null)
+					.limit(1);
+
+				if (products && products.length > 0) {
+					operatorId = products[0].operator_id ?? null;
+					operatorEmail = products[0].operators?.email ?? null;
+				}
+			}
+
+			const { error } = await supabase.from('shop_orders').upsert(
+				{
+					stripe_session_id: session.id,
+					stripe_payment_intent_id: session.payment_intent,
+					user_id: metadata?.userId || null,
+					operator_id: operatorId,
+					items,
+					total_amount: session.amount_total,
+					status: 'paid',
+					shipping_status: 'pending',
+					settlement_status: 'unsettled',
+					customer_email: session.customer_details?.email ?? null,
+					shipping_address: shipping
+						? {
+								name:        shipping.name,
+								postal_code: shipping.address?.postal_code,
+								state:       shipping.address?.state,
+								city:        shipping.address?.city,
+								line1:       shipping.address?.line1,
+								line2:       shipping.address?.line2 ?? null,
+								phone:       session.customer_details?.phone ?? null
+							}
+						: null
+				},
+				{ onConflict: 'stripe_session_id' }
+			);
+			if (error) console.error('Order upsert error:', error);
+
+			// 出店者へ受注メール通知
+			if (operatorEmail && env.RESEND_API_KEY) {
 				try {
-					await sendOrderNotification({
+					const resend = new Resend(env.RESEND_API_KEY);
+					await sendOperatorNotification({
+						resend,
+						toEmail: operatorEmail,
 						items,
 						totalAmount: session.amount_total,
 						shipping,
 						orderId: session.id
 					});
 				} catch (e) {
-					console.error('Order notification email error:', e);
+					console.error('Operator notification email error:', e);
 				}
 			}
 		}

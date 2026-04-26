@@ -42,13 +42,20 @@ export async function POST({ request }) {
 			};
 		});
 
+		// 商品IDをメタデータに含める（Stripe制限500文字以内）
+		const productIds = items
+			.map((i) => i.productId ?? '')
+			.filter(Boolean)
+			.join(',')
+			.slice(0, 490);
+
 		const session = await stripe.checkout.sessions.create({
 			payment_method_types: ['card'],
 			line_items: lineItems,
 			mode: 'payment',
 			success_url: successUrl,
 			cancel_url: cancelUrl,
-			metadata: { userId: userId ?? '' },
+			metadata: { userId: userId ?? '', productIds },
 			locale: 'ja',
 			// 配送先住所をStripeの画面で収集（日本国内のみ）
 			shipping_address_collection: { allowed_countries: ['JP'] },
