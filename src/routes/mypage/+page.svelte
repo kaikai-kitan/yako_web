@@ -297,6 +297,33 @@
 			</button>
 		</section>
 
+		<!-- ===== ダッシュボード ===== -->
+		<section class="section dashboard-section">
+			{#if profile.operators}
+				<a href="{base}/mypage/operator" class="dashboard-link operator-link">
+					<span class="dl-icon">📦</span>
+					<div class="dl-text">
+						<strong>出店者ダッシュボード</strong>
+						<span>受注管理・売上確認・口座設定</span>
+					</div>
+					<span class="dl-arrow">›</span>
+				</a>
+			{:else}
+				<div class="operator-cta">
+					<div class="cta-text">
+						<span class="cta-icon">🛍️</span>
+						<div>
+							<strong>オンラインストアで出店する</strong>
+							<p>商品を出品して販売できます。屋号・電話番号を登録してください。</p>
+						</div>
+					</div>
+					<button class="cta-btn" onclick={() => openRoleModal('屋台提供者')}>
+						出店申請する →
+					</button>
+				</div>
+			{/if}
+		</section>
+
 		<!-- ===== マイメニュー ===== -->
 		<section class="section">
 			<div class="section-header">
@@ -830,6 +857,58 @@
 	}
 
 	.icon-btn.danger { color: #dc2626; border-color: #fca5a5; }
+
+	/* ===== ダッシュボード ===== */
+	.dashboard-section { padding: 0; background: none; box-shadow: none; }
+
+	.dashboard-link {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		padding: 16px 20px;
+		background: #fff;
+		border: 1.5px solid #e8e0d8;
+		border-radius: 14px;
+		text-decoration: none;
+		color: #26201a;
+		transition: background 0.15s;
+	}
+	.dashboard-link:hover { background: #fbf3ea; border-color: #d56d04; }
+	.dl-icon { font-size: 1.6rem; }
+	.dl-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+	.dl-text strong { font-size: 0.95rem; }
+	.dl-text span { font-size: 0.78rem; color: #7a6f67; }
+	.dl-arrow { font-size: 1.4rem; color: #bbb; }
+
+	.operator-cta {
+		background: #fbf3ea;
+		border: 1.5px solid #e8c97a;
+		border-radius: 14px;
+		padding: 16px 20px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+	.cta-text {
+		display: flex;
+		gap: 12px;
+		align-items: flex-start;
+	}
+	.cta-icon { font-size: 1.6rem; flex-shrink: 0; }
+	.cta-text strong { font-size: 0.92rem; display: block; margin-bottom: 4px; }
+	.cta-text p { font-size: 0.78rem; color: #7a6f67; margin: 0; line-height: 1.5; }
+	.cta-btn {
+		padding: 10px 18px;
+		background: #d56d04;
+		color: #fff;
+		border: none;
+		border-radius: 10px;
+		font-size: 0.88rem;
+		font-weight: 700;
+		cursor: pointer;
+		align-self: flex-start;
+	}
+	.cta-btn:hover { opacity: 0.9; }
 
 	/* ===== 役割追加 ===== */
 	.role-add-row { display: flex; flex-direction: column; gap: 10px; }
