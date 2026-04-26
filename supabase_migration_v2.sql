@@ -67,5 +67,13 @@ CREATE TRIGGER operator_bank_accounts_updated_at
   BEFORE UPDATE ON public.operator_bank_accounts
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
--- 7. 既存 shop_orders で shipping_address が別カラムになっている場合は不要
+-- 7. user_profiles の user_type 制約に '購入者' を追加
+ALTER TABLE public.user_profiles
+  DROP CONSTRAINT IF EXISTS user_profiles_user_type_check;
+
+ALTER TABLE public.user_profiles
+  ADD CONSTRAINT user_profiles_user_type_check
+  CHECK (user_type IN ('利用者', '場所提供者', '屋台提供者', '購入者'));
+
+-- 8. 既存 shop_orders で shipping_address が別カラムになっている場合は不要
 --    （ADD COLUMN IF NOT EXISTS で重複は自動スキップ）

@@ -11,25 +11,22 @@
 		getMyProfile
 	} from '$lib/db.js';
 
-	let step = $state(1); // 1: タイプ選択, 2: 詳細入力
+	// step: 'purpose' | 'type' | 'detail'
+	let step = $state('purpose');
+	let purpose = $state(''); // 'shop' | 'yatakari'
 	let selectedType = $state('');
 	let isLoading = $state(false);
 	let errorMessage = $state('');
 	let userId = $state('');
 
-	// 共通フィールド
 	let name = $state('');
-
-	// 場所提供者フィールド
 	let ownerName = $state('');
 	let bio = $state('');
 	let career = $state('');
-
-	// 屋台提供者フィールド
 	let businessName = $state('');
 	let phoneNumber = $state('');
 
-	const userTypes = [
+	const yatakariTypes = [
 		{
 			id: '利用者',
 			icon: '🛒',
@@ -58,20 +55,26 @@
 		}
 		userId = data.session.user.id;
 
-		// すでにプロフィール設定済みならマップへ
 		const profile = await getMyProfile(userId);
 		if (profile) {
-			goto(`${base}/map`);
+			goto(profile.user_type === '購入者' ? `${base}/shop` : `${base}/map`);
 		}
 	});
 
-	function selectType(typeId) {
-		selectedType = typeId;
+	function choosePurpose(p) {
+		purpose = p;
+		if (p === 'shop') {
+			selectedType = '購入者';
+			step = 'detail';
+		} else {
+			selectedType = '';
+			step = 'type';
+		}
 	}
 
-	function goToStep2() {
+	function goToDetail() {
 		if (!selectedType) return;
-		step = 2;
+		step = 'detail';
 	}
 
 	async function handleSubmit() {
@@ -83,13 +86,12 @@
 
 		isLoading = true;
 		try {
-			// 1. 共通プロフィールを作成
 			await createUserProfile(userId, selectedType, name.trim());
 
-			// 2. タイプ別追加プロフィールを作成
 			if (selectedType === '場所提供者') {
 				if (!ownerName.trim()) {
 					errorMessage = 'オーナー名を入力してください';
+					isLoading = false;
 					return;
 				}
 				await createOwnerProfile(userId, {
@@ -100,6 +102,7 @@
 			} else if (selectedType === '屋台提供者') {
 				if (!businessName.trim()) {
 					errorMessage = '屋号を入力してください';
+					isLoading = false;
 					return;
 				}
 				await createOperatorProfile(userId, {
@@ -108,31 +111,64 @@
 				});
 			}
 
-			goto(`${base}/map`);
+			if (selectedType === '購入者') {
+				goto(`${base}/shop`);
+			} else {
+				goto(`${base}/map`);
+			}
 		} catch (e) {
 			errorMessage = `登録に失敗しました: ${e.message}`;
 		} finally {
 			isLoading = false;
 		}
 	}
+
+	const stepLabel = $derived(
+		step === 'purpose' ? 'STEP 1 / 3' :
+		step === 'type'    ? 'STEP 2 / 3' : 'STEP 3 / 3'
+	);
 </script>
 
 <div class="setup-page">
 	<div class="setup-card">
-		{#if step === 1}
-			<!-- Step 1: ユーザータイプ選択 -->
+
+		<!-- STEP 1: 目的選択 -->
+		{#if step === 'purpose'}
 			<div class="step-header">
-				<div class="step-badge">STEP 1 / 2</div>
-				<h2>ご利用の種類を選択してください</h2>
-				<p class="step-desc">後から変更することはできません</p>
+				<div class="step-badge">STEP 1 / 3</div>
+				<h2>ご利用目的を選択してください</h2>
+				<p class="step-desc">目的に合わせたアカウントを作成します</p>
+			</div>
+
+			<div class="purpose-grid">
+				<button class="purpose-card shop" onclick={() => choosePurpose('shop')}>
+					<span class="purpose-icon">🛍️</span>
+					<span class="purpose-label">オンラインストアで<br/>商品を購入したい</span>
+					<span class="purpose-desc">購入者として登録。商品をカートに入れて購入できます。</span>
+				</button>
+				<button class="purpose-card yatakari" onclick={() => choosePurpose('yatakari')}>
+					<span class="purpose-icon">🏮</span>
+					<span class="purpose-label">YATAKARIサービスを<br/>利用したい</span>
+					<span class="purpose-desc">屋台の貸し借り・スペース提供・出店などYATAKARI全般。</span>
+				</button>
+			</div>
+
+			<p class="change-note">※ 後からマイページで役割を追加することができます</p>
+
+		<!-- STEP 2: YATAKARIタイプ選択 -->
+		{:else if step === 'type'}
+			<div class="step-header">
+				<div class="step-badge">STEP 2 / 3</div>
+				<h2>YATAKARIの役割を選択</h2>
+				<p class="step-desc">当てはまるものをお選びください</p>
 			</div>
 
 			<div class="type-grid">
-				{#each userTypes as type}
+				{#each yatakariTypes as type}
 					<button
 						class="type-card"
 						class:selected={selectedType === type.id}
-						onclick={() => selectType(type.id)}
+						onclick={() => (selectedType = type.id)}
 					>
 						<span class="type-icon">{type.icon}</span>
 						<span class="type-label">{type.label}</span>
@@ -144,16 +180,19 @@
 				{/each}
 			</div>
 
-			<button class="next-btn" onclick={goToStep2} disabled={!selectedType}>
-				次へ →
-			</button>
+			<div class="btn-row">
+				<button class="back-btn" onclick={() => (step = 'purpose')}>← 戻る</button>
+				<button class="next-btn" onclick={goToDetail} disabled={!selectedType}>次へ →</button>
+			</div>
+
+		<!-- STEP 3: 詳細入力 -->
 		{:else}
-			<!-- Step 2: 詳細プロフィール入力 -->
 			<div class="step-header">
-				<div class="step-badge">STEP 2 / 2</div>
+				<div class="step-badge">{stepLabel}</div>
 				<h2>
-					{userTypes.find((t) => t.id === selectedType)?.icon}
-					{userTypes.find((t) => t.id === selectedType)?.label}
+					{selectedType === '購入者' ? '🛍️ 購入者' :
+					 yatakariTypes.find((t) => t.id === selectedType)?.icon + ' ' +
+					 yatakariTypes.find((t) => t.id === selectedType)?.label}
 				</h2>
 				<p class="step-desc">プロフィール情報を入力してください</p>
 			</div>
@@ -165,70 +204,40 @@
 			<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
 				<label class="field-label">
 					お名前 <span class="required">*</span>
-					<input
-						type="text"
-						bind:value={name}
-						class="field-input"
-						placeholder="山田 太郎"
-						required
-					/>
+					<input type="text" bind:value={name} class="field-input" placeholder="山田 太郎" required />
 				</label>
 
 				{#if selectedType === '場所提供者'}
 					<label class="field-label">
 						オーナー名 <span class="required">*</span>
-						<input
-							type="text"
-							bind:value={ownerName}
-							class="field-input"
-							placeholder="表示されるオーナー名"
-							required
-						/>
+						<input type="text" bind:value={ownerName} class="field-input" placeholder="表示されるオーナー名" required />
 					</label>
 					<label class="field-label">
 						紹介文
-						<textarea
-							bind:value={bio}
-							class="field-input textarea"
-							placeholder="場所の特徴や提供できるスペースについて"
-							rows="3"
-						></textarea>
+						<textarea bind:value={bio} class="field-input textarea" placeholder="場所の特徴や提供できるスペースについて" rows="3"></textarea>
 					</label>
 					<label class="field-label">
 						経歴
-						<input
-							type="text"
-							bind:value={career}
-							class="field-input"
-							placeholder="例：鴨川沿いで10年"
-						/>
+						<input type="text" bind:value={career} class="field-input" placeholder="例：鴨川沿いで10年" />
 					</label>
 				{/if}
 
 				{#if selectedType === '屋台提供者'}
 					<label class="field-label">
 						屋号 <span class="required">*</span>
-						<input
-							type="text"
-							bind:value={businessName}
-							class="field-input"
-							placeholder="例：鴨川珈琲"
-							required
-						/>
+						<input type="text" bind:value={businessName} class="field-input" placeholder="例：鴨川珈琲" required />
 					</label>
 					<label class="field-label">
 						電話番号
-						<input
-							type="tel"
-							bind:value={phoneNumber}
-							class="field-input"
-							placeholder="090-0000-0000"
-						/>
+						<input type="tel" bind:value={phoneNumber} class="field-input" placeholder="090-0000-0000" />
 					</label>
 				{/if}
 
 				<div class="btn-row">
-					<button type="button" class="back-btn" onclick={() => (step = 1)}>← 戻る</button>
+					<button type="button" class="back-btn"
+						onclick={() => (purpose === 'shop' ? (step = 'purpose') : (step = 'type'))}>
+						← 戻る
+					</button>
 					<button type="submit" class="submit-btn" disabled={isLoading}>
 						{isLoading ? '登録中…' : '登録を完了する'}
 					</button>
@@ -253,7 +262,7 @@
 		border-radius: 20px;
 		padding: 36px 28px;
 		width: 100%;
-		max-width: 460px;
+		max-width: 480px;
 		box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
 	}
 
@@ -269,7 +278,7 @@
 	}
 
 	.step-header h2 {
-		font-size: 1.3rem;
+		font-size: 1.2rem;
 		color: #0f172a;
 		margin: 0 0 6px 0;
 	}
@@ -280,12 +289,68 @@
 		margin: 0 0 24px 0;
 	}
 
-	/* タイプ選択カード */
+	/* 目的選択 */
+	.purpose-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+		margin-bottom: 16px;
+	}
+
+	.purpose-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+		padding: 24px 14px;
+		border: 2px solid #e2e8f0;
+		border-radius: 16px;
+		background: white;
+		cursor: pointer;
+		text-align: center;
+		transition: all 0.2s;
+	}
+
+	.purpose-card.shop:hover {
+		border-color: #d56d04;
+		background: #fbf3ea;
+	}
+
+	.purpose-card.yatakari:hover {
+		border-color: #facc15;
+		background: #fefce8;
+	}
+
+	.purpose-icon {
+		font-size: 2.4rem;
+	}
+
+	.purpose-label {
+		font-size: 0.88rem;
+		font-weight: 700;
+		color: #0f172a;
+		line-height: 1.4;
+	}
+
+	.purpose-desc {
+		font-size: 0.72rem;
+		color: #64748b;
+		line-height: 1.5;
+	}
+
+	.change-note {
+		font-size: 0.75rem;
+		color: #94a3b8;
+		text-align: center;
+		margin: 0;
+	}
+
+	/* タイプ選択 */
 	.type-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 12px;
-		margin-bottom: 24px;
+		gap: 10px;
+		margin-bottom: 20px;
 	}
 
 	.type-card {
@@ -293,7 +358,7 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding: 18px 10px;
+		padding: 16px 8px;
 		border: 2px solid #e2e8f0;
 		border-radius: 14px;
 		background: white;
@@ -302,69 +367,47 @@
 		text-align: center;
 	}
 
-	.type-card:hover {
-		border-color: #facc15;
-		background: #fefce8;
-	}
-
+	.type-card:hover,
 	.type-card.selected {
 		border-color: #facc15;
 		background: #fefce8;
 	}
 
 	.type-icon {
-		font-size: 2rem;
-		margin-bottom: 8px;
+		font-size: 1.8rem;
+		margin-bottom: 6px;
 	}
 
 	.type-label {
-		font-size: 0.85rem;
+		font-size: 0.78rem;
 		font-weight: bold;
 		color: #0f172a;
 		margin-bottom: 4px;
 	}
 
 	.type-desc {
-		font-size: 0.72rem;
+		font-size: 0.68rem;
 		color: #64748b;
 		line-height: 1.4;
 	}
 
 	.check-badge {
 		position: absolute;
-		top: 8px;
-		right: 8px;
+		top: 6px;
+		right: 6px;
 		background: #facc15;
 		color: #0f172a;
-		font-size: 0.7rem;
+		font-size: 0.65rem;
 		font-weight: bold;
-		width: 18px;
-		height: 18px;
+		width: 16px;
+		height: 16px;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
 
-	.next-btn {
-		width: 100%;
-		padding: 12px;
-		background: #facc15;
-		color: #0f172a;
-		border: none;
-		border-radius: 10px;
-		font-size: 1rem;
-		font-weight: bold;
-		cursor: pointer;
-		transition: opacity 0.2s;
-	}
-
-	.next-btn:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-
-	/* フォーム部品 */
+	/* フォーム */
 	.error-msg {
 		background: #fee2e2;
 		color: #dc2626;
@@ -381,9 +424,7 @@
 		margin-bottom: 14px;
 	}
 
-	.required {
-		color: #ef4444;
-	}
+	.required { color: #ef4444; }
 
 	.field-input {
 		display: block;
@@ -424,6 +465,24 @@
 		cursor: pointer;
 	}
 
+	.next-btn {
+		flex: 1;
+		padding: 12px;
+		background: #facc15;
+		color: #0f172a;
+		border: none;
+		border-radius: 10px;
+		font-size: 1rem;
+		font-weight: bold;
+		cursor: pointer;
+		transition: opacity 0.2s;
+	}
+
+	.next-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
 	.submit-btn {
 		flex: 1;
 		padding: 12px;
@@ -443,8 +502,7 @@
 	}
 
 	@media (max-width: 400px) {
-		.type-grid {
-			grid-template-columns: 1fr;
-		}
+		.purpose-grid { grid-template-columns: 1fr; }
+		.type-grid { grid-template-columns: 1fr; }
 	}
 </style>

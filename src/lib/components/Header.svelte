@@ -34,7 +34,7 @@
 
     <!-- プライマリナビ（常時表示） -->
     <nav class="primary-nav" aria-label="主要ナビゲーション">
-        <a href="{base}/map" class="primary-nav-item" class:nav-active={currentPath.startsWith('/map')} onclick={closeMenu}>
+        <a href="{base}/yatakari" target="_blank" rel="noopener noreferrer" class="primary-nav-item" onclick={closeMenu}>
             <img src="{base}/images/yatakari_icon.png" alt="" class="nav-icon yatakari-icon" aria-hidden="true" />
             <span>YATAKARI</span>
         </a>
@@ -94,9 +94,9 @@
         <ul>
             <li><a href="{base}/" onclick={closeMenu}>トップ</a></li>
             <li>
-                <a href="{base}/map" class="drawer-item-with-icon" onclick={closeMenu}>
+                <a href="{base}/yatakari" target="_blank" rel="noopener noreferrer" class="drawer-item-with-icon" onclick={closeMenu}>
                     <img src="{base}/images/yatakari_icon.png" alt="" class="drawer-nav-icon yatakari-icon" aria-hidden="true" />
-                    YATAKARI
+                    YATAKARI ↗
                 </a>
             </li>
             <li>
