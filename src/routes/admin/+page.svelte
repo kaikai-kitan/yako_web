@@ -26,7 +26,7 @@
 	onMount(async () => {
 		const { data: { session } } = await supabase.auth.getSession();
 		if (!session) {
-			goto(`${base}/auth`);
+			goto(`${base}/`);
 			return;
 		}
 		token = session.access_token;
@@ -45,9 +45,8 @@
 			headers: { Authorization: `Bearer ${token}` }
 		});
 
-		if (res.status === 403) {
-			isAuthorized = false;
-			isLoading = false;
+		if (res.status === 401 || res.status === 403) {
+			goto(`${base}/`);
 			return;
 		}
 
@@ -99,12 +98,6 @@
 
 {#if isLoading}
 	<div class="loading">読み込み中...</div>
-{:else if !isAuthorized}
-	<div class="forbidden">
-		<h1>アクセス権限がありません</h1>
-		<p>このページは管理者専用です。</p>
-		<a href="{base}/">トップへ戻る</a>
-	</div>
 {:else}
 <div class="page">
 	<h1 class="page-title">管理者ダッシュボード</h1>
@@ -219,14 +212,6 @@
 		text-align: center;
 		padding: 80px 20px;
 		color: #7a6f67;
-	}
-	.forbidden {
-		text-align: center;
-		padding: 80px 20px;
-		color: #26201a;
-	}
-	.forbidden a {
-		color: #d56d04;
 	}
 	.page {
 		max-width: 900px;
