@@ -4,12 +4,12 @@ import { createClient } from '@supabase/supabase-js';
 
 export const prerender = false;
 
-function isAdmin(userId) {
-	const adminIds = (env.ADMIN_USER_IDS ?? '')
+function isAdmin(email) {
+	const adminEmails = (env.ADMIN_EMAILS ?? '')
 		.split(',')
-		.map((s) => s.trim())
+		.map((s) => s.trim().toLowerCase())
 		.filter(Boolean);
-	return adminIds.includes(userId);
+	return adminEmails.includes(email?.toLowerCase() ?? '');
 }
 
 export async function GET({ request, url }) {
@@ -20,7 +20,7 @@ export async function GET({ request, url }) {
 	const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 	const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-	if (authErr || !user || !isAdmin(user.id)) throw error(403, 'Forbidden');
+	if (authErr || !user || !isAdmin(user.email)) throw error(403, 'Forbidden');
 
 	// YYYY-MM 形式のフィルタ（省略時は全件）
 	const month = url.searchParams.get('month');
