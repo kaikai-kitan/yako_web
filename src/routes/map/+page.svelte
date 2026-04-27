@@ -1414,7 +1414,7 @@
 	:global(.leaflet-bottom.leaflet-right) { bottom: 80px !important; right: 10px !important; }
 
 	.app-container {
-		width: 100%; height: calc(100svh - 60px);
+		width: 100%; height: 100svh;
 		display: flex; flex-direction: column;
 		background: #f8f5f0; position: relative; overflow: hidden;
 	}
@@ -1439,7 +1439,7 @@
 	}
 	.toggle-switch span.active { color: white; }
 
-	.app-main { flex: 1; position: relative; }
+	.app-main { flex: 1; position: relative; padding-bottom: 70px; }
 	.map-layer { width: 100%; height: 100%; }
 	.map-canvas { width: 100%; height: 100%; }
 
@@ -1801,6 +1801,7 @@
 
 	/* Bottom Nav */
 	.bottom-nav {
+		position: fixed; bottom: 0; left: 0; right: 0;
 		height: 70px; background: white; display: flex;
 		justify-content: space-around; align-items: stretch;
 		border-top: 1px solid #e2e8f0; z-index: 800;
