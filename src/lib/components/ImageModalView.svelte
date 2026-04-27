@@ -26,7 +26,9 @@
 		<image transition:scale={{ duration: 300, start: 0.8 }} class="image" src={base + src} {alt} />
 	</div>
 
-	<span class="close-button">
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<span class="close-button" onclick={hide}>
 		<span class="bar1"></span>
 		<span class="bar2"></span>
 	</span>
@@ -56,6 +58,8 @@
 		right: 50px;
 		width: 50px;
 		height: 50px;
+		cursor: pointer;
+		z-index: 10;
 	}
 
 	.close-button .bar1 {
