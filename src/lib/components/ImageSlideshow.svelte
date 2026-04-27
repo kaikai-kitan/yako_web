@@ -94,7 +94,8 @@
 <style>
 	.slideshow-wrapper {
 		width: 100%;
-		height: 100%;
+		aspect-ratio: 3 / 2;
+		max-height: 100%;
 		position: relative;
 		user-select: none;
 		overflow: hidden;
