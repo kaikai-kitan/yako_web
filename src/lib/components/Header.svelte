@@ -183,12 +183,9 @@
         height: 3px; background: #f97316; border-radius: 2px;
     }
 
-    /* YATAKARIボタン強調 */
-    .yatakari-btn {
-        background: #1a1410; color: #e8c97a;
-        border-radius: 10px; padding: 5px 10px;
-    }
-    .yatakari-btn:hover { background: #2a2018; }
+    /* YATAKARIボタン */
+    .yatakari-btn { border: 1px solid #e8e0d8; }
+    .yatakari-btn:hover { border-color: #d56d04; }
 
     /* ストアボタン */
     .shop-btn { border: 1px solid #e8e0d8; }
