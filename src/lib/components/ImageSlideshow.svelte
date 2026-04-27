@@ -9,25 +9,27 @@
 	let overlayEl = $state();
 	let inTransition = false;
 
-	const FADE_DURATION = 1800; // ms — フェードの長さ
+	// スワイプ検出
+	let touchStartX = 0;
 
-	let current_image = $derived(images[slideshow_index] ?? { src: '', alt: '' });
+	const FADE_DURATION = 1000;
+	const AUTO_INTERVAL = 6000;
+
+	let current_image  = $derived(images[slideshow_index] ?? { src: '', alt: '' });
 	let previous_image = $derived(
 		images[slideshow_index === 0 ? images.length - 1 : slideshow_index - 1] ?? { src: '', alt: '' }
 	);
 
-	function nextSlide() {
+	function goTo(index) {
 		if (inTransition || !overlayEl) return;
+		const next = ((index % images.length) + images.length) % images.length;
+		if (next === slideshow_index) return;
 		inTransition = true;
 
-		// 1. トランジションなしで即座に非表示（前の画像が下から透けて見える）
 		overlayEl.style.transition = 'none';
 		overlayEl.style.opacity = '0';
+		slideshow_index = next;
 
-		// 2. スライドを進める
-		slideshow_index = (slideshow_index + 1) % images.length;
-
-		// 3. DOM更新後にフェードイン開始
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => {
 				overlayEl.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
@@ -37,28 +39,62 @@
 		});
 	}
 
-	onMount(() => {
-		if (images.length > 1) {
-			timer = setInterval(nextSlide, 6000);
-		}
-	});
+	function nextSlide() { goTo(slideshow_index + 1); }
+	function prevSlide() { goTo(slideshow_index - 1); }
 
-	onDestroy(() => {
-		if (timer) clearInterval(timer);
+	// 手動操作後はタイマーをリセット（操作直後に自動で切り替わらないように）
+	function resetTimer() {
+		clearInterval(timer);
+		if (images.length > 1) timer = setInterval(nextSlide, AUTO_INTERVAL);
+	}
+
+	function handleNext() { nextSlide(); resetTimer(); }
+	function handlePrev() { prevSlide(); resetTimer(); }
+	function handleDot(i)  { goTo(i);    resetTimer(); }
+
+	function onTouchStart(e) { touchStartX = e.touches[0].clientX; }
+	function onTouchEnd(e) {
+		const delta = e.changedTouches[0].clientX - touchStartX;
+		if (Math.abs(delta) > 40) {
+			delta < 0 ? handleNext() : handlePrev();
+		}
+	}
+
+	onMount(() => {
+		if (images.length > 1) timer = setInterval(nextSlide, AUTO_INTERVAL);
 	});
+	onDestroy(() => { clearInterval(timer); });
 </script>
 
-<div class="slideshow-container">
-	<!-- 下レイヤー: 前の画像（常時表示） -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+	class="slideshow-container"
+	ontouchstart={onTouchStart}
+	ontouchend={onTouchEnd}
+>
+	<!-- 下レイヤー: 前の画像 -->
 	<img class="slideshow-image" src={base + previous_image.src} alt={previous_image.alt} />
+	<!-- 上レイヤー: 現在の画像（フェードイン） -->
+	<img bind:this={overlayEl} class="slideshow-image overlay"
+		src={base + current_image.src} alt={current_image.alt} />
 
-	<!-- 上レイヤー: 現在の画像（フェードイン/アウト） -->
-	<img
-		bind:this={overlayEl}
-		class="slideshow-image overlay"
-		src={base + current_image.src}
-		alt={current_image.alt}
-	/>
+	<!-- 左矢印 -->
+	{#if images.length > 1}
+		<button class="arrow arrow-left" onclick={handlePrev} aria-label="前の画像">&#8249;</button>
+		<button class="arrow arrow-right" onclick={handleNext} aria-label="次の画像">&#8250;</button>
+
+		<!-- ドットインジケーター -->
+		<div class="dots">
+			{#each images as _, i}
+				<button
+					class="dot"
+					class:active={i === slideshow_index}
+					onclick={() => handleDot(i)}
+					aria-label={`${i + 1}枚目`}
+				></button>
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -67,6 +103,7 @@
 		width: 100%;
 		aspect-ratio: 16 / 9;
 		position: relative;
+		user-select: none;
 	}
 
 	.slideshow-image {
@@ -76,8 +113,55 @@
 		position: absolute;
 		clip-path: polygon(0% 40px, 40px 0%, 100% 0px, 100% calc(100% - 40px), calc(100% - 40px) 100%, 0px 100%);
 	}
+	.overlay { z-index: 1; }
 
-	.overlay {
-		z-index: 1;
+	/* 矢印ボタン */
+	.arrow {
+		position: absolute;
+		top: 50%;
+		transform: translateY(-50%);
+		z-index: 10;
+		background: rgba(0, 0, 0, 0.35);
+		color: #fff;
+		border: none;
+		border-radius: 50%;
+		width: 40px;
+		height: 40px;
+		font-size: 1.6rem;
+		line-height: 1;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background 0.15s;
+		backdrop-filter: blur(4px);
+	}
+	.arrow:hover { background: rgba(0, 0, 0, 0.6); }
+	.arrow-left  { left: 12px; }
+	.arrow-right { right: 12px; }
+
+	/* ドット */
+	.dots {
+		position: absolute;
+		bottom: 12px;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 10;
+		display: flex;
+		gap: 7px;
+	}
+	.dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		border: none;
+		background: rgba(255, 255, 255, 0.5);
+		cursor: pointer;
+		padding: 0;
+		transition: background 0.2s, transform 0.2s;
+	}
+	.dot.active {
+		background: #fff;
+		transform: scale(1.3);
 	}
 </style>

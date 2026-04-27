@@ -78,11 +78,16 @@
 
 	<div class="gallery-container">
 		<h1 class="gallery-name">活動実績ギャラリー</h1>
-		<div class="gallery-images-container">
-			{#each company.gallery as image}
-				<ImageView modal={imageModalView} src={image} alt={image} />
-			{/each}
+		<div class="gallery-scroll-wrap">
+			<div class="gallery-images-container">
+				{#each company.gallery as image}
+					<div class="gallery-item">
+						<ImageView modal={imageModalView} src={image} alt={image} />
+					</div>
+				{/each}
+			</div>
 		</div>
+		<p class="gallery-hint">← スクロールして全て見る →</p>
 	</div>
 
 	<ImageModalView bind:this={imageModalView}/>
@@ -266,11 +271,37 @@
 		margin-bottom: 3rem;
 	}
 
+	/* ギャラリー横スクロール */
+	.gallery-scroll-wrap {
+		width: 100vw;
+		margin-left: calc(50% - 50vw);
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none; /* Firefox */
+	}
+	.gallery-scroll-wrap::-webkit-scrollbar { display: none; }
+
 	.gallery-images-container {
-		width: 100%;
-		display: grid;
-    grid-template-columns: repeat(3, calc(33% - 5px));
-    grid-auto-rows: auto;
-    gap: 10px;
+		display: flex;
+		gap: 10px;
+		padding: 0 max(20px, calc(50% - 7.5cm)) 12px;
+		scroll-snap-type: x mandatory;
+		width: max-content;
+	}
+
+	.gallery-item {
+		flex-shrink: 0;
+		width: min(72vw, 280px);
+		aspect-ratio: 1 / 1;
+		scroll-snap-align: center;
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
+	.gallery-hint {
+		text-align: center;
+		font-size: 0.75rem;
+		color: #9e9289;
+		margin: 4px 0 0;
 	}
 </style>
