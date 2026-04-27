@@ -287,9 +287,9 @@
 
 		<!-- 6ヶ月売上推移チャート -->
 		{#if chartData.length > 0}
+			{@const maxVal = Math.max(...chartData.map((d) => d.total), 1)}
 			<div class="chart-section">
 				<h2 class="section-title">📈 売上推移（直近6ヶ月）</h2>
-				{@const maxVal = Math.max(...chartData.map((d) => d.total), 1)}
 				<div class="chart-wrap">
 					<svg
 						class="chart-svg"
