@@ -66,14 +66,14 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="slideshow-outer">
-	<!-- 画像エリア（手紙カット） -->
+	<!-- 画像フレーム（手紙カット） -->
 	<div class="slideshow-frame" ontouchstart={onTouchStart} ontouchend={onTouchEnd}>
 		<img class="slideshow-image" src={base + previous_image.src} alt={previous_image.alt} />
 		<img bind:this={overlayEl} class="slideshow-image overlay"
 			src={base + current_image.src} alt={current_image.alt} />
 	</div>
 
-	<!-- コントロール: 写真の下 -->
+	<!-- コントロール: 写真の真下・中央 -->
 	{#if images.length > 1}
 		<div class="controls">
 			<button class="arrow" onclick={handlePrev} aria-label="前の画像">&#8249;</button>
@@ -93,23 +93,28 @@
 </div>
 
 <style>
-	/* 外側コンテナ: 縦に並べる */
 	.slideshow-outer {
 		width: 100%;
 		display: flex;
 		flex-direction: column;
-		align-items: center;
+		align-items: stretch;
 		gap: 10px;
 	}
 
-	/* 画像フレーム: 手紙カット形状 */
+	/* 手紙カット形状のフレーム */
 	.slideshow-frame {
 		width: 100%;
 		aspect-ratio: 3 / 2;
 		position: relative;
-		user-select: none;
 		overflow: hidden;
-		clip-path: polygon(0% 40px, 40px 0%, 100% 0%, 100% calc(100% - 40px), calc(100% - 40px) 100%, 0% 100%);
+		user-select: none;
+		/* 左上・右下を手紙のように斜めカット */
+		clip-path: polygon(
+			0% 60px, 60px 0%,
+			100% 0%,
+			100% calc(100% - 60px), calc(100% - 60px) 100%,
+			0% 100%
+		);
 	}
 
 	.slideshow-image {
@@ -121,12 +126,13 @@
 	}
 	.overlay { z-index: 1; }
 
-	/* コントロール行 */
+	/* コントロール行: フレーム幅に合わせて中央揃え */
 	.controls {
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		gap: 14px;
+		width: 100%;
 	}
 
 	.arrow {
