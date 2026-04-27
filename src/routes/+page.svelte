@@ -383,8 +383,11 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 8vh 10vw;
+		padding: 3vh 6vw;
 		box-sizing: border-box;
+	}
+	@media (min-width: 769px) {
+		.image-area { padding: 6vh 10vw; }
 	}
 
 	/* フレーズ層: 画像の上に重ねる */
