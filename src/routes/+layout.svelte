@@ -5,6 +5,7 @@
 	import 'leaflet/dist/leaflet.css';
 
 	import Header from '$lib/components/Header.svelte';
+	import PreFooter from '$lib/components/PreFooter.svelte';
 	import { dev } from '$app/environment';
 	import { injectAnalytics } from '@vercel/analytics/sveltekit';
 	import { page } from '$app/stores';
@@ -38,6 +39,8 @@
 {#if !hideShell}<Header />{/if}
 
 {@render children?.()}
+
+{#if !hideShell}<PreFooter />{/if}
 
 {#if !hideShell}
 <footer>
