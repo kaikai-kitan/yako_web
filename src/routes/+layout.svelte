@@ -7,10 +7,17 @@
 	import Header from '$lib/components/Header.svelte';
 	import { dev } from '$app/environment';
 	import { injectAnalytics } from '@vercel/analytics/sveltekit';
+	import { page } from '$app/stores';
 
 	injectAnalytics({ mode: dev ? 'development' : 'production' });
 
 	let { children } = $props();
+
+	// /map・/yatakari はYATAKARIアプリとして別タブで開くためナビ・フッターを非表示
+	let hideShell = $derived(
+		$page.url.pathname === '/map' ||
+		$page.url.pathname.startsWith('/yatakari')
+	);
 </script>
 
 <svelte:head>
@@ -27,10 +34,11 @@
 	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<Header />
+{#if !hideShell}<Header />{/if}
 
 {@render children?.()}
 
+{#if !hideShell}
 <footer>
 	<nav class="footer-links">
 		<a href="{base}/terms">利用規約</a>
@@ -39,6 +47,7 @@
 	</nav>
 	<small class="footer-copy">&copy;2024-2026 微小夜行電灯 All rights reserved</small>
 </footer>
+{/if}
 
 <style>
 	footer {
