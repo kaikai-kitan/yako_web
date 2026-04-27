@@ -299,9 +299,27 @@
 
 		<!-- ===== ダッシュボード ===== -->
 		<section class="section dashboard-section">
+			<!-- 収益ダッシュボード（全員） -->
+			<a href="{base}/mypage/dashboard" class="dashboard-link revenue-link">
+				<span class="dl-icon">📊</span>
+				<div class="dl-text">
+					<strong>収益ダッシュボード</strong>
+					<span>売上集計・ロール別収益・売上推移</span>
+				</div>
+				<span class="dl-arrow">›</span>
+			</a>
+			<!-- 在庫管理（全員） -->
+			<a href="{base}/mypage/inventory" class="dashboard-link inventory-link">
+				<span class="dl-icon">📦</span>
+				<div class="dl-text">
+					<strong>在庫管理</strong>
+					<span>商品の必要数・現在数・不足資金を管理</span>
+				</div>
+				<span class="dl-arrow">›</span>
+			</a>
 			{#if profile.operators}
 				<a href="{base}/mypage/operator" class="dashboard-link operator-link">
-					<span class="dl-icon">📦</span>
+					<span class="dl-icon">🛍️</span>
 					<div class="dl-text">
 						<strong>出店者ダッシュボード</strong>
 						<span>受注管理・売上確認・口座設定</span>
@@ -859,7 +877,7 @@
 	.icon-btn.danger { color: #dc2626; border-color: #fca5a5; }
 
 	/* ===== ダッシュボード ===== */
-	.dashboard-section { padding: 0; background: none; box-shadow: none; }
+	.dashboard-section { padding: 0; background: none; box-shadow: none; display: flex; flex-direction: column; gap: 10px; }
 
 	.dashboard-link {
 		display: flex;
@@ -874,6 +892,9 @@
 		transition: background 0.15s;
 	}
 	.dashboard-link:hover { background: #fbf3ea; border-color: #d56d04; }
+	.revenue-link { border-color: #e8c97a; }
+	.inventory-link { border-color: #bbf7d0; }
+	.inventory-link:hover { background: #f0fdf4; border-color: #22c55e; }
 	.dl-icon { font-size: 1.6rem; }
 	.dl-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 	.dl-text strong { font-size: 0.95rem; }
