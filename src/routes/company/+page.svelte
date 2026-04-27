@@ -23,6 +23,57 @@
 			<span class="separator"></span>
 			<p class="business-description">{business.description}</p>
 		</div>
+
+		{#if business.name === '京産屋台化計画'}
+			<!-- YATAKARI サービス紹介 -->
+			<div class="yatakari-section">
+				<div class="yatakari-header">
+					<span class="yatakari-lantern">🏮</span>
+					<div class="yatakari-title-block">
+						<span class="yatakari-label">デジタル基盤</span>
+						<h3 class="yatakari-title">YATAKARI</h3>
+						<p class="yatakari-subtitle">屋台出店をワンストップで支援するプラットフォーム</p>
+					</div>
+				</div>
+
+				<div class="service-grid">
+					<div class="service-card">
+						<span class="service-icon">🗺️</span>
+						<span class="service-name">リアルタイムマップ</span>
+						<span class="service-desc">出店中の屋台をマップで確認</span>
+					</div>
+					<div class="service-card">
+						<span class="service-icon">📅</span>
+						<span class="service-name">予約・スペース管理</span>
+						<span class="service-desc">屋台・場所をオンライン予約</span>
+					</div>
+					<div class="service-card">
+						<span class="service-icon">📱</span>
+						<span class="service-name">QR出退店</span>
+						<span class="service-desc">QRコードで簡単に出退店記録</span>
+					</div>
+					<div class="service-card">
+						<span class="service-icon">🛍️</span>
+						<span class="service-name">オンラインショップ</span>
+						<span class="service-desc">店舗商品のEC販売</span>
+					</div>
+					<div class="service-card">
+						<span class="service-icon">📦</span>
+						<span class="service-name">在庫管理</span>
+						<span class="service-desc">食材・消耗品の在庫を一元管理</span>
+					</div>
+					<div class="service-card">
+						<span class="service-icon">📊</span>
+						<span class="service-name">収益ダッシュボード</span>
+						<span class="service-desc">売上・精算状況をリアルタイム集計</span>
+					</div>
+				</div>
+
+				<a href="/yatakari" target="_blank" rel="noopener noreferrer" class="yatakari-cta">
+					YATAKARIを開く <span class="cta-arrow">↗</span>
+				</a>
+			</div>
+		{/if}
 	{/each}
 
 	<div class="gallery-container">
@@ -93,6 +144,117 @@
 		width: 60px;
 		height: 1px;
 		margin: 16px 0;
+	}
+
+	/* YATAKARI セクション */
+	.yatakari-section {
+		margin: 0 0 3rem;
+		background: #1a1410;
+		border-radius: 20px;
+		padding: 32px 28px 28px;
+		color: #fff;
+	}
+
+	.yatakari-header {
+		display: flex;
+		align-items: center;
+		gap: 18px;
+		margin-bottom: 28px;
+	}
+
+	.yatakari-lantern {
+		font-size: 3rem;
+		flex-shrink: 0;
+		filter: drop-shadow(0 0 12px rgba(229, 157, 60, 0.6));
+	}
+
+	.yatakari-title-block {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+
+	.yatakari-label {
+		font-size: 0.72rem;
+		color: #e8c97a;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
+
+	.yatakari-title {
+		font-size: 2rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		margin: 0;
+		color: #e8c97a;
+		line-height: 1;
+	}
+
+	.yatakari-subtitle {
+		font-size: 0.82rem;
+		color: #a09080;
+		margin: 0;
+	}
+
+	.service-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 12px;
+		margin-bottom: 24px;
+	}
+
+	.service-card {
+		background: rgba(255, 255, 255, 0.06);
+		border: 1px solid rgba(232, 201, 122, 0.2);
+		border-radius: 14px;
+		padding: 16px 12px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		text-align: center;
+	}
+
+	.service-icon {
+		font-size: 2rem;
+	}
+
+	.service-name {
+		font-size: 0.78rem;
+		font-weight: 700;
+		color: #f0e8d8;
+		line-height: 1.3;
+	}
+
+	.service-desc {
+		font-size: 0.68rem;
+		color: #7a6f67;
+		line-height: 1.4;
+	}
+
+	.yatakari-cta {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 13px;
+		background: #d56d04;
+		color: #fff;
+		border-radius: 12px;
+		font-size: 0.95rem;
+		font-weight: 700;
+		text-decoration: none;
+		letter-spacing: 0.04em;
+		transition: background 0.15s;
+	}
+
+	.yatakari-cta:hover { background: #b85d03; }
+	.cta-arrow { font-size: 1.1rem; }
+
+	@media (max-width: 480px) {
+		.service-grid { grid-template-columns: repeat(2, 1fr); }
+		.yatakari-title { font-size: 1.6rem; }
 	}
 
 	.gallery-container {

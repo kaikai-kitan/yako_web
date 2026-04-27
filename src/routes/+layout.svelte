@@ -13,10 +13,11 @@
 
 	let { children } = $props();
 
-	// /map・/yatakari はYATAKARIアプリとして別タブで開くためナビ・フッターを非表示
+	// /map・/yatakari・/mypage系 はYATAKARIアプリとして別タブで開くためナビ・フッターを非表示
 	let hideShell = $derived(
 		$page.url.pathname === '/map' ||
-		$page.url.pathname.startsWith('/yatakari')
+		$page.url.pathname.startsWith('/yatakari') ||
+		$page.url.pathname.startsWith('/mypage')
 	);
 </script>
 
