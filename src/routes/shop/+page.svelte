@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import { supabase } from '$lib/supabase.js';
 	import { cart, cartItems, cartCount, cartTotal } from '$lib/cart.js';
 
@@ -48,7 +49,8 @@
 			const q = searchQuery.trim().toLowerCase();
 			result = result.filter(p =>
 				p.name.toLowerCase().includes(q) ||
-				(p.description ?? '').toLowerCase().includes(q)
+				(p.description ?? '').toLowerCase().includes(q) ||
+				(p.tags ?? []).some(t => t.toLowerCase().includes(q))
 			);
 		}
 		if (sortMode === '価格が安い順') result.sort((a, b) => a.price - b.price);
@@ -67,6 +69,12 @@
 		checkoutError = '';
 
 		const { data: { session } } = await supabase.auth.getSession();
+
+		if (!session) {
+			isCheckingOut = false;
+			goto(`${base}/auth?redirectTo=${encodeURIComponent(`${base}/shop`)}`);
+			return;
+		}
 		const origin = window.location.origin;
 
 		const items = $cartItems.map((c) => ({
@@ -115,7 +123,7 @@
 				<polyline points="15 18 9 12 15 6"/>
 			</svg>
 		</a>
-		<h1 class="shop-title">オンラインストア「電灯」</h1>
+		<h1 class="shop-title">公式オンラインストア</h1>
 		<button class="cart-btn" onclick={() => (isCartOpen = true)} aria-label="カートを開く">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
 				stroke-linecap="round" stroke-linejoin="round" class="cart-svg" aria-hidden="true">
@@ -133,7 +141,7 @@
 	<nav class="breadcrumb" aria-label="パンくず">
 		<a href="{base}/" class="breadcrumb-link">トップ</a>
 		<span class="breadcrumb-sep">/</span>
-		<span class="breadcrumb-current">オンラインストア</span>
+		<span class="breadcrumb-current">公式オンラインストア</span>
 	</nav>
 
 	<!-- 検索バー -->
@@ -282,6 +290,13 @@
 								<h2 class="product-name">{product.name}</h2>
 								{#if product.description}
 									<p class="product-desc">{product.description}</p>
+								{/if}
+								{#if product.tags?.length}
+									<div class="tag-list">
+										{#each product.tags as tag}
+											<span class="tag">{tag}</span>
+										{/each}
+									</div>
 								{/if}
 								<div class="product-footer">
 									<span class="product-price">¥{product.price.toLocaleString()}</span>
@@ -540,6 +555,12 @@
 		font-size: 0.72rem; color: #7a6f67; margin: 0 0 6px;
 		line-height: 1.4; display: -webkit-box;
 		-webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+	}
+	.tag-list { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+	.tag {
+		font-size: 0.65rem; padding: 2px 7px;
+		background: #f0ede8; color: #7a6f67;
+		border-radius: 100px; white-space: nowrap;
 	}
 	.product-footer { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
 	.product-price { font-size: 0.92rem; font-weight: 700; color: #26201a; }

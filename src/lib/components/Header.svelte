@@ -49,7 +49,7 @@
 
         <!-- デスクトップ用テキストリンク -->
         <a href="{base}/menu" class="desktop-nav-item" onclick={closeMenu}>メニュー</a>
-        <a href="{base}/company" class="desktop-nav-item" onclick={closeMenu}>事業内容</a>
+        <a href="{base}/company" class="desktop-nav-item" onclick={closeMenu}>会社概要</a>
         {#if $session}
             <button class="desktop-nav-item desktop-auth-btn" onclick={handleSignOut}>ログアウト</button>
         {:else}
@@ -82,15 +82,10 @@
             <li><a href="{base}/" onclick={closeMenu}>トップ</a></li>
 
             <!-- メニュー -->
-            <li>
-                <a href="{base}/menu" class="drawer-item-with-icon" onclick={closeMenu}>
-                    <span class="drawer-item-emoji">🍜</span>
-                    <div class="drawer-item-text">
-                        <span class="drawer-item-name">メニュー</span>
-                        <span class="drawer-item-desc">屋台で現地飲食</span>
-                    </div>
-                </a>
-            </li>
+            <li><a href="{base}/menu" onclick={closeMenu}>メニュー</a></li>
+
+            <!-- 会社概要 -->
+            <li><a href="{base}/company" onclick={closeMenu}>会社概要</a></li>
 
             <!-- 事業内容（セクションラベル） -->
             <li class="drawer-section-label">事業内容</li>
@@ -116,7 +111,7 @@
                         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
                     </svg>
                     <div class="drawer-item-text">
-                        <span class="drawer-item-name">オンラインストア「電灯」</span>
+                        <span class="drawer-item-name">公式オンラインストア</span>
                         <span class="drawer-item-desc">グッズ・商品をネット購入</span>
                     </div>
                 </a>
@@ -125,7 +120,20 @@
             <!-- Instagram -->
             <li>
                 <a href="https://www.instagram.com/delta_yako?igsh=MTYxZmJzZG5yZHZieA%3D%3D&utm_source=qr"
-                    target="_blank" rel="noopener noreferrer" onclick={closeMenu}>Instagram ↗</a>
+                    target="_blank" rel="noopener noreferrer"
+                    class="drawer-item-with-icon" onclick={closeMenu}>
+                    <svg class="drawer-nav-icon ig-icon" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                        <circle cx="12" cy="12" r="4"/>
+                        <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
+                    </svg>
+                    <div class="drawer-item-text">
+                        <span class="drawer-item-name">Instagram ↗</span>
+                        <span class="drawer-item-desc">@delta_yako</span>
+                    </div>
+                </a>
             </li>
 
             <!-- その他 -->
@@ -270,7 +278,7 @@
         width: 22px; height: 22px; flex-shrink: 0; stroke: #26201a;
     }
     .drawer-nav-icon.yatakari-icon { object-fit: contain; stroke: none; }
-    .drawer-item-emoji { font-size: 1.2rem; flex-shrink: 0; width: 22px; text-align: center; }
+    .ig-icon { stroke: #e1306c; }
 
     .drawer-item-text {
         display: flex; flex-direction: column; gap: 1px;
