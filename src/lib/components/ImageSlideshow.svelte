@@ -104,11 +104,13 @@
 		position: relative;
 		overflow: hidden;
 		user-select: none;
-		/* 左上・右下を手紙のように斜めカット */
+		/* 左上・右下を手紙のように斜めカット（8vwで常に目立つサイズ） */
 		clip-path: polygon(
-			0% 60px, 60px 0%,
+			0% clamp(50px, 8vw, 120px),
+			clamp(50px, 8vw, 120px) 0%,
 			100% 0%,
-			100% calc(100% - 60px), calc(100% - 60px) 100%,
+			100% calc(100% - clamp(50px, 8vw, 120px)),
+			calc(100% - clamp(50px, 8vw, 120px)) 100%,
 			0% 100%
 		);
 	}
