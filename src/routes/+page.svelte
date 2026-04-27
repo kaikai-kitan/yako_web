@@ -376,10 +376,15 @@
 		background: #fbf3ea;
 	}
 
-	/* 画像: sticky エリア全面を占有 */
+	/* 画像: sticky エリアの中央に余白付きで配置 */
 	.image-area {
 		position: absolute;
 		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 8vh 10vw;
+		box-sizing: border-box;
 	}
 
 	/* フレーズ層: 画像の上に重ねる */
