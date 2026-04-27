@@ -12,7 +12,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="image-container" onclick={onClickImage}>
-	<image class="image" src={base + src} {alt} />
+	<img class="image" src={base + src} {alt} loading="lazy" decoding="async" />
 </div>
 
 <style>

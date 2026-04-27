@@ -1,5 +1,5 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase.js';
@@ -182,7 +182,11 @@
 				center: KSU_CENTER,
 				zoom: 15,
 				zoomControl: false,
-				attributionControl: false
+				attributionControl: false,
+				// スマホでの意図しないスクロール対策
+				tap: false,
+				tapTolerance: 15,
+				bounceAtZoomLimits: false
 			});
 			L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
 				subdomains: 'abcd',
@@ -194,6 +198,28 @@
 		} catch (e) {
 			console.error('Map Load Error:', e);
 		}
+
+		// ── Supabase Realtime: 屋台ステータス変化を自動反映 ──
+		const realtimeChannel = supabase
+			.channel('map-realtime')
+			.on('postgres_changes', { event: '*', schema: 'public', table: 'stall_specs' }, async () => {
+				[activeStalls, stallPins, availableStallsList] = await Promise.all([
+					getActiveStalls(),
+					getAvailableStallPins(),
+					getAvailableStallsList()
+				]);
+				if (mapInstance) updateMarkers(mapInstance);
+			})
+			.on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, async () => {
+				[activeStalls, bookedStallIds] = await Promise.all([
+					getActiveStalls(),
+					getBookedStallIds()
+				]);
+				if (mapInstance) updateMarkers(mapInstance);
+			})
+			.subscribe();
+
+		return () => { supabase.removeChannel(realtimeChannel); };
 	});
 
 	// ── 実証実験エリア（京都産業大学） ──
@@ -788,6 +814,7 @@
 		<!-- マップレイヤー -->
 		<div class="map-layer" class:hidden={currentView !== 'map'}>
 			<div class="map-canvas" bind:this={mapContainer}></div>
+			<!-- スマホ: タッチ操作はLeafletに委譲（touch-action: noneで制御） -->
 
 			{#if isLoading}
 				<div class="map-overlay">
@@ -851,7 +878,7 @@
 									</button>
 								{/if}
 							{:else}
-								<a href="{base}/auth" class="action-btn primary link-btn">ログインして予約する</a>
+								<a href="{base}/auth?redirectTo=/map" class="action-btn primary link-btn">ログインして予約する</a>
 							{/if}
 
 						{:else if mapMode === 'available'}
@@ -882,7 +909,7 @@
 									<button class="action-btn primary" onclick={goReserve}>予約する</button>
 								{/if}
 							{:else}
-								<a href="{base}/auth" class="action-btn primary link-btn">ログインして予約する</a>
+								<a href="{base}/auth?redirectTo=/map" class="action-btn primary link-btn">ログインして予約する</a>
 							{/if}
 
 						{:else}
@@ -1441,7 +1468,7 @@
 
 	.app-main { flex: 1; position: relative; padding-bottom: 70px; }
 	.map-layer { width: 100%; height: 100%; }
-	.map-canvas { width: 100%; height: 100%; }
+	.map-canvas { width: 100%; height: 100%; touch-action: none; }
 
 	.legend {
 		position: absolute; bottom: 88px; left: 12px;

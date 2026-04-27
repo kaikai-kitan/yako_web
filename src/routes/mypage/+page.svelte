@@ -185,7 +185,8 @@
 	// ---- 役割追加 ----
 	async function handleSignOut() {
 		await signOut();
-		goto(`${base}/`);
+		// /mypage はYATAKARIアプリ内からのアクセスなのでマップへ戻す
+		goto(`${base}/map`);
 	}
 
 	function openRoleModal(role) {
