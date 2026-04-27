@@ -3,7 +3,6 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
-	import { page } from '$app/stores';
 	import { signIn, signUp } from '$lib/db.js';
 	import { supabase, isSupabaseConfigured } from '$lib/supabase.js';
 
@@ -15,10 +14,11 @@
 	let successMessage = $state('');
 	let isLoading = $state(false);
 
-	// ?redirectTo= パラメータを取得（ログイン後の戻り先）
-	let redirectTo = $derived($page.url.searchParams.get('redirectTo') ?? `${base}/map`);
+	// ?redirectTo= はクライアント側でのみ読む（プリレンダリング対策）
+	let redirectTo = $state(`${base}/map`);
 
 	onMount(async () => {
+		redirectTo = new URLSearchParams(window.location.search).get('redirectTo') ?? `${base}/map`;
 		const { data } = await supabase.auth.getSession();
 		if (data.session) {
 			goto(redirectTo);
