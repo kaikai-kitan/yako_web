@@ -77,67 +77,62 @@
             <img src="{base}/images/icon.png" alt="微小夜行電灯" class="drawer-logo" />
         </div>
 
-        <!-- 一般客向けグループ -->
-        <div class="drawer-group">
-            <p class="drawer-group-label">現地で楽しむ</p>
-            <ul>
-                <li><a href="{base}/" onclick={closeMenu}>トップ</a></li>
-                <li>
-                    <a href="{base}/yatakari" target="_blank" rel="noopener noreferrer"
-                        class="drawer-item-with-icon drawer-yatakari" onclick={closeMenu}>
-                        <img src="{base}/images/yatakari_icon.png" alt="" class="drawer-nav-icon yatakari-icon" aria-hidden="true" />
-                        <div class="drawer-item-text">
-                            <span class="drawer-item-name">YATAKARI ↗</span>
-                            <span class="drawer-item-desc">マップ・予約・出退店管理</span>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{base}/menu" class="drawer-item-with-icon" onclick={closeMenu}>
-                        <span class="drawer-item-emoji">🍜</span>
-                        <div class="drawer-item-text">
-                            <span class="drawer-item-name">メニュー</span>
-                            <span class="drawer-item-desc">屋台で現地飲食</span>
-                        </div>
-                    </a>
-                </li>
-                <li><a href="{base}/company" onclick={closeMenu}>事業内容</a></li>
-                <li>
-                    <a href="https://www.instagram.com/delta_yako?igsh=MTYxZmJzZG5yZHZieA%3D%3D&utm_source=qr"
-                        target="_blank" rel="noopener noreferrer" onclick={closeMenu}>Instagram</a>
-                </li>
-            </ul>
-        </div>
+        <ul class="drawer-list">
+            <!-- トップ -->
+            <li><a href="{base}/" onclick={closeMenu}>トップ</a></li>
 
-        <!-- 事業者・購入者向けグループ -->
-        <div class="drawer-group drawer-group-biz">
-            <p class="drawer-group-label">オンラインで購入・出店</p>
-            <ul>
-                <li>
-                    <a href="{base}/shop" class="drawer-item-with-icon" onclick={closeMenu}>
-                        <svg class="drawer-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-                        </svg>
-                        <div class="drawer-item-text">
-                            <span class="drawer-item-name">オンラインストア</span>
-                            <span class="drawer-item-desc">グッズ・商品をネット購入</span>
-                        </div>
-                    </a>
-                </li>
-                <li><a href="{base}/terms" onclick={closeMenu}>利用規約</a></li>
-                <li><a href="{base}/tokusho" onclick={closeMenu}>特定商取引法に基づく表記</a></li>
-            </ul>
-        </div>
+            <!-- メニュー -->
+            <li>
+                <a href="{base}/menu" class="drawer-item-with-icon" onclick={closeMenu}>
+                    <span class="drawer-item-emoji">🍜</span>
+                    <div class="drawer-item-text">
+                        <span class="drawer-item-name">メニュー</span>
+                        <span class="drawer-item-desc">屋台で現地飲食</span>
+                    </div>
+                </a>
+            </li>
 
-        <div class="drawer-auth">
-            {#if $session}
-                <button class="drawer-auth-btn" onclick={handleSignOut}>ログアウト</button>
-            {:else}
-                <a href="{base}/auth" class="drawer-auth-link" onclick={closeMenu}>ログイン / 新規登録</a>
-            {/if}
-        </div>
+            <!-- 事業内容（セクションラベル） -->
+            <li class="drawer-section-label">事業内容</li>
+
+            <!-- YATAKARI -->
+            <li>
+                <a href="{base}/yatakari" target="_blank" rel="noopener noreferrer"
+                    class="drawer-item-with-icon drawer-yatakari" onclick={closeMenu}>
+                    <img src="{base}/images/yatakari_icon.png" alt="" class="drawer-nav-icon yatakari-icon" aria-hidden="true" />
+                    <div class="drawer-item-text">
+                        <span class="drawer-item-name">YATAKARI ↗</span>
+                        <span class="drawer-item-desc">マップ・予約・出退店管理</span>
+                    </div>
+                </a>
+            </li>
+
+            <!-- オンラインストア -->
+            <li>
+                <a href="{base}/shop" class="drawer-item-with-icon" onclick={closeMenu}>
+                    <svg class="drawer-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                    </svg>
+                    <div class="drawer-item-text">
+                        <span class="drawer-item-name">オンラインストア「電灯」</span>
+                        <span class="drawer-item-desc">グッズ・商品をネット購入</span>
+                    </div>
+                </a>
+            </li>
+
+            <!-- Instagram -->
+            <li>
+                <a href="https://www.instagram.com/delta_yako?igsh=MTYxZmJzZG5yZHZieA%3D%3D&utm_source=qr"
+                    target="_blank" rel="noopener noreferrer" onclick={closeMenu}>Instagram ↗</a>
+            </li>
+
+            <!-- その他 -->
+            <li class="drawer-section-label">その他</li>
+            <li><a href="{base}/terms" onclick={closeMenu}>利用規約</a></li>
+            <li><a href="{base}/tokusho" onclick={closeMenu}>特定商取引法に基づく表記</a></li>
+        </ul>
     </nav>
 {/if}
 
@@ -252,25 +247,22 @@
     }
     .drawer-logo { width: 56px; height: 56px; object-fit: contain; }
 
-    /* グループ */
-    .drawer-group { padding: 8px 0; }
-    .drawer-group + .drawer-group { border-top: 2px solid #f0ede8; }
-    .drawer-group-biz { background: #faf8f5; }
-    .drawer-group-label {
-        padding: 10px 20px 4px;
-        font-size: 0.7rem; font-weight: 700;
-        color: #9e9289; letter-spacing: 0.06em; text-transform: uppercase;
-        margin: 0;
-    }
-
-    .drawer-group ul { list-style: none; margin: 0; padding: 0; }
-    .drawer-group li { border-bottom: 1px solid #f5f0ea; }
-    .drawer-group a {
+    /* ドロワーリスト */
+    .drawer-list { list-style: none; margin: 0; padding: 0; }
+    .drawer-list li { border-bottom: 1px solid #f5f0ea; }
+    .drawer-list a {
         display: block; padding: 13px 20px;
         text-decoration: none; color: #26201a;
         font-size: 0.93rem; transition: background 0.15s;
     }
-    .drawer-group a:hover { background: #faf8f5; }
+    .drawer-list a:hover { background: #faf8f5; }
+    .drawer-section-label {
+        padding: 10px 20px 4px;
+        font-size: 0.7rem; font-weight: 700;
+        color: #9e9289; letter-spacing: 0.06em; text-transform: uppercase;
+        margin: 0; border-bottom: none !important;
+        background: #faf8f5;
+    }
 
     /* アイテム（アイコン付き） */
     .drawer-item-with-icon {
@@ -297,20 +289,6 @@
     .drawer-item-desc { font-size: 0.72rem; color: #9e9289; }
     .drawer-yatakari .drawer-item-desc { color: #7a6050; }
 
-    /* 認証 */
-    .drawer-auth {
-        margin-top: auto; padding: 16px 20px;
-        border-top: 1px solid #ede8e0;
-    }
-    .drawer-auth-btn {
-        width: 100%; padding: 12px; background: none;
-        border: 1.5px solid #26201a; border-radius: 8px;
-        color: #26201a; font-size: 0.95rem; font-family: inherit; cursor: pointer;
-    }
-    .drawer-auth-link {
-        display: block; padding: 12px !important;
-        border: 1.5px solid #26201a !important; border-radius: 8px; text-align: center;
-    }
 
     /* デスクトップ */
     @media (min-width: 769px) {

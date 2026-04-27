@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { supabase } from '$lib/supabase.js';
 	import { cart, cartItems, cartCount, cartTotal } from '$lib/cart.js';
+	import { signOut } from '$lib/db.js';
 
 	let products = $state([]);
 	let isLoading = $state(true);
@@ -11,22 +12,36 @@
 	let isCheckingOut = $state(false);
 	let checkoutError = $state('');
 	let isCartOpen = $state(false);
+	let currentUser = $state(null);
 
 	onMount(async () => {
-		const { data, error } = await supabase
-			.from('shop_products')
-			.select('*')
-			.eq('is_active', true)
-			.order('display_order', { ascending: true })
-			.order('created_at', { ascending: true });
+		const [productsRes, sessionRes] = await Promise.all([
+			supabase
+				.from('shop_products')
+				.select('*')
+				.eq('is_active', true)
+				.order('display_order', { ascending: true })
+				.order('created_at', { ascending: true }),
+			supabase.auth.getSession()
+		]);
 
-		if (error) {
+		if (productsRes.error) {
 			fetchError = '商品の取得に失敗しました';
 		} else {
-			products = data ?? [];
+			products = productsRes.data ?? [];
 		}
+		currentUser = sessionRes.data.session?.user ?? null;
 		isLoading = false;
 	});
+
+	async function handleAuthShop() {
+		if (currentUser) {
+			await signOut();
+			currentUser = null;
+		} else {
+			goto(`${base}/auth?redirectTo=${encodeURIComponent(`${base}/shop`)}`);
+		}
+	}
 
 	async function checkout() {
 		if ($cartItems.length === 0) return;
@@ -77,7 +92,11 @@
 	<header class="shop-header">
 		<a href="{base}/" class="back-link">← トップへ</a>
 		<h1 class="shop-title">オンラインストア</h1>
-		<button class="cart-btn" onclick={() => (isCartOpen = true)} aria-label="カートを開く">
+		<div class="shop-header-actions">
+			<button class="shop-auth-btn" onclick={handleAuthShop}>
+				{currentUser ? 'ログアウト' : 'ログイン'}
+			</button>
+			<button class="cart-btn" onclick={() => (isCartOpen = true)} aria-label="カートを開く">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="cart-svg" aria-hidden="true">
 				<circle cx="9" cy="21" r="1"/>
 				<circle cx="20" cy="21" r="1"/>
@@ -86,7 +105,8 @@
 			{#if $cartCount > 0}
 				<span class="cart-badge">{$cartCount}</span>
 			{/if}
-		</button>
+			</button>
+		</div>
 	</header>
 
 	<main class="shop-main">
@@ -207,6 +227,16 @@
 	}
 	.back-link { font-size: 0.85rem; color: #7a6f67; text-decoration: none; }
 	.shop-title { font-size: 1rem; font-weight: 700; color: #26201a; margin: 0; }
+	.shop-header-actions {
+		display: flex; align-items: center; gap: 8px;
+	}
+	.shop-auth-btn {
+		padding: 5px 10px; font-size: 0.78rem; font-family: inherit;
+		border: 1.5px solid #26201a; border-radius: 6px;
+		background: none; color: #26201a; cursor: pointer;
+		white-space: nowrap; transition: background 0.15s;
+	}
+	.shop-auth-btn:hover { background: #f5f0ea; }
 	.cart-btn {
 		position: relative; background: none; border: none;
 		cursor: pointer; padding: 4px;

@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { base } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import { supabase } from '$lib/supabase.js';
 	import {
 		getActiveStalls,
@@ -18,7 +19,8 @@
 		getMySalesThisMonth,
 		getMyProviderMonthlyStats,
 		getBookedStallIds,
-		getMyMenuItems
+		getMyMenuItems,
+		signOut
 	} from '$lib/db.js';
 
 	// --- ステート管理 ---
@@ -788,6 +790,16 @@
 			isReturningRes = '';
 		}
 	}
+
+	async function handleAuthNav() {
+		if (currentUser) {
+			await signOut();
+			currentUser = null;
+			userProfile = null;
+		} else {
+			goto(`${base}/auth?redirectTo=${encodeURIComponent(`${base}/map`)}`);
+		}
+	}
 </script>
 
 <svelte:head>
@@ -1274,10 +1286,24 @@
 				<img src="{base}/images/map_icon/yatainin.jpg" alt="マイページ" class="nav-icon" />
 				<span>マイページ</span>
 			</a>
-			<button class="nav-item" class:active={isDashboardOpen}
-				onclick={() => (isDashboardOpen = true)}>
-				<img src="{base}/images/map_icon/earn_money.jpg" alt="今月の売上" class="nav-icon" />
-				<span>今月の売上</span>
+			<button class="nav-item" onclick={handleAuthNav}>
+				{#if currentUser}
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+						stroke-linecap="round" stroke-linejoin="round" class="nav-icon-svg" aria-hidden="true">
+						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+						<polyline points="16 17 21 12 16 7"/>
+						<line x1="21" y1="12" x2="9" y2="12"/>
+					</svg>
+					<span>ログアウト</span>
+				{:else}
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+						stroke-linecap="round" stroke-linejoin="round" class="nav-icon-svg" aria-hidden="true">
+						<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+						<polyline points="10 17 15 12 10 7"/>
+						<line x1="15" y1="12" x2="3" y2="12"/>
+					</svg>
+					<span>ログイン</span>
+				{/if}
 			</button>
 		</nav>
 	{/if}
@@ -1847,6 +1873,7 @@
 		border-bottom-color: #f97316;
 	}
 	.nav-icon { width: 24px; height: 24px; object-fit: contain; }
+	.nav-icon-svg { width: 24px; height: 24px; stroke: currentColor; }
 
 	/* Dashboard Modal */
 	.modal-overlay {
