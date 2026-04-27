@@ -387,7 +387,7 @@
 		box-sizing: border-box;
 	}
 	@media (min-width: 769px) {
-		.image-area { padding: 6vh 10vw; }
+		.image-area { padding: 6vh 14vw; }
 	}
 
 	/* フレーズ層: 画像の上に重ねる */
