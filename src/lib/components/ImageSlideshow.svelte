@@ -67,32 +67,34 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-	class="slideshow-container"
-	ontouchstart={onTouchStart}
-	ontouchend={onTouchEnd}
->
-	<!-- 下レイヤー: 前の画像 -->
-	<img class="slideshow-image" src={base + previous_image.src} alt={previous_image.alt} />
-	<!-- 上レイヤー: 現在の画像（フェードイン） -->
-	<img bind:this={overlayEl} class="slideshow-image overlay"
-		src={base + current_image.src} alt={current_image.alt} />
+<div class="slideshow-wrapper">
+	<div
+		class="slideshow-container"
+		ontouchstart={onTouchStart}
+		ontouchend={onTouchEnd}
+	>
+		<!-- 下レイヤー: 前の画像 -->
+		<img class="slideshow-image" src={base + previous_image.src} alt={previous_image.alt} />
+		<!-- 上レイヤー: 現在の画像（フェードイン） -->
+		<img bind:this={overlayEl} class="slideshow-image overlay"
+			src={base + current_image.src} alt={current_image.alt} />
+	</div>
 
-	<!-- 左矢印 -->
+	<!-- 写真の下: 矢印 + ドット -->
 	{#if images.length > 1}
-		<button class="arrow arrow-left" onclick={handlePrev} aria-label="前の画像">&#8249;</button>
-		<button class="arrow arrow-right" onclick={handleNext} aria-label="次の画像">&#8250;</button>
-
-		<!-- ドットインジケーター -->
-		<div class="dots">
-			{#each images as _, i}
-				<button
-					class="dot"
-					class:active={i === slideshow_index}
-					onclick={() => handleDot(i)}
-					aria-label={`${i + 1}枚目`}
-				></button>
-			{/each}
+		<div class="controls">
+			<button class="arrow" onclick={handlePrev} aria-label="前の画像">&#8249;</button>
+			<div class="dots">
+				{#each images as _, i}
+					<button
+						class="dot"
+						class:active={i === slideshow_index}
+						onclick={() => handleDot(i)}
+						aria-label={`${i + 1}枚目`}
+					></button>
+				{/each}
+			</div>
+			<button class="arrow" onclick={handleNext} aria-label="次の画像">&#8250;</button>
 		</div>
 	{/if}
 </div>
@@ -115,38 +117,35 @@
 	}
 	.overlay { z-index: 1; }
 
+	.controls {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 16px;
+		margin-top: 10px;
+	}
+
 	/* 矢印ボタン */
 	.arrow {
-		position: absolute;
-		top: 50%;
-		transform: translateY(-50%);
-		z-index: 10;
-		background: rgba(0, 0, 0, 0.35);
+		background: #26201a;
 		color: #fff;
 		border: none;
 		border-radius: 50%;
-		width: 40px;
-		height: 40px;
-		font-size: 1.6rem;
+		width: 36px;
+		height: 36px;
+		font-size: 1.4rem;
 		line-height: 1;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		transition: background 0.15s;
-		backdrop-filter: blur(4px);
+		flex-shrink: 0;
 	}
-	.arrow:hover { background: rgba(0, 0, 0, 0.6); }
-	.arrow-left  { left: 12px; }
-	.arrow-right { right: 12px; }
+	.arrow:hover { background: #4a3828; }
 
 	/* ドット */
 	.dots {
-		position: absolute;
-		bottom: 12px;
-		left: 50%;
-		transform: translateX(-50%);
-		z-index: 10;
 		display: flex;
 		gap: 7px;
 	}
