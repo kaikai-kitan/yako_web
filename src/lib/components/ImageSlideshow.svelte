@@ -98,6 +98,7 @@
 		position: relative;
 		user-select: none;
 		overflow: hidden;
+		clip-path: polygon(0% 40px, 40px 0%, 100% 0%, 100% calc(100% - 40px), calc(100% - 40px) 100%, 0% 100%);
 	}
 
 	.slideshow-image {
