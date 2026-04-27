@@ -266,15 +266,9 @@
         display: flex !important; align-items: center; gap: 12px;
         padding: 12px 20px !important;
     }
-    .drawer-yatakari {
-        background: #1a1410 !important; color: #e8c97a !important;
-        margin: 4px 12px; border-radius: 10px;
-    }
-    .drawer-yatakari:hover { background: #2a2018 !important; }
     .drawer-nav-icon {
         width: 22px; height: 22px; flex-shrink: 0; stroke: #26201a;
     }
-    .drawer-yatakari .drawer-nav-icon { stroke: none; }
     .drawer-nav-icon.yatakari-icon { object-fit: contain; stroke: none; }
     .drawer-item-emoji { font-size: 1.2rem; flex-shrink: 0; width: 22px; text-align: center; }
 
@@ -282,9 +276,7 @@
         display: flex; flex-direction: column; gap: 1px;
     }
     .drawer-item-name { font-size: 0.92rem; font-weight: 600; }
-    .drawer-yatakari .drawer-item-name { color: #e8c97a; }
     .drawer-item-desc { font-size: 0.72rem; color: #9e9289; }
-    .drawer-yatakari .drawer-item-desc { color: #7a6050; }
 
 
     /* デスクトップ */
