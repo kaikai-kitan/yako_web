@@ -204,6 +204,41 @@
 
 	function fmt(n) { return `¥${(n ?? 0).toLocaleString()}`; }
 
+	// ======== マイメニュー追加 ========
+	let showAddMenuForm = $state(false);
+	let newMenuName = $state('');
+	let newMenuDesc = $state('');
+	let newMenuPrice = $state('');
+	let isAddingMenu = $state(false);
+
+	async function addMenuItem() {
+		if (!newMenuName.trim()) return;
+		isAddingMenu = true;
+		errMsg = '';
+		const { error } = await supabase.from('my_menu_items').insert({
+			user_id: userId,
+			name: newMenuName.trim(),
+			description: newMenuDesc.trim() || null,
+			price: parseInt(newMenuPrice) || 0,
+			display_order: menuItems.length
+		});
+		if (error) {
+			errMsg = 'メニュー追加失敗: ' + error.message;
+		} else {
+			newMenuName = ''; newMenuDesc = ''; newMenuPrice = '';
+			showAddMenuForm = false;
+			flash('メニューを追加しました');
+			await loadMenu();
+		}
+		isAddingMenu = false;
+	}
+
+	async function deleteMenuItem(id) {
+		if (!confirm('このメニューを削除しますか？')) return;
+		const { error } = await supabase.from('my_menu_items').delete().eq('id', id).eq('user_id', userId);
+		if (!error) { flash('削除しました'); await Promise.all([loadMenu(), loadIngredients()]); }
+	}
+
 	function stockStatus(ing) {
 		const inv = ing.inventory;
 		if (!inv) return null;
@@ -214,7 +249,7 @@
 
 <div class="page">
 	<div class="page-header">
-		<a href="{base}/mypage/dashboard" class="back-link">‹ 収益ダッシュボード</a>
+		<a href="{base}/mypage" class="back-link">‹ マイページ</a>
 		<h1 class="page-title">📦 在庫管理</h1>
 	</div>
 
@@ -239,10 +274,33 @@
 
 	<!-- ======== メニュー別タブ ======== -->
 	{:else if tab === 'menu'}
+		<!-- メニュー追加ボタン -->
+		<div class="menu-tab-header">
+			<button class="btn-add-menu" onclick={() => (showAddMenuForm = !showAddMenuForm)}>
+				＋ メニューを追加
+			</button>
+		</div>
+
+		{#if showAddMenuForm}
+			<div class="add-menu-form">
+				<h3 class="add-menu-title">新しいメニューを追加</h3>
+				<div class="add-menu-fields">
+					<input type="text" bind:value={newMenuName} placeholder="メニュー名 *" class="add-menu-input" />
+					<input type="text" bind:value={newMenuDesc} placeholder="説明（任意）" class="add-menu-input" />
+					<input type="number" bind:value={newMenuPrice} placeholder="価格（円）" min="0" class="add-menu-input" />
+				</div>
+				<div class="add-menu-actions">
+					<button class="btn-confirm-menu" onclick={addMenuItem} disabled={isAddingMenu || !newMenuName.trim()}>
+						{isAddingMenu ? '追加中…' : '追加する'}
+					</button>
+					<button class="btn-cancel-ing" onclick={() => (showAddMenuForm = false)}>取消</button>
+				</div>
+			</div>
+		{/if}
+
 		{#if menuItems.length === 0}
 			<div class="empty">
-				<p>登録されたメニューがありません。</p>
-				<a href="{base}/mypage" class="empty-link">マイページでメニューを追加する ›</a>
+				<p>登録されたメニューがありません。上のボタンから追加できます。</p>
 			</div>
 		{:else}
 			{#if invItems.length === 0}
@@ -569,7 +627,6 @@
 	.error-msg { font-size: 0.85rem; color: #c0392b; margin: 0 0 12px; }
 	.loading { text-align: center; padding: 60px; color: #7a6f67; }
 	.empty { text-align: center; padding: 40px 20px; color: #9e9289; font-size: 0.9rem; }
-	.empty-link { display: inline-block; margin-top: 10px; color: #d56d04; text-decoration: none; font-weight: 600; }
 
 	.notice {
 		background: #fffbeb;
@@ -867,4 +924,64 @@
 		margin-top: 12px; font-size: 0.78rem; color: #7a6f67;
 		display: flex; align-items: center; gap: 6px;
 	}
+
+	/* マイメニュー追加 */
+	.menu-tab-header {
+		display: flex;
+		justify-content: flex-end;
+		margin-bottom: 12px;
+	}
+	.btn-add-menu {
+		padding: 8px 18px;
+		background: #d56d04;
+		color: #fff;
+		border: none;
+		border-radius: 8px;
+		font-size: 0.88rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.btn-add-menu:hover { background: #b85d03; }
+	.add-menu-form {
+		background: #faf8f5;
+		border: 1.5px solid #e8e0d8;
+		border-radius: 14px;
+		padding: 16px;
+		margin-bottom: 16px;
+	}
+	.add-menu-title {
+		font-size: 0.9rem;
+		font-weight: 700;
+		color: #26201a;
+		margin: 0 0 12px;
+	}
+	.add-menu-fields {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin-bottom: 12px;
+	}
+	.add-menu-input {
+		padding: 9px 12px;
+		border: 1.5px solid #e2e8f0;
+		border-radius: 8px;
+		font-size: 0.9rem;
+		font-family: inherit;
+	}
+	.add-menu-input:focus { outline: none; border-color: #d56d04; }
+	.add-menu-actions {
+		display: flex;
+		gap: 8px;
+	}
+	.btn-confirm-menu {
+		padding: 8px 20px;
+		background: #26201a;
+		color: #fff;
+		border: none;
+		border-radius: 8px;
+		font-size: 0.88rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.btn-confirm-menu:disabled { opacity: 0.5; cursor: default; }
 </style>

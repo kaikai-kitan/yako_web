@@ -179,6 +179,7 @@
 	<div class="loading">読み込み中...</div>
 {:else}
 <div class="page">
+	<a href="{base}/mypage" class="back-link">← マイページ</a>
 	<h1 class="page-title">出店者ダッシュボード</h1>
 
 	<!-- 月選択 -->
@@ -351,6 +352,14 @@
 		padding: 32px 16px 80px;
 		color: #26201a;
 	}
+	.back-link {
+		display: inline-block;
+		font-size: 0.85rem;
+		color: #7a6f67;
+		text-decoration: none;
+		margin-bottom: 12px;
+	}
+	.back-link:hover { color: #26201a; }
 	.page-title {
 		font-size: 1.3rem;
 		font-weight: 700;

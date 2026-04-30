@@ -32,6 +32,7 @@
 	let currentView = $state('map'); // 'map'|'reserve'|'qr'|'active'|'return'|'finish'
 
 	let isDashboardOpen = $state(false);
+	let isExternalMenuOpen = $state(false);
 	let mapMode = $state('active'); // 'available'|'active'
 	let selectedStall = $state(null);
 	let currentUser = $state(null);
@@ -69,6 +70,20 @@
 	let allReservations = $state([]);
 	let isCancellingRes = $state('');
 	let isReturningRes = $state('');
+
+	// 予約フィルター
+	let resStatusFilter = $state('all'); // 'all'|'pending'|'active'|'completed'|'cancelled'
+	let resTypeFilter = $state('all');   // 'all'|'space'|'stall'
+
+	let filteredReservations = $derived(
+		allReservations.filter((r) => {
+			const statusOk = resStatusFilter === 'all' || r.status === resStatusFilter;
+			const typeOk = resTypeFilter === 'all'
+				|| (resTypeFilter === 'space' && r.rental_space_id && !r.stall_id)
+				|| (resTypeFilter === 'stall' && r.stall_id);
+			return statusOk && typeOk;
+		})
+	);
 
 	// 売上集計（derived）
 	let salesTotalRevenue = $derived(
@@ -213,10 +228,18 @@
 				if (mapInstance) updateMarkers(mapInstance);
 			})
 			.on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, async () => {
-				[activeStalls, bookedStallIds] = await Promise.all([
+				const [activeStallsData, bookedData, myResData, allResData] = await Promise.all([
 					getActiveStalls(),
-					getBookedStallIds()
+					getBookedStallIds(),
+					currentUser ? getUserReservations(currentUser.id) : Promise.resolve([]),
+					currentUser ? getMyReservations(currentUser.id) : Promise.resolve([])
 				]);
+				activeStalls = activeStallsData;
+				bookedStallIds = bookedData;
+				if (currentUser) {
+					myUserReservations = myResData ?? [];
+					allReservations = allResData ?? [];
+				}
 				if (mapInstance) updateMarkers(mapInstance);
 			})
 			.subscribe();
@@ -380,6 +403,7 @@
 	// 予約フォーム state
 	let reservationMode = $state('space-first'); // 'space-first' | 'stall-first'
 	let needsStall = $state(false); // スペース優先フロー: 屋台も必要か
+	let stallOperatingLocation = $state(''); // 屋台のみ予約時の営業場所
 	let reservationForm = $state({
 		spaceId: null, spaceName: '',
 		stallId: '', stallName: '',
@@ -411,6 +435,7 @@
 	function goReserveFromStall() {
 		reservationMode = 'stall-first';
 		needsStall = false;
+		stallOperatingLocation = '';
 		reservationForm = {
 			spaceId: null, spaceName: '',
 			stallId: selectedStall?.id ?? '',
@@ -450,6 +475,9 @@
 			// Flow B: 屋台のみ必須
 			if (!reservationForm.stallId) {
 				reservationError = '使用する屋台を選択してください'; return;
+			}
+			if (!stallOperatingLocation.trim()) {
+				reservationError = '営業場所を入力してください'; return;
 			}
 		} else {
 			// Flow A: スペース必須、屋台は「はい」選択時のみ必須
@@ -724,8 +752,9 @@
 
 	// ===== 予約確認パネル用ヘルパー =====
 	function formatDate(isoString) {
-		return new Date(isoString).toLocaleDateString('ja-JP', {
-			year: 'numeric', month: 'short', day: 'numeric'
+		return new Date(isoString).toLocaleString('ja-JP', {
+			year: 'numeric', month: 'short', day: 'numeric',
+			hour: '2-digit', minute: '2-digit'
 		});
 	}
 
@@ -1039,8 +1068,20 @@
 								<span class="form-label">予約屋台</span>
 								<div class="form-value">🏮 {reservationForm.stallName}</div>
 							</div>
+							<div class="form-section">
+								<label class="form-label" for="operating-location">
+									営業場所 <span class="req">*</span>
+								</label>
+								<input
+									id="operating-location"
+									type="text"
+									bind:value={stallOperatingLocation}
+									class="form-input"
+									placeholder="例: 鴨川河川敷・出町柳付近"
+								/>
+							</div>
 							<div class="flow-info-box">
-								スペースは当日現地で空きを確認して使用してください。スペース予約が必要な場合はマップからスペースピンを選択してください。
+								スペース予約が必要な場合はマップからスペースピンを選択してください。
 							</div>
 						{/if}
 
@@ -1276,6 +1317,28 @@
 
 	<!-- ボトムナビゲーション -->
 	{#if currentView === 'map'}
+		<!-- 外部リンクポップアップ -->
+		{#if isExternalMenuOpen}
+			<div class="ext-menu-overlay" onclick={() => (isExternalMenuOpen = false)}
+				onkeydown={(e) => e.key === 'Escape' && (isExternalMenuOpen = false)}
+				role="button" tabindex="-1" aria-label="メニューを閉じる">
+			</div>
+			<div class="ext-menu">
+				<a href="{base}/" class="ext-menu-item">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ext-menu-icon"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+					ホームページ
+				</a>
+				<a href="{base}/shop" class="ext-menu-item">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ext-menu-icon"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+					公式オンラインストア
+				</a>
+				<a href="{base}/contact" class="ext-menu-item">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ext-menu-icon"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+					お問合せ
+				</a>
+			</div>
+		{/if}
+
 		<nav class="bottom-nav">
 			<button class="nav-item" class:active={isReservationOpen}
 				onclick={() => { isReservationOpen = true; isDashboardOpen = false; }}>
@@ -1286,6 +1349,14 @@
 				<img src="{base}/images/map_icon/yatainin.jpg" alt="マイページ" class="nav-icon" />
 				<span>マイページ</span>
 			</a>
+			<button class="nav-item" class:active={isExternalMenuOpen}
+				onclick={() => (isExternalMenuOpen = !isExternalMenuOpen)}>
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+					stroke-linecap="round" stroke-linejoin="round" class="nav-icon-svg" aria-hidden="true">
+					<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+				</svg>
+				<span>メニュー ▾</span>
+			</button>
 			<button class="nav-item" onclick={handleAuthNav}>
 				{#if currentUser}
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -1329,11 +1400,34 @@
 				<p class="empty-history">予約履歴はありません</p>
 				<p class="empty-history" style="margin-top:0">マップから屋台・スペースを予約してみましょう</p>
 			{:else}
+				<!-- フィルター -->
+				<div class="res-filters">
+					<div class="res-filter-group">
+						<span class="res-filter-label">種類</span>
+						<div class="res-filter-btns">
+							<button class="res-filter-btn" class:active={resTypeFilter === 'all'} onclick={() => (resTypeFilter = 'all')}>すべて</button>
+							<button class="res-filter-btn" class:active={resTypeFilter === 'space'} onclick={() => (resTypeFilter = 'space')}>📍 スペース</button>
+							<button class="res-filter-btn" class:active={resTypeFilter === 'stall'} onclick={() => (resTypeFilter = 'stall')}>🏮 屋台</button>
+						</div>
+					</div>
+					<div class="res-filter-group">
+						<span class="res-filter-label">ステータス</span>
+						<div class="res-filter-btns">
+							<button class="res-filter-btn" class:active={resStatusFilter === 'all'} onclick={() => (resStatusFilter = 'all')}>すべて</button>
+							<button class="res-filter-btn" class:active={resStatusFilter === 'pending'} onclick={() => (resStatusFilter = 'pending')}>予約中</button>
+							<button class="res-filter-btn" class:active={resStatusFilter === 'active'} onclick={() => (resStatusFilter = 'active')}>利用中</button>
+							<button class="res-filter-btn" class:active={resStatusFilter === 'completed'} onclick={() => (resStatusFilter = 'completed')}>利用済み</button>
+						</div>
+					</div>
+				</div>
+
 				<div class="res-list">
-					{#each allReservations as res}
+					{#each filteredReservations as res}
 						<div class="res-card">
 							<div class="res-card-header">
-								<span class="res-space-name">{res.rental_spaces?.name ?? '不明'}</span>
+								<span class="res-space-name">
+									{res.rental_spaces?.name ?? (res.stall_specs?.stall_name ? '🏮 屋台のみ予約' : '不明')}
+								</span>
 								<span class="res-badge {resStatusClass(res.status)}">{resStatusLabel(res.status)}</span>
 							</div>
 							{#if res.stall_specs?.stall_name}
@@ -1950,6 +2044,80 @@
 	.res-action-scan  { background: #0f172a; color: white; }
 	.res-action-return { background: #0f172a; color: white; }
 	.res-action-cancel { background: none; border: 1.5px solid #cbd5e1; color: #64748b; }
+
+	/* 外部リンクメニュー */
+	.ext-menu-overlay {
+		position: fixed; inset: 0; z-index: 790;
+	}
+	.ext-menu {
+		position: fixed;
+		bottom: 78px;
+		right: 8px;
+		background: white;
+		border-radius: 14px;
+		box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+		padding: 8px 0;
+		z-index: 800;
+		min-width: 180px;
+	}
+	.ext-menu-item {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 12px 18px;
+		font-size: 0.88rem;
+		font-weight: 600;
+		color: #0f172a;
+		text-decoration: none;
+		border-bottom: 1px solid #f1f5f9;
+	}
+	.ext-menu-item:last-child { border-bottom: none; }
+	.ext-menu-item:hover { background: #f8fafc; }
+	.ext-menu-icon { width: 18px; height: 18px; flex-shrink: 0; color: #64748b; }
+
+	/* 予約フィルター */
+	.res-filters {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		margin-bottom: 16px;
+		padding: 12px;
+		background: #f1f5f9;
+		border-radius: 12px;
+	}
+	.res-filter-group {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+	.res-filter-label {
+		font-size: 0.72rem;
+		font-weight: 700;
+		color: #64748b;
+		min-width: 40px;
+	}
+	.res-filter-btns {
+		display: flex;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+	.res-filter-btn {
+		padding: 4px 12px;
+		border-radius: 20px;
+		border: 1.5px solid #cbd5e1;
+		background: white;
+		color: #64748b;
+		font-size: 0.75rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	.res-filter-btn.active {
+		background: #0f172a;
+		border-color: #0f172a;
+		color: white;
+	}
 
 	/* ライトボックス */
 	.lightbox-overlay {

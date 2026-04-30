@@ -16,12 +16,14 @@
 
 	// フォームデータ
 	let stallName = $state('');
+	let stallAddress = $state('');
 	let specs = $state('');
 	let rentalFee = $state('');
 	let lat = $state(null);
 	let lng = $state(null);
 	let photoFile = $state(null);
 	let photoPreview = $state('');
+	let isLocating = $state(false);
 
 	onMount(async () => {
 		const {
@@ -41,24 +43,61 @@
 		await initMap();
 	});
 
+	let mapRef = null;
+	let leafletRef = null;
+
 	async function initMap() {
 		try {
 			const L = (await import('leaflet')).default;
+			leafletRef = L;
 			const map = L.map(mapContainer, { center: [35.009, 135.772], zoom: 15 });
+			mapRef = map;
 			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
 				maxZoom: 19,
 			}).addTo(map);
 
 			map.on('click', (e) => {
-				lat = parseFloat(e.latlng.lat.toFixed(6));
-				lng = parseFloat(e.latlng.lng.toFixed(6));
-				if (pickerMarker) pickerMarker.remove();
-				pickerMarker = L.marker([lat, lng]).addTo(map);
+				setPin(L, map, e.latlng.lat, e.latlng.lng);
 			});
 		} catch (e) {
 			console.error('Map init error:', e);
 		}
+	}
+
+	function setPin(L, map, newLat, newLng) {
+		lat = parseFloat(newLat.toFixed(6));
+		lng = parseFloat(newLng.toFixed(6));
+		if (pickerMarker) pickerMarker.remove();
+		pickerMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
+		pickerMarker.on('dragend', (e) => {
+			const pos = e.target.getLatLng();
+			lat = parseFloat(pos.lat.toFixed(6));
+			lng = parseFloat(pos.lng.toFixed(6));
+		});
+	}
+
+	function useCurrentLocation() {
+		if (!navigator.geolocation) {
+			errorMessage = 'お使いのブラウザは位置情報に対応していません';
+			return;
+		}
+		isLocating = true;
+		navigator.geolocation.getCurrentPosition(
+			(pos) => {
+				const { latitude, longitude } = pos.coords;
+				if (mapRef && leafletRef) {
+					mapRef.setView([latitude, longitude], 16);
+					setPin(leafletRef, mapRef, latitude, longitude);
+				}
+				isLocating = false;
+			},
+			() => {
+				errorMessage = '位置情報の取得に失敗しました。地図をタップして指定してください。';
+				isLocating = false;
+			},
+			{ timeout: 10000 }
+		);
 	}
 
 	function onPhotoChange(e) {
@@ -81,6 +120,7 @@
 			}
 			await createStallSpec(userId, {
 				stall_name: stallName.trim(),
+				address: stallAddress.trim() || null,
 				specs: specs.trim() || null,
 				rental_fee: rentalFee ? parseInt(rentalFee) : 0,
 				lat,
@@ -108,12 +148,17 @@
 	{:else}
 		<!-- 地図ピン設定 -->
 		<div class="map-section">
-			<p class="map-instruction">
-				🏮 地図をタップして屋台の現在地を指定してください
-				{#if lat !== null}
-					<span class="coords">({lat}, {lng})</span>
-				{/if}
-			</p>
+			<div class="map-instruction-row">
+				<p class="map-instruction">
+					🏮 地図をタップして屋台の現在地を指定（ピンはドラッグで移動可）
+					{#if lat !== null}
+						<span class="coords">({lat}, {lng})</span>
+					{/if}
+				</p>
+				<button type="button" class="gps-btn" onclick={useCurrentLocation} disabled={isLocating}>
+					{isLocating ? '取得中…' : '📍 現在地を取得'}
+				</button>
+			</div>
 			<div class="map-container" bind:this={mapContainer}></div>
 		</div>
 
@@ -142,6 +187,11 @@
 			<label class="field-label">
 				屋台名 <span class="req">*</span>
 				<input type="text" bind:value={stallName} class="field-input" placeholder="例: 鴨川珈琲 壱号台" required />
+			</label>
+
+			<label class="field-label">
+				住所・場所の説明
+				<input type="text" bind:value={stallAddress} class="field-input" placeholder="例: 京都市左京区下鴨半木町（鴨川河川敷）" />
 			</label>
 
 			<label class="field-label">
@@ -186,7 +236,28 @@
 
 	.map-section { margin-bottom: 24px; }
 
-	.map-instruction { font-size: 0.85rem; color: #475569; margin-bottom: 8px; }
+	.map-instruction-row {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 8px;
+		margin-bottom: 8px;
+		flex-wrap: wrap;
+	}
+	.map-instruction { font-size: 0.85rem; color: #475569; margin: 0; flex: 1; }
+	.gps-btn {
+		flex-shrink: 0;
+		padding: 7px 14px;
+		background: #fff;
+		border: 1.5px solid #d56d04;
+		color: #d56d04;
+		border-radius: 8px;
+		font-size: 0.82rem;
+		font-weight: 600;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.gps-btn:disabled { opacity: 0.6; cursor: default; }
 
 	.coords {
 		font-family: monospace; background: #f1f5f9;

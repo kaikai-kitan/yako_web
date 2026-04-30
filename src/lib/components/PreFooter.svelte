@@ -32,6 +32,7 @@
             <h3 class="pf-heading">会社情報</h3>
             <ul class="pf-list">
                 <li><a href="{base}/company">会社概要</a></li>
+                <li><a href="{base}/contact">お問合せ</a></li>
                 <li><a href="{base}/terms">利用規約</a></li>
                 <li><a href="{base}/tokusho">特定商取引法に基づく表記</a></li>
                 <li>
