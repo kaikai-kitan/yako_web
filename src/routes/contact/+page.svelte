@@ -143,24 +143,7 @@
 				</button>
 			</form>
 
-			<div class="alt-contact">
-				<h3>その他のお問合せ方法</h3>
-				<a
-					href="https://www.instagram.com/delta_yako?igsh=MTYxZmJzZG5yZHZieA%3D%3D&utm_source=qr"
-					target="_blank"
-					rel="noopener noreferrer"
-					class="alt-contact-item"
-				>
-					<svg class="ig-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-						stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-						<rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-						<circle cx="12" cy="12" r="4"/>
-						<circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
-					</svg>
-					Instagram DM: @delta_yako
-				</a>
-			</div>
-		{/if}
+			{/if}
 	</div>
 </div>
 
@@ -303,38 +286,4 @@
 		font-size: 0.95rem;
 	}
 
-	.alt-contact {
-		margin-top: 40px;
-		padding-top: 28px;
-		border-top: 1px solid #e8e0d8;
-	}
-	.alt-contact h3 {
-		font-size: 0.88rem;
-		font-weight: 700;
-		color: #7a6f67;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		margin: 0 0 14px;
-	}
-	.alt-contact-item {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		padding: 12px 16px;
-		background: #fff;
-		border: 1.5px solid #e8e0d8;
-		border-radius: 10px;
-		text-decoration: none;
-		font-size: 0.9rem;
-		font-weight: 600;
-		color: #26201a;
-		transition: border-color 0.15s;
-	}
-	.alt-contact-item:hover { border-color: #d56d04; }
-	.ig-icon {
-		width: 20px;
-		height: 20px;
-		stroke: #e1306c;
-		flex-shrink: 0;
-	}
 </style>
