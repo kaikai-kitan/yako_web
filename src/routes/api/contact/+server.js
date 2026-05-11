@@ -6,7 +6,7 @@ import { Resend } from 'resend';
 export const prerender = false;
 
 const NOTIFY_EMAIL = 'delta10yako@gmail.com';
-const FROM_EMAIL = 'onboarding@resend.dev';
+const FROM_EMAIL = 'no-reply@delta-yako.com';
 
 export async function POST({ request }) {
 	let body;

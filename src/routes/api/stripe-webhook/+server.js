@@ -5,7 +5,81 @@ import { Resend } from 'resend';
 
 export const prerender = false;
 
-const FROM_EMAIL = 'onboarding@resend.dev';
+const FROM_EMAIL = 'no-reply@delta-yako.com';
+
+/** 管理者向け決済通知メール（全決済共通） */
+async function sendAdminNotification({ resend, adminEmails, type, totalAmount, items, customerEmail, orderId }) {
+	if (!adminEmails?.length) return;
+	const typeLabel = type === 'rental' ? '🏮 屋台レンタル決済' : '🛒 ショップ注文';
+	const itemsHtml = (items ?? []).length > 0
+		? `<ul style="margin:8px 0;padding-left:20px;font-size:0.9rem">${items.map(i => `<li>${i.name} × ${i.quantity}</li>`).join('')}</ul>`
+		: '';
+
+	await resend.emails.send({
+		from: FROM_EMAIL,
+		to: adminEmails,
+		subject: `【微小夜行電灯】${typeLabel} ¥${totalAmount.toLocaleString()} 決済完了`,
+		html: `
+			<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#26201a">
+				<h2 style="background:#fbf3ea;padding:16px 20px;margin:0;font-size:1rem;border-left:4px solid #d56d04">
+					${typeLabel}が完了しました
+				</h2>
+				<div style="padding:20px">
+					<table style="width:100%;font-size:0.9rem;border-collapse:collapse">
+						<tr><td style="padding:6px 0;color:#7a6f67;width:120px">金額</td><td style="padding:6px 0;font-weight:700">¥${totalAmount.toLocaleString()}</td></tr>
+						<tr><td style="padding:6px 0;color:#7a6f67">購入者メール</td><td style="padding:6px 0">${customerEmail ?? '不明'}</td></tr>
+						<tr><td style="padding:6px 0;color:#7a6f67">注文ID</td><td style="padding:6px 0;font-size:0.78rem">${orderId}</td></tr>
+					</table>
+					${itemsHtml}
+				</div>
+			</div>
+		`
+	});
+}
+
+/** 購入者向け注文確認メール */
+async function sendCustomerConfirmation({ resend, toEmail, items, totalAmount, orderId }) {
+	if (!toEmail) return;
+	const itemRows = (items ?? []).map(i => `
+		<tr>
+			<td style="padding:6px 12px;border-bottom:1px solid #f0ede8">${i.name}</td>
+			<td style="padding:6px 12px;border-bottom:1px solid #f0ede8;text-align:center">${i.quantity}</td>
+			<td style="padding:6px 12px;border-bottom:1px solid #f0ede8;text-align:right">¥${(i.price * i.quantity).toLocaleString()}</td>
+		</tr>`).join('');
+
+	await resend.emails.send({
+		from: FROM_EMAIL,
+		to: toEmail,
+		subject: '【微小夜行電灯】ご注文ありがとうございます',
+		html: `
+			<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#26201a">
+				<h2 style="background:#fbf3ea;padding:16px 20px;margin:0;font-size:1rem;border-left:4px solid #d56d04">
+					ご注文ありがとうございます
+				</h2>
+				<div style="padding:20px">
+					<p>以下の内容でご注文を承りました。発送準備ができ次第ご連絡いたします。</p>
+					<table style="width:100%;border-collapse:collapse;font-size:0.9rem;margin-top:8px">
+						<thead>
+							<tr style="background:#f8f5f0">
+								<th style="padding:6px 12px;text-align:left">商品名</th>
+								<th style="padding:6px 12px">数量</th>
+								<th style="padding:6px 12px;text-align:right">金額</th>
+							</tr>
+						</thead>
+						<tbody>${itemRows}</tbody>
+						<tfoot>
+							<tr>
+								<td colspan="2" style="padding:8px 12px;font-weight:bold">合計</td>
+								<td style="padding:8px 12px;font-weight:bold;text-align:right">¥${totalAmount.toLocaleString()}</td>
+							</tr>
+						</tfoot>
+					</table>
+					<p style="font-size:0.78rem;color:#94a3b8;margin-top:20px">注文ID: ${orderId}</p>
+				</div>
+			</div>
+		`
+	});
+}
 
 /** 出店者向け受注通知メール */
 async function sendOperatorNotification({ resend, toEmail, items, totalAmount, shipping, orderId }) {
@@ -105,6 +179,13 @@ export async function POST({ request }) {
 
 		const supabase = createClient(supabaseUrl, serviceKey);
 
+		const adminEmails = (env.ADMIN_EMAILS ?? '')
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean);
+		const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+		const customerEmail = session.customer_details?.email ?? null;
+
 		if (metadata.type === 'rental' && metadata.reservationId) {
 			// レンタル決済: 予約をアクティブ化
 			const { error } = await supabase
@@ -113,6 +194,23 @@ export async function POST({ request }) {
 				.eq('id', metadata.reservationId)
 				.in('status', ['pending', 'active']);
 			if (error) console.error('Reservation activate error:', error);
+
+			// 管理者へ決済通知
+			if (resend) {
+				try {
+					await sendAdminNotification({
+						resend,
+						adminEmails,
+						type: 'rental',
+						totalAmount: session.amount_total,
+						items: [],
+						customerEmail,
+						orderId: session.id
+					});
+				} catch (e) {
+					console.error('Admin notification email error:', e);
+				}
+			}
 		} else {
 			// ショップ注文: 出店者を特定して受注データを記録
 			const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
@@ -157,7 +255,7 @@ export async function POST({ request }) {
 					status: 'paid',
 					shipping_status: 'pending',
 					settlement_status: 'unsettled',
-					customer_email: session.customer_details?.email ?? null,
+					customer_email: customerEmail,
 					shipping_address: shipping
 						? {
 								name:        shipping.name,
@@ -174,20 +272,49 @@ export async function POST({ request }) {
 			);
 			if (error) console.error('Order upsert error:', error);
 
-			// 出店者へ受注メール通知
-			if (operatorEmail && env.RESEND_API_KEY) {
+			if (resend) {
+				// 管理者へ決済通知
 				try {
-					const resend = new Resend(env.RESEND_API_KEY);
-					await sendOperatorNotification({
+					await sendAdminNotification({
 						resend,
-						toEmail: operatorEmail,
-						items,
+						adminEmails,
+						type: 'shop',
 						totalAmount: session.amount_total,
-						shipping,
+						items,
+						customerEmail,
 						orderId: session.id
 					});
 				} catch (e) {
-					console.error('Operator notification email error:', e);
+					console.error('Admin notification email error:', e);
+				}
+
+				// 購入者へ注文確認メール
+				try {
+					await sendCustomerConfirmation({
+						resend,
+						toEmail: customerEmail,
+						items,
+						totalAmount: session.amount_total,
+						orderId: session.id
+					});
+				} catch (e) {
+					console.error('Customer confirmation email error:', e);
+				}
+
+				// 出店者へ受注メール通知
+				if (operatorEmail) {
+					try {
+						await sendOperatorNotification({
+							resend,
+							toEmail: operatorEmail,
+							items,
+							totalAmount: session.amount_total,
+							shipping,
+							orderId: session.id
+						});
+					} catch (e) {
+						console.error('Operator notification email error:', e);
+					}
 				}
 			}
 		}
