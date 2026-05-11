@@ -6,11 +6,7 @@
 
 	import Header from '$lib/components/Header.svelte';
 	import PreFooter from '$lib/components/PreFooter.svelte';
-	import { dev } from '$app/environment';
-	import { injectAnalytics } from '@vercel/analytics/sveltekit';
 	import { page } from '$app/stores';
-
-	injectAnalytics({ mode: dev ? 'development' : 'production' });
 
 	let { children } = $props();
 
@@ -31,8 +27,8 @@
 	<meta property="og:type" content="website" />
 	<meta property="og:title" content="微小夜行電灯" />
 	<meta property="og:description" content="京都・鴨川河川敷で屋台を借りて出店できるシェアリングサービス。" />
-	<meta property="og:image" content="https://yako-web.vercel.app/images/shop/yatai.jpg" />
-	<meta property="og:url" content="https://yako-web.vercel.app/" />
+	<meta property="og:image" content="/images/shop/yatai.jpg" />
+	<meta property="og:url" content="https://yako-web.pages.dev/" />
 	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
