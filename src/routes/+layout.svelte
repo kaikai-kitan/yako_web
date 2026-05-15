@@ -1,5 +1,6 @@
 <!-- 基本レイアウト -->
 <script>
+	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import favicon from '$lib/assets/favicon.png';
 	import 'leaflet/dist/leaflet.css';
@@ -7,8 +8,23 @@
 	import Header from '$lib/components/Header.svelte';
 	import PreFooter from '$lib/components/PreFooter.svelte';
 	import { page } from '$app/stores';
+	import { session } from '$lib/auth.js';
+	import { supabase } from '$lib/supabase.js';
 
 	let { children } = $props();
+
+	// onMount はブラウザでのみ実行されるため browser チェック不要
+	onMount(() => {
+		supabase.auth.getSession().then(({ data }) => {
+			session.set(data.session);
+		});
+
+		const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+			session.set(newSession);
+		});
+
+		return () => subscription.unsubscribe();
+	});
 
 	// /map・/yatakari・/mypage系 はYATAKARIアプリとして別タブで開くためナビ・フッターを非表示
 	let hideShell = $derived(
