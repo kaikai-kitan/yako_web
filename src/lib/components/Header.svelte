@@ -6,14 +6,18 @@
     import { goto } from '$app/navigation';
 
     let isMenuOpen = $state(false);
+    let isUserMenuOpen = $state(false);
     let currentPath = $derived($page.url.pathname);
 
-    function toggleMenu() { isMenuOpen = !isMenuOpen; }
+    function toggleMenu() { isMenuOpen = !isMenuOpen; isUserMenuOpen = false; }
     function closeMenu() { isMenuOpen = false; }
+    function toggleUserMenu() { isUserMenuOpen = !isUserMenuOpen; isMenuOpen = false; }
+    function closeUserMenu() { isUserMenuOpen = false; }
 
     async function handleSignOut() {
         await signOut();
         closeMenu();
+        closeUserMenu();
         goto(`${base}/`);
     }
 </script>
@@ -56,6 +60,51 @@
             <a href="{base}/auth" class="desktop-nav-item desktop-auth-link" onclick={closeMenu}>ログイン</a>
         {/if}
     </nav>
+
+    <!-- ユーザーアイコン -->
+    <div class="user-menu-wrap">
+        <button class="user-icon-btn" onclick={toggleUserMenu}
+            aria-label="ユーザーメニュー" aria-expanded={isUserMenuOpen}>
+            {#if $session}
+                <svg viewBox="0 0 24 24" fill="currentColor" class="user-svg" aria-hidden="true">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+            {:else}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round" class="user-svg" aria-hidden="true">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+            {/if}
+        </button>
+
+        {#if isUserMenuOpen}
+            <div class="user-dropdown"
+                role="menu"
+                tabindex="-1"
+                onkeydown={(e) => e.key === 'Escape' && closeUserMenu()}>
+                {#if $session}
+                    <a href="{base}/mypage" class="dropdown-item" onclick={closeUserMenu} role="menuitem">
+                        マイページ
+                    </a>
+                    <a href="{base}/mypage/operator" class="dropdown-item" onclick={closeUserMenu} role="menuitem">
+                        🛍 出店者管理
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item dropdown-signout" onclick={handleSignOut} role="menuitem">
+                        ログアウト
+                    </button>
+                {:else}
+                    <a href="{base}/auth" class="dropdown-item" onclick={closeUserMenu} role="menuitem">
+                        ログイン
+                    </a>
+                {/if}
+            </div>
+            <!-- クリック外で閉じる -->
+            <div class="dropdown-backdrop" onclick={closeUserMenu} aria-hidden="true"></div>
+        {/if}
+    </div>
 
     <!-- ハンバーガーボタン -->
     <button class="hamburger" class:active={isMenuOpen} onclick={toggleMenu}
@@ -212,6 +261,38 @@
     .desktop-nav-item:hover { background: #f5f0ea; }
     .desktop-auth-link, .desktop-auth-btn {
         border: 1.5px solid #26201a; border-radius: 6px; padding: 6px 12px;
+    }
+
+    /* ユーザーアイコン */
+    .user-menu-wrap { position: relative; flex-shrink: 0; }
+    .user-icon-btn {
+        width: 36px; height: 36px; border-radius: 50%;
+        border: 1.5px solid #e8e0d8; background: white;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; padding: 6px; transition: border-color 0.15s;
+    }
+    .user-icon-btn:hover { border-color: #d56d04; }
+    .user-svg { width: 20px; height: 20px; color: #26201a; }
+
+    .user-dropdown {
+        position: absolute; top: calc(100% + 8px); right: 0;
+        min-width: 160px; background: white;
+        border: 1px solid #e8e0d8; border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        overflow: hidden; z-index: 300;
+    }
+    .dropdown-item {
+        display: block; width: 100%; padding: 11px 16px;
+        font-size: 0.88rem; color: #26201a;
+        text-decoration: none; background: none; border: none;
+        text-align: left; font-family: inherit; cursor: pointer;
+        transition: background 0.12s;
+    }
+    .dropdown-item:hover { background: #faf8f5; }
+    .dropdown-divider { height: 1px; background: #ede8e0; margin: 2px 0; }
+    .dropdown-signout { color: #c62828; }
+    .dropdown-backdrop {
+        position: fixed; inset: 0; z-index: 299;
     }
 
     /* ハンバーガー */

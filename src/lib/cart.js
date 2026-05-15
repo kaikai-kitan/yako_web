@@ -6,12 +6,15 @@ function createCart() {
 	return {
 		subscribe,
 		add(product) {
-			update((c) => ({
-				...c,
-				[product.id]: c[product.id]
-					? { product, quantity: c[product.id].quantity + 1 }
-					: { product, quantity: 1 }
-			}));
+			update((c) => {
+				const current = c[product.id]?.quantity ?? 0;
+				const maxStock = product.stock !== null && product.stock !== undefined ? product.stock : Infinity;
+				if (current >= maxStock) return c;
+				return {
+					...c,
+					[product.id]: { product, quantity: current + 1 }
+				};
+			});
 		},
 		remove(productId) {
 			update((c) => {
@@ -22,12 +25,15 @@ function createCart() {
 		updateQty(productId, delta) {
 			update((c) => {
 				if (!c[productId]) return c;
+				const product = c[productId].product;
+				const maxStock = product.stock !== null && product.stock !== undefined ? product.stock : Infinity;
 				const newQty = c[productId].quantity + delta;
 				if (newQty <= 0) {
 					const { [productId]: _, ...rest } = c;
 					return rest;
 				}
-				return { ...c, [productId]: { ...c[productId], quantity: newQty } };
+				const clampedQty = Math.min(newQty, maxStock);
+				return { ...c, [productId]: { ...c[productId], quantity: clampedQty } };
 			});
 		},
 		clear() {

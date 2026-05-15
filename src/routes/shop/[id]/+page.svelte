@@ -2,10 +2,12 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { base } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import { supabase } from '$lib/supabase.js';
 	import { cart, cartCount, cartTotal, cartItems } from '$lib/cart.js';
 
 	let product = $state(null);
+	let operatorProfile = $state(null);
 	let isLoading = $state(true);
 	let fetchError = $state('');
 	let quantity = $state(1);
@@ -14,26 +16,73 @@
 	let isCheckingOut = $state(false);
 	let checkoutError = $state('');
 
+	// お気に入り
+	let isFavorited = $state(false);
+	let currentUserId = $state(null);
+
+	let soldOut = $derived(
+		product && product.stock !== null && product.stock !== undefined && product.stock <= 0
+	);
+	let maxQty = $derived(
+		product?.stock !== null && product?.stock !== undefined ? product.stock : 99
+	);
+
 	onMount(async () => {
 		const id = $page.params.id;
-		const { data, error } = await supabase
-			.from('shop_products')
-			.select('*')
-			.eq('id', id)
-			.eq('is_active', true)
-			.single();
 
-		if (error || !data) {
+		const [productRes, sessionRes] = await Promise.all([
+			supabase.from('shop_products')
+				.select('*, operators(id, business_name, icon_path, user_id)')
+				.eq('id', id).eq('is_active', true).single(),
+			supabase.auth.getSession()
+		]);
+
+		if (productRes.error || !productRes.data) {
 			fetchError = '商品が見つかりませんでした';
 		} else {
-			product = data;
+			product = productRes.data;
+			// 出店者プロフィールをuser_profilesから取得
+			const opUserId = product.operators?.user_id ?? null;
+			if (opUserId) {
+				const { data: profile } = await supabase
+					.from('user_profiles')
+					.select('bio, icon_path')
+					.eq('user_id', opUserId)
+					.maybeSingle();
+				operatorProfile = {
+					name: product.operators?.business_name ?? '出店者',
+					icon: profile?.icon_path ?? product.operators?.icon_path ?? null,
+					bio: profile?.bio ?? null
+				};
+			}
+		}
+
+		const userId = sessionRes.data?.session?.user?.id ?? null;
+		currentUserId = userId;
+		if (userId && product) {
+			const { data: fav } = await supabase.from('favorites')
+				.select('id').eq('user_id', userId).eq('product_id', id).maybeSingle();
+			isFavorited = !!fav;
 		}
 		isLoading = false;
 	});
 
+	async function toggleFavorite() {
+		if (!currentUserId) { goto(`${base}/auth`); return; }
+		if (isFavorited) {
+			await supabase.from('favorites').delete()
+				.eq('user_id', currentUserId).eq('product_id', product.id);
+			isFavorited = false;
+		} else {
+			await supabase.from('favorites').insert({ user_id: currentUserId, product_id: product.id });
+			isFavorited = true;
+		}
+	}
+
 	function handleAddToCart() {
-		if (!product) return;
-		for (let i = 0; i < quantity; i++) {
+		if (!product || soldOut) return;
+		const addCount = Math.min(quantity, maxQty);
+		for (let i = 0; i < addCount; i++) {
 			cart.add(product);
 		}
 		addedMsg = 'カートに追加しました！';
@@ -111,21 +160,45 @@
 			<div class="detail-layout">
 				<!-- 商品画像 -->
 				<div class="image-col">
-					<div class="img-wrap" class:soldout={product.stock !== null && product.stock !== undefined && product.stock <= 0}>
+					<div class="img-wrap" class:soldout={soldOut}>
 						{#if product.photo_url}
 							<img src={product.photo_url} alt={product.name} class="product-photo" />
 						{:else}
 							<div class="product-photo no-img">🛍</div>
 						{/if}
-						{#if product.stock !== null && product.stock !== undefined && product.stock <= 0}
+						{#if soldOut}
 							<div class="soldout-overlay">SOLD OUT</div>
 						{/if}
+						<button class="heart-btn" class:active={isFavorited}
+							onclick={toggleFavorite}
+							aria-label={isFavorited ? 'お気に入りを解除' : 'お気に入りに追加'}>
+							<svg viewBox="0 0 24 24" fill={isFavorited ? 'currentColor' : 'none'}
+								stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+							</svg>
+						</button>
 					</div>
 				</div>
 
 				<!-- 商品情報 -->
 				<div class="info-col">
-					<p class="brand">微小夜行電灯</p>
+					<!-- 出店者プロフィール -->
+					{#if operatorProfile}
+						<div class="operator-row">
+							{#if operatorProfile.icon}
+								<img src={operatorProfile.icon} alt={operatorProfile.name} class="operator-icon" />
+							{:else}
+								<div class="operator-icon operator-icon-placeholder">👤</div>
+							{/if}
+							<div>
+								<p class="operator-name">{operatorProfile.name}</p>
+								{#if operatorProfile.bio}
+									<p class="operator-bio">{operatorProfile.bio}</p>
+								{/if}
+							</div>
+						</div>
+					{/if}
+
 					<h1 class="product-name">{product.name}</h1>
 					<p class="product-price">¥{product.price.toLocaleString()}<span class="tax-note">（税込）</span></p>
 
@@ -135,7 +208,7 @@
 
 					<div class="divider"></div>
 
-					{#if product.stock === 0}
+					{#if soldOut}
 						<div class="sold-out-badge">現在売り切れです</div>
 					{:else}
 						<!-- 数量選択 -->
@@ -150,12 +223,15 @@
 								<span class="qty-value">{quantity}</span>
 								<button
 									class="qty-btn"
-									onclick={() => quantity = quantity + 1}
+									onclick={() => quantity = Math.min(maxQty, quantity + 1)}
+									disabled={product.stock !== null && quantity >= maxQty}
 								>＋</button>
 							</div>
 						</div>
+						{#if product.stock !== null && product.stock <= 5}
+							<p class="stock-warning">残り {product.stock} 点</p>
+						{/if}
 
-						<!-- カートに追加 -->
 						<button class="add-to-cart-btn" onclick={handleAddToCart}>
 							カートに追加する
 						</button>
@@ -318,6 +394,46 @@
 		font-weight: 800;
 		letter-spacing: 0.15em;
 		pointer-events: none;
+	}
+
+	/* ハートボタン */
+	.heart-btn {
+		position: absolute; top: 10px; right: 10px;
+		width: 38px; height: 38px; border-radius: 50%;
+		background: rgba(255,255,255,0.9);
+		border: none; cursor: pointer; padding: 7px;
+		display: flex; align-items: center; justify-content: center;
+		color: #c8bfb5; transition: color 0.15s, transform 0.15s;
+		backdrop-filter: blur(4px);
+	}
+	.heart-btn:hover { color: #e53e3e; transform: scale(1.1); }
+	.heart-btn.active { color: #e53e3e; }
+	.heart-btn svg { width: 100%; height: 100%; }
+
+	/* 出店者情報 */
+	.operator-row {
+		display: flex; align-items: center; gap: 10px;
+		padding: 10px 12px; background: #f8f5f0;
+		border-radius: 10px; margin-bottom: 14px;
+	}
+	.operator-icon {
+		width: 40px; height: 40px; border-radius: 50%;
+		object-fit: cover; flex-shrink: 0;
+	}
+	.operator-icon-placeholder {
+		background: #e8e0d8; display: flex;
+		align-items: center; justify-content: center;
+		font-size: 1.2rem;
+	}
+	.operator-name { font-size: 0.85rem; font-weight: 700; color: #26201a; margin: 0 0 2px; }
+	.operator-bio { font-size: 0.72rem; color: #7a6f67; margin: 0; }
+
+	/* 在庫警告 */
+	.stock-warning {
+		font-size: 0.78rem; color: #c05621;
+		background: #fff7ed; border: 1px solid #fdba74;
+		border-radius: 6px; padding: 4px 10px;
+		margin: 6px 0; display: inline-block;
 	}
 
 	/* 画像 */

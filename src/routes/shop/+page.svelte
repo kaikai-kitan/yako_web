@@ -16,6 +16,11 @@
 	let checkoutError = $state('');
 	let isCartOpen = $state(false);
 
+	// お気に入り
+	let favoriteIds = $state(new Set());
+	let showFavoritesOnly = $state(false);
+	let currentUserId = $state(null);
+
 	let searchQuery = $state('');
 	let selectedCategory = $state('すべて');
 	let sortMode = $state('おすすめ順');
@@ -23,20 +28,45 @@
 	const SORT_OPTIONS = ['おすすめ順', '価格が安い順', '価格が高い順'];
 
 	onMount(async () => {
-		const { data, error } = await supabase
-			.from('shop_products')
-			.select('*')
-			.eq('is_active', true)
-			.order('display_order', { ascending: true })
-			.order('created_at', { ascending: true });
+		const [productsRes, sessionRes] = await Promise.all([
+			supabase.from('shop_products').select('*').eq('is_active', true)
+				.order('display_order', { ascending: true }).order('created_at', { ascending: true }),
+			supabase.auth.getSession()
+		]);
 
-		if (error) {
+		if (productsRes.error) {
 			fetchError = '商品の取得に失敗しました';
 		} else {
-			products = data ?? [];
+			products = productsRes.data ?? [];
+		}
+
+		const userId = sessionRes.data?.session?.user?.id ?? null;
+		currentUserId = userId;
+		if (userId) {
+			const { data: favs } = await supabase
+				.from('favorites')
+				.select('product_id')
+				.eq('user_id', userId);
+			favoriteIds = new Set((favs ?? []).map(f => f.product_id));
 		}
 		isLoading = false;
 	});
+
+	async function toggleFavorite(e, productId) {
+		e.preventDefault();
+		e.stopPropagation();
+		if (!currentUserId) { goto(`${base}/auth`); return; }
+		if (favoriteIds.has(productId)) {
+			await supabase.from('favorites').delete()
+				.eq('user_id', currentUserId).eq('product_id', productId);
+			const next = new Set(favoriteIds);
+			next.delete(productId);
+			favoriteIds = next;
+		} else {
+			await supabase.from('favorites').insert({ user_id: currentUserId, product_id: productId });
+			favoriteIds = new Set([...favoriteIds, productId]);
+		}
+	}
 
 	// カテゴリ一覧（商品のcategoryフィールドから動的生成 or フォールバック）
 	let categories = $derived(() => {
@@ -46,6 +76,9 @@
 
 	let filteredProducts = $derived(() => {
 		let result = [...products];
+		if (showFavoritesOnly) {
+			result = result.filter(p => favoriteIds.has(p.id));
+		}
 		if (selectedCategory !== 'すべて') {
 			result = result.filter(p => p.category === selectedCategory);
 		}
@@ -65,7 +98,9 @@
 	let recommendedProducts = $derived(products.slice(0, 4));
 	let rankingProducts = $derived(products.slice(0, 5));
 
-	let isSearching = $derived(searchQuery.trim().length > 0 || selectedCategory !== 'すべて');
+	let isSearching = $derived(
+		searchQuery.trim().length > 0 || selectedCategory !== 'すべて' || showFavoritesOnly
+	);
 
 	async function checkout() {
 		if ($cartItems.length === 0) return;
@@ -165,6 +200,20 @@
 				<button class="search-clear" onclick={() => (searchQuery = '')} aria-label="クリア">×</button>
 			{/if}
 		</div>
+		<!-- お気に入りフィルター -->
+		<button
+			class="fav-filter-btn"
+			class:active={showFavoritesOnly}
+			onclick={() => (showFavoritesOnly = !showFavoritesOnly)}
+			aria-pressed={showFavoritesOnly}
+		>
+			<svg viewBox="0 0 24 24" fill={showFavoritesOnly ? 'currentColor' : 'none'}
+				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+				class="fav-filter-icon" aria-hidden="true">
+				<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+			</svg>
+			お気に入りのみ表示
+		</button>
 	</div>
 
 	<main class="shop-main">
@@ -199,6 +248,13 @@
 								{#if isSoldOut(product)}
 									<div class="soldout-overlay">SOLD OUT</div>
 								{/if}
+								<button class="heart-btn" class:active={favoriteIds.has(product.id)}
+									onclick={(e) => toggleFavorite(e, product.id)} aria-label="お気に入り">
+									<svg viewBox="0 0 24 24" fill={favoriteIds.has(product.id) ? 'currentColor' : 'none'}
+										stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+										<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+									</svg>
+								</button>
 							</div>
 							<div class="product-body">
 								<h2 class="product-name">{product.name}</h2>
@@ -304,6 +360,13 @@
 								{#if isSoldOut(product)}
 									<div class="soldout-overlay">SOLD OUT</div>
 								{/if}
+								<button class="heart-btn" class:active={favoriteIds.has(product.id)}
+									onclick={(e) => toggleFavorite(e, product.id)} aria-label="お気に入り">
+									<svg viewBox="0 0 24 24" fill={favoriteIds.has(product.id) ? 'currentColor' : 'none'}
+										stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+										<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+									</svg>
+								</button>
 							</div>
 							<div class="product-body">
 								<h2 class="product-name">{product.name}</h2>
@@ -440,6 +503,35 @@
 	.breadcrumb-link:hover { text-decoration: underline; }
 	.breadcrumb-sep { color: #c8bfb5; }
 	.breadcrumb-current { color: #26201a; font-weight: 600; }
+
+	/* お気に入りフィルター */
+	.fav-filter-btn {
+		display: flex; align-items: center; gap: 6px;
+		margin: 0 16px 10px; padding: 7px 14px;
+		background: white; border: 1.5px solid #e8e0d8;
+		border-radius: 100px; font-size: 0.82rem;
+		color: #7a6f67; font-family: inherit; cursor: pointer;
+		transition: all 0.15s;
+	}
+	.fav-filter-btn.active {
+		background: #fff0f0; border-color: #e57373; color: #c62828;
+	}
+	.fav-filter-icon { width: 16px; height: 16px; flex-shrink: 0; }
+	.fav-filter-btn.active .fav-filter-icon { color: #e53e3e; }
+
+	/* ハートボタン */
+	.heart-btn {
+		position: absolute; top: 6px; right: 6px;
+		width: 30px; height: 30px; border-radius: 50%;
+		background: rgba(255,255,255,0.88);
+		border: none; cursor: pointer; padding: 5px;
+		display: flex; align-items: center; justify-content: center;
+		color: #c8bfb5; transition: color 0.15s, background 0.15s;
+		backdrop-filter: blur(4px);
+	}
+	.heart-btn:hover { color: #e53e3e; background: white; }
+	.heart-btn.active { color: #e53e3e; }
+	.heart-btn svg { width: 100%; height: 100%; }
 
 	/* 検索バー */
 	.search-bar-wrap { padding: 12px 16px; background: #faf8f5; }
