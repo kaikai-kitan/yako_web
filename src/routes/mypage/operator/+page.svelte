@@ -45,6 +45,18 @@
 		}
 		user = session.user;
 
+		// 承認済みオペレーターのみアクセス可
+		const { data: opData } = await supabase
+			.from('operators')
+			.select('shop_application_status')
+			.eq('user_id', user.id)
+			.maybeSingle();
+
+		if (!opData || opData.shop_application_status !== 'approved') {
+			goto(`${base}/mypage`);
+			return;
+		}
+
 		await Promise.all([loadOrders(), loadBankAccount(), loadOperatorEmail()]);
 		isLoading = false;
 	});

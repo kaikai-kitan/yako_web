@@ -25,6 +25,14 @@
 	let myMenuItems = $state([]);
 	let isLoading = $state(true);
 	let userId = $state('');
+	let accessToken = $state('');
+
+	// オンラインショップ申請
+	let completedRentals = $state(0);
+	let shopStatus = $state(null); // operators row の shop_application_status など
+	let isApplying = $state(false);
+	let applyMsg = $state('');
+	let applyError = $state('');
 
 	// ---- プロフィール編集 ----
 	let editName = $state('');
@@ -63,6 +71,7 @@
 		} = await supabase.auth.getSession();
 		if (!session) { goto(`${base}/auth`); return; }
 		userId = session.user.id;
+		accessToken = session.access_token;
 
 		profile = await getMyProfile(userId);
 		if (!profile) { goto(`${base}/auth/setup`); return; }
@@ -76,7 +85,27 @@
 			getMyMenuItems(userId).then((d) => (myMenuItems = d))
 		];
 		if (profile.owners) tasks.push(getMySpaces(userId).then((d) => (mySpaces = d)));
-		if (profile.operators) tasks.push(getMyStalls(userId).then((d) => (myStalls = d)));
+		if (profile.operators) {
+			tasks.push(getMyStalls(userId).then((d) => (myStalls = d)));
+			tasks.push(
+				(async () => {
+					const [{ count }, { data: opData }] = await Promise.all([
+						supabase
+							.from('reservations')
+							.select('id', { count: 'exact', head: true })
+							.eq('user_id', userId)
+							.eq('status', 'completed'),
+						supabase
+							.from('operators')
+							.select('shop_application_status, rejection_reason, applied_at')
+							.eq('user_id', userId)
+							.maybeSingle()
+					]);
+					completedRentals = count ?? 0;
+					shopStatus = opData ?? { shop_application_status: 'none', rejection_reason: null };
+				})()
+			);
+		}
 		await Promise.all(tasks);
 
 		isLoading = false;
@@ -237,6 +266,27 @@
 		const url = `${window.location.origin}/scan?yatai=${stall.id}`;
 		const QRCode = (await import('qrcode')).default;
 		qrDataUrl = await QRCode.toDataURL(url, { width: 280, margin: 2 });
+	}
+
+	async function applyForShop() {
+		isApplying = true;
+		applyError = '';
+		applyMsg = '';
+		try {
+			const res = await fetch('/api/operator/apply', {
+				method: 'POST',
+				headers: { Authorization: `Bearer ${accessToken}` }
+			});
+			if (!res.ok) {
+				const d = await res.json().catch(() => ({}));
+				throw new Error(d.message ?? '申請に失敗しました');
+			}
+			shopStatus = { ...shopStatus, shop_application_status: 'pending' };
+			applyMsg = '申請を送信しました。運営からの連絡をお待ちください。';
+		} catch (e) {
+			applyError = e.message;
+		}
+		isApplying = false;
 	}
 
 
@@ -467,6 +517,64 @@
 							</div>
 						{/each}
 					</div>
+				{/if}
+			</section>
+		{/if}
+
+		<!-- ===== オンラインショップ申請 ===== -->
+		{#if profile.operators && shopStatus}
+			<section class="section shop-apply-section">
+				<h3 class="section-title">🛍 オンラインショップ開設</h3>
+
+				{#if shopStatus.shop_application_status === 'approved'}
+					<div class="shop-status-box approved">
+						<span class="shop-badge approved">✓ 承認済み</span>
+						<p class="shop-status-msg">オンラインショップが開設されています。</p>
+						<a href="{base}/mypage/operator" class="shop-goto-btn">出品者ダッシュボードへ →</a>
+					</div>
+
+				{:else if shopStatus.shop_application_status === 'pending'}
+					<div class="shop-status-box pending">
+						<span class="shop-badge pending">⏳ 審査中</span>
+						<p class="shop-status-msg">申請を受け付けました。運営からの連絡をお待ちください。</p>
+					</div>
+
+				{:else if shopStatus.shop_application_status === 'rejected'}
+					<div class="shop-status-box rejected">
+						<span class="shop-badge rejected">✕ 却下</span>
+						{#if shopStatus.rejection_reason}
+							<p class="rejection-reason">却下理由: {shopStatus.rejection_reason}</p>
+						{/if}
+						{#if completedRentals >= 1}
+							{#if applyMsg}
+								<p class="apply-success">{applyMsg}</p>
+							{/if}
+							{#if applyError}
+								<p class="apply-error">{applyError}</p>
+							{/if}
+							<button class="apply-btn" onclick={applyForShop} disabled={isApplying}>
+								{isApplying ? '申請中…' : '再申請する'}
+							</button>
+						{/if}
+					</div>
+
+				{:else}
+					<!-- none: 申請前 -->
+					{#if completedRentals >= 1}
+						<p class="section-hint">屋台出店の実績が確認されました。オンラインショップを申請できます。</p>
+						{#if applyMsg}
+							<p class="apply-success">{applyMsg}</p>
+						{/if}
+						{#if applyError}
+							<p class="apply-error">{applyError}</p>
+						{/if}
+						<button class="apply-btn" onclick={applyForShop} disabled={isApplying}>
+							{isApplying ? '申請中…' : 'オンラインショップを申請する'}
+						</button>
+					{:else}
+						<p class="empty-msg">オンラインショップ開設には屋台での出店実績（1回以上）が必要です。</p>
+						<a href="{base}/map" class="cta-link">屋台を予約する →</a>
+					{/if}
 				{/if}
 			</section>
 		{/if}
@@ -1080,6 +1188,50 @@
 		border-radius: 8px;
 		cursor: pointer;
 		font-size: 0.9rem;
+	}
+
+	/* ===== オンラインショップ申請 ===== */
+	.shop-apply-section { }
+	.shop-status-box {
+		border-radius: 12px; padding: 16px;
+		margin-bottom: 8px;
+	}
+	.shop-status-box.approved { background: #ecfdf5; border: 1px solid #bbf7d0; }
+	.shop-status-box.pending  { background: #fffbeb; border: 1px solid #fde68a; }
+	.shop-status-box.rejected { background: #fef2f2; border: 1px solid #fecaca; }
+
+	.shop-badge {
+		display: inline-block; font-size: 0.75rem; font-weight: 700;
+		border-radius: 20px; padding: 3px 10px; margin-bottom: 8px;
+	}
+	.shop-badge.approved { background: #dcfce7; color: #166534; }
+	.shop-badge.pending  { background: #fef9c3; color: #92400e; }
+	.shop-badge.rejected { background: #fee2e2; color: #991b1b; }
+
+	.shop-status-msg { font-size: 0.85rem; color: #26201a; margin: 0 0 10px; }
+	.shop-goto-btn {
+		display: inline-block; padding: 9px 18px;
+		background: #26201a; color: white;
+		border-radius: 10px; font-size: 0.85rem; font-weight: 700;
+		text-decoration: none;
+	}
+	.rejection-reason {
+		font-size: 0.82rem; color: #991b1b; margin: 0 0 10px;
+		background: #fff; border-radius: 6px; padding: 6px 10px;
+	}
+	.apply-btn {
+		display: block; width: 100%; padding: 11px;
+		background: #26201a; color: white;
+		border: none; border-radius: 10px;
+		font-size: 0.9rem; font-weight: 700;
+		font-family: inherit; cursor: pointer; margin-top: 4px;
+	}
+	.apply-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+	.apply-success { font-size: 0.82rem; color: #166534; margin: 0 0 8px; }
+	.apply-error   { font-size: 0.82rem; color: #991b1b; margin: 0 0 8px; }
+	.cta-link {
+		display: inline-block; font-size: 0.85rem;
+		color: #5a6e99; text-decoration: none; font-weight: 600;
 	}
 
 	/* ===== モーダル共通 ===== */
