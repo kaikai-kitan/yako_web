@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npm install *)",
-      "Bash(ls /Users/iwatakaidou/微小夜行電灯/yako_web/.env*)"
+      "Bash(ls /Users/iwatakaidou/微小夜行電灯/yako_web/.env*)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

@@ -5,7 +5,7 @@ import { Resend } from 'resend';
 
 export const prerender = false;
 
-const FROM_EMAIL = 'onboarding@resend.dev';
+const FROM_EMAIL = 'no-reply@delta-yako.com';
 
 export async function POST({ request }) {
 	// JWT 認証

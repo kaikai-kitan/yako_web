@@ -21,7 +21,8 @@ export async function POST({ request }) {
 
 		const key = env.STRIPE_SECRET_KEY;
 		if (!key) {
-			throw error(500, 'STRIPE_SECRET_KEY が Vercel 環境変数に未設定です');
+			console.error('[create-checkout] STRIPE_SECRET_KEY is not set');
+			throw error(500, 'サーバーエラーが発生しました。しばらく後にお試しください。');
 		}
 
 		const stripe = new Stripe(key, { apiVersion: '2024-06-20' });
@@ -68,8 +69,7 @@ export async function POST({ request }) {
 	} catch (err) {
 		// SvelteKit の HttpError はそのまま再スロー
 		if (err?.status) throw err;
-		// 予期しないエラーは詳細をレスポンスに含める
 		console.error('[create-checkout] Unexpected error:', err);
-		throw error(500, err?.message ?? String(err));
+		throw error(500, 'サーバーエラーが発生しました。しばらく後にお試しください。');
 	}
 }

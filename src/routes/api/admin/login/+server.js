@@ -1,5 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { timingSafeEqual } from 'node:crypto';
 
 export const prerender = false;
 
@@ -14,7 +15,14 @@ export async function POST({ request, cookies }) {
 	const { password } = body;
 	const secret = env.ADMIN_SECRET;
 
-	if (!secret || !password || password !== secret) {
+	// timingSafeEqual でタイミング攻撃を防ぐ。長さが異なる場合も即時拒否ではなくdummyで比較
+	const passwordBuf = Buffer.from(typeof password === 'string' ? password : '');
+	const secretBuf   = Buffer.from(typeof secret   === 'string' ? secret   : '');
+	const valid = secret && password &&
+		passwordBuf.length === secretBuf.length &&
+		timingSafeEqual(passwordBuf, secretBuf);
+
+	if (!valid) {
 		throw error(401, 'Unauthorized');
 	}
 
