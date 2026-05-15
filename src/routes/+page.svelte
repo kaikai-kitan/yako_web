@@ -401,16 +401,22 @@
 		position: absolute;
 		left: 50%;
 		top: 50%;
-		/* 初期値: 中央揃え・非表示 (JS 実行前の overflow を防ぐ) */
 		transform: translate(-50%, -50%);
 		opacity: 0;
-		width: 90%;
-		max-width: 560px;
+		width: 100%;
+		max-width: 800px;
+		padding: 0 5%;
+		box-sizing: border-box;
 		display: flex;
-		gap: 1rem;
-		justify-content: center;
+		gap: 1.5rem;
+		flex-direction: row-reverse; /* 縦書きのため右から左への流れ */
 		align-items: flex-start;
 	}
+
+	/* row-reverse のため start=右、end=左 */
+	.phrase-1 { justify-content: flex-end; }   /* 左寄り：微小夜行電灯 */
+	.phrase-2 { justify-content: flex-start; } /* 右寄り：京都に流れる鴨川の… */
+	.phrase-3 { justify-content: flex-end; }   /* 左寄り：おもろい空間を… */
 
 	.description-text {
 		writing-mode: vertical-rl;
