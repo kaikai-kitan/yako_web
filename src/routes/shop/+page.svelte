@@ -8,6 +8,10 @@
 	let products = $state([]);
 	let isLoading = $state(true);
 	let fetchError = $state('');
+
+	function isSoldOut(product) {
+		return product.stock !== null && product.stock !== undefined && product.stock <= 0;
+	}
 	let isCheckingOut = $state(false);
 	let checkoutError = $state('');
 	let isCartOpen = $state(false);
@@ -186,17 +190,19 @@
 				<div class="product-grid">
 					{#each filteredProducts as product}
 						<a href="{base}/shop/{product.id}" class="product-card">
-							{#if product.photo_url}
-								<img src={product.photo_url} alt={product.name} class="product-img" />
-							{:else}
-								<div class="product-img no-img">🛍</div>
-							{/if}
+							<div class="img-wrap" class:soldout={isSoldOut(product)}>
+								{#if product.photo_url}
+									<img src={product.photo_url} alt={product.name} class="product-img" />
+								{:else}
+									<div class="product-img no-img">🛍</div>
+								{/if}
+								{#if isSoldOut(product)}
+									<div class="soldout-overlay">SOLD OUT</div>
+								{/if}
+							</div>
 							<div class="product-body">
 								<h2 class="product-name">{product.name}</h2>
 								<span class="product-price">¥{product.price.toLocaleString()}</span>
-								{#if product.stock === 0}
-									<span class="sold-out">売り切れ</span>
-								{/if}
 							</div>
 						</a>
 					{/each}
@@ -225,11 +231,16 @@
 					<div class="horizontal-scroll">
 						{#each recommendedProducts as product}
 							<a href="{base}/shop/{product.id}" class="h-card">
-								{#if product.photo_url}
-									<img src={product.photo_url} alt={product.name} class="h-card-img" />
-								{:else}
-									<div class="h-card-img no-img">🛍</div>
-								{/if}
+								<div class="img-wrap" class:soldout={isSoldOut(product)}>
+									{#if product.photo_url}
+										<img src={product.photo_url} alt={product.name} class="h-card-img" />
+									{:else}
+										<div class="h-card-img no-img">🛍</div>
+									{/if}
+									{#if isSoldOut(product)}
+										<div class="soldout-overlay">SOLD OUT</div>
+									{/if}
+								</div>
 								<div class="h-card-body">
 									<p class="h-card-name">{product.name}</p>
 									<p class="h-card-price">¥{product.price.toLocaleString()}</p>
@@ -250,18 +261,21 @@
 						{#each rankingProducts as product, i}
 							<a href="{base}/shop/{product.id}" class="ranking-item">
 								<span class="rank-num" class:rank-top={i < 3}>{i + 1}</span>
-								{#if product.photo_url}
-									<img src={product.photo_url} alt={product.name} class="rank-img" />
-								{:else}
-									<div class="rank-img no-img-sm">🛍</div>
-								{/if}
+								<div class="rank-img-wrap" class:soldout={isSoldOut(product)}>
+									{#if product.photo_url}
+										<img src={product.photo_url} alt={product.name} class="rank-img" />
+									{:else}
+										<div class="rank-img no-img-sm">🛍</div>
+									{/if}
+									{#if isSoldOut(product)}
+										<div class="soldout-overlay soldout-sm">SOLD OUT</div>
+									{/if}
+								</div>
 								<div class="rank-info">
 									<p class="rank-name">{product.name}</p>
 									<p class="rank-price">¥{product.price.toLocaleString()}</p>
+									{#if isSoldOut(product)}<span class="sold-out-sm">売り切れ</span>{/if}
 								</div>
-								{#if product.stock === 0}
-									<span class="sold-out-sm">売り切れ</span>
-								{/if}
 							</a>
 						{/each}
 					</div>
@@ -281,11 +295,16 @@
 				<div class="product-grid">
 					{#each filteredProducts as product}
 						<a href="{base}/shop/{product.id}" class="product-card">
-							{#if product.photo_url}
-								<img src={product.photo_url} alt={product.name} class="product-img" />
-							{:else}
-								<div class="product-img no-img">🛍</div>
-							{/if}
+							<div class="img-wrap" class:soldout={isSoldOut(product)}>
+								{#if product.photo_url}
+									<img src={product.photo_url} alt={product.name} class="product-img" />
+								{:else}
+									<div class="product-img no-img">🛍</div>
+								{/if}
+								{#if isSoldOut(product)}
+									<div class="soldout-overlay">SOLD OUT</div>
+								{/if}
+							</div>
 							<div class="product-body">
 								<h2 class="product-name">{product.name}</h2>
 								{#if product.description}
@@ -300,7 +319,7 @@
 								{/if}
 								<div class="product-footer">
 									<span class="product-price">¥{product.price.toLocaleString()}</span>
-									{#if product.stock === 0}
+									{#if isSoldOut(product)}
 										<span class="sold-out">売り切れ</span>
 									{:else}
 										<span class="detail-link">詳細を見る →</span>
@@ -524,6 +543,40 @@
 	.rank-name { font-size: 0.88rem; font-weight: 600; color: #26201a; margin: 0 0 2px; }
 	.rank-price { font-size: 0.8rem; color: #7a6f67; margin: 0; }
 	.sold-out-sm { font-size: 0.72rem; color: #9e9289; font-weight: 600; flex-shrink: 0; }
+
+	/* SOLD OUT オーバーレイ */
+	.img-wrap {
+		position: relative;
+		overflow: hidden;
+	}
+	.img-wrap.soldout img,
+	.img-wrap.soldout .no-img {
+		opacity: 0.45;
+	}
+	.rank-img-wrap {
+		position: relative;
+		flex-shrink: 0;
+	}
+	.rank-img-wrap.soldout img,
+	.rank-img-wrap.soldout .no-img-sm {
+		opacity: 0.45;
+	}
+	.soldout-overlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.18);
+		color: white;
+		font-size: 0.75rem;
+		font-weight: 800;
+		letter-spacing: 0.12em;
+		pointer-events: none;
+	}
+	.soldout-sm {
+		font-size: 0.6rem;
+	}
 
 	/* 商品グリッド */
 	.product-grid {

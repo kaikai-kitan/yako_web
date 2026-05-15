@@ -111,11 +111,16 @@
 			<div class="detail-layout">
 				<!-- 商品画像 -->
 				<div class="image-col">
-					{#if product.photo_url}
-						<img src={product.photo_url} alt={product.name} class="product-photo" />
-					{:else}
-						<div class="product-photo no-img">🛍</div>
-					{/if}
+					<div class="img-wrap" class:soldout={product.stock !== null && product.stock !== undefined && product.stock <= 0}>
+						{#if product.photo_url}
+							<img src={product.photo_url} alt={product.name} class="product-photo" />
+						{:else}
+							<div class="product-photo no-img">🛍</div>
+						{/if}
+						{#if product.stock !== null && product.stock !== undefined && product.stock <= 0}
+							<div class="soldout-overlay">SOLD OUT</div>
+						{/if}
+					</div>
 				</div>
 
 				<!-- 商品情報 -->
@@ -289,6 +294,30 @@
 		}
 		.image-col { flex: 1; position: sticky; top: 120px; }
 		.info-col { flex: 1; }
+	}
+
+	/* SOLD OUT オーバーレイ */
+	.img-wrap {
+		position: relative;
+		border-radius: 16px;
+		overflow: hidden;
+	}
+	.img-wrap.soldout .product-photo,
+	.img-wrap.soldout .no-img {
+		opacity: 0.45;
+	}
+	.soldout-overlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.18);
+		color: white;
+		font-size: 1.1rem;
+		font-weight: 800;
+		letter-spacing: 0.15em;
+		pointer-events: none;
 	}
 
 	/* 画像 */

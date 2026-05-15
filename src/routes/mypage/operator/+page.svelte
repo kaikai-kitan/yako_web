@@ -182,6 +182,18 @@
 	<a href="{base}/mypage" class="back-link">← マイページ</a>
 	<h1 class="page-title">出店者ダッシュボード</h1>
 
+	<!-- クイックリンク -->
+	<div class="quick-links">
+		<a href="{base}/mypage/operator/products" class="quick-link">
+			<span class="quick-icon">🛍</span>
+			<span class="quick-label">商品管理</span>
+		</a>
+		<a href="{base}/mypage/inventory" class="quick-link">
+			<span class="quick-icon">📦</span>
+			<span class="quick-label">在庫管理</span>
+		</a>
+	</div>
+
 	<!-- 月選択 -->
 	<div class="month-bar">
 		<label>
@@ -352,6 +364,21 @@
 		padding: 32px 16px 80px;
 		color: #26201a;
 	}
+	.quick-links {
+		display: flex; gap: 10px;
+		padding: 12px 16px 4px;
+	}
+	.quick-link {
+		flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+		background: white; border: 1.5px solid #e8e0d8;
+		border-radius: 12px; padding: 14px 8px;
+		text-decoration: none; color: #26201a;
+		transition: box-shadow 0.15s, border-color 0.15s;
+	}
+	.quick-link:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); border-color: #d56d04; }
+	.quick-icon { font-size: 1.4rem; }
+	.quick-label { font-size: 0.8rem; font-weight: 600; }
+
 	.back-link {
 		display: inline-block;
 		font-size: 0.85rem;
