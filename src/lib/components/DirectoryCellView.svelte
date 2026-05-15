@@ -36,7 +36,7 @@
 <style>
 	.directory-cell-container {
 		width: 100%;
-		height: 200px;
+		min-height: 160px;
 		clip-path: polygon(
 			0% 20px,
 			20px 0%,
@@ -52,40 +52,57 @@
 	}
 
 	.directory-image-container {
-		width: 200px;
-		aspect-ratio: 1; /* 画像のアスペクト比を4:3に */
+		width: 160px;
+		flex-shrink: 0;
+		aspect-ratio: 1;
 	}
 
 	.directory-image {
-		width: 200px;
+		width: 100%;
 		height: 100%;
-		object-fit: cover; /* 画像がコンテナにフィットするように */
+		object-fit: cover;
 	}
 
 	.no-image {
-		width: 200px;
-		height: 200px;
+		width: 100%;
+		height: 100%;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-    background-color: rgb(238, 217, 192);
+		background-color: rgb(238, 217, 192);
+		font-size: 0.75rem;
+		color: #9e9289;
 	}
 
 	.directory-information {
-		padding: 20px;
+		padding: 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		flex: 1;
+		min-width: 0;
 	}
 
 	.information-key {
-		font-size: 0.8rem;
+		font-size: 0.72rem;
+		color: #9e9289;
+		margin-right: 4px;
 	}
 
 	.information-value {
-		font-size: 1rem;
+		font-size: 0.95rem;
+		color: #26201a;
 	}
 
 	.information-message {
 		font-style: italic;
-		padding: 10px;
+		padding: 8px 0 0;
+		line-height: 1.6;
+	}
+
+	@media (max-width: 400px) {
+		.directory-image-container { width: 120px; }
+		.directory-information { padding: 12px; }
 	}
 
 	.separator {

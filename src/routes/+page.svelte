@@ -73,20 +73,20 @@
 
 		const phrases   = [phrase1, phrase2, phrase3];
 		const n         = phrases.length;
-		const travel    = stickyH * 0.65; // フレーズが上下に移動する最大距離
-		const fadeRange = stickyH * 0.58; // 中心からこの距離で完全に透明（大きいほどくっきり範囲が広い）
+		const travel    = stickyH * 0.70; // フレーズが上下に移動する最大距離
+		const fadeRange = stickyH * 0.55; // 中心からこの距離で完全に透明
 
 		phrases.forEach((el, i) => {
 			if (!el) return;
 
-			// pStart を 0.5/n だけ前にシフト → phrase-1 が progress=0 (セクション先頭) で中央に来る
+			// pStart を 0.5/n だけ前にシフト → phrase-1 が progress=0 で中央に来る
 			const pp = (progress - (i - 0.5) / n) / (1 / n);
 
-			// 範囲外は完全に非表示（負の progress = まだ来ていない, > 1 = 通過済み）
+			// 範囲外は完全に非表示
 			if (pp < -0.5 || pp > 1.5) {
 				el.style.opacity   = '0';
 				el.style.filter    = '';
-				el.style.transform = 'translate(-50%, -50%)'; // 中央に戻す（右への layout overflow を防ぐ）
+				el.style.transform = 'translate(-50%, -50%)';
 				return;
 			}
 
@@ -357,13 +357,11 @@
 
 	/* ===== GALLERY SECTION =====
 	   高さがスクロール持続時間を決める:
-	     section height = sticky高さ(≈100svh) + フレーズ通過時間(≈60svh × 3)
+	     section height = sticky高さ(≈100svh) + フレーズ通過時間(≈40svh × 3)
 	   sticky は section が viewport を抜けるまで解除されない。
-	   画像の下に余白が生まれないのは、gallery-sticky が height:calc(100svh-60px) で
-	   画面いっぱいを占有し、余分な空間を作らないため。
 	============================= */
 	.gallery-section {
-		height: 280svh;
+		height: 220svh;
 		position: relative;
 	}
 
@@ -403,17 +401,16 @@
 		position: absolute;
 		left: 50%;
 		top: 50%;
-		/* 初期値: 中央揃え・非表示 (JS 実行前の右 overflow を防ぐ) */
+		/* 初期値: 中央揃え・非表示 (JS 実行前の overflow を防ぐ) */
 		transform: translate(-50%, -50%);
 		opacity: 0;
 		width: 90%;
+		max-width: 560px;
 		display: flex;
 		gap: 1rem;
-		flex-direction: row-reverse;
+		justify-content: center;
+		align-items: flex-start;
 	}
-	.phrase-1 { justify-content: flex-end; }
-	.phrase-2 { justify-content: flex-start; }
-	.phrase-3 { justify-content: flex-end; }
 
 	.description-text {
 		writing-mode: vertical-rl;

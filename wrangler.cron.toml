@@ -1,0 +1,24 @@
+# Cloudflare Cron Worker — YATAKARI ノーショー対策
+# Pages とは別の独立した Worker としてデプロイする
+#
+# デプロイコマンド:
+#   npx wrangler deploy --config wrangler.cron.toml
+#
+# シークレット設定（デプロイ後に一度だけ実行）:
+#   npx wrangler secret put CRON_SECRET --config wrangler.cron.toml
+#   npx wrangler secret put PAGES_BASE_URL --config wrangler.cron.toml
+#     → 値: https://delta-yako.com（または Cloudflare Pages の URL）
+
+name = "yako-cron"
+main = "cron-worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[triggers]
+crons = [
+  # 毎時 0, 10, 20, 30, 40, 50 分（10分おき）
+  "*/10 * * * *"
+]
+
+# 環境変数（非シークレット）はここに記載
+# シークレット（CRON_SECRET, PAGES_BASE_URL）は wrangler secret put で設定すること

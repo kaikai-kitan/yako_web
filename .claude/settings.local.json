@@ -3,7 +3,13 @@
     "allow": [
       "Bash(npm install *)",
       "Bash(ls /Users/iwatakaidou/微小夜行電灯/yako_web/.env*)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(xargs -I {} basename {} +server.js)",
+      "Bash(awk '{print \"Parent: \" $0}')",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(npx svelte-check *)",
+      "Bash(grep -E \"^/Users/iwatakaidou/微小夜行電灯/yako_web/src/routes/\\(menu|directory\\)/\\\\+page.svelte$\")"
     ]
   }
 }

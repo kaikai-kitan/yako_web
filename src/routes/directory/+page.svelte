@@ -20,16 +20,22 @@
 		margin: auto;
 		display: flex;
 		flex-direction: column;
+		padding: 0 16px;
+		box-sizing: border-box;
 	}
 
 	.directory-title {
 		text-align: center;
 		color: #26201a;
 		margin-bottom: 1rem;
+		margin-top: 2rem;
 	}
 
 	.directory-description {
 		margin-bottom: 2rem;
+		line-height: 1.75;
+		color: #4a3f38;
+		font-size: 0.95rem;
 	}
 
 	.separator {

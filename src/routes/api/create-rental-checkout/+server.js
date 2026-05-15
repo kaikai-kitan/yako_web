@@ -36,6 +36,13 @@ export async function POST({ request }) {
 		if (dbErr || !res) throw error(404, '有効な予約が見つかりません');
 		if (res.user_id !== userId) throw error(403, '権限がありません');
 
+		const { data: profile } = await supabase
+			.from('user_profiles')
+			.select('is_suspended')
+			.eq('user_id', userId)
+			.maybeSingle();
+		if (profile?.is_suspended) throw error(403, 'アカウントが停止されているため、決済できません。');
+
 		// 利用日数を計算（最低1日）
 		const days = Math.max(1, Math.ceil(
 			(new Date(res.end_datetime) - new Date(res.start_datetime)) / (1000 * 60 * 60 * 24)
@@ -83,10 +90,18 @@ export async function POST({ request }) {
 			payment_method_types: ['card'],
 			line_items: lineItems,
 			mode: 'payment',
+			// 与信枠の確保のみ（QRスキャン時に Capture して売上確定）
+			payment_intent_data: { capture_method: 'manual' },
 			success_url: successUrl,
 			cancel_url: cancelUrl,
 			metadata: { type: 'rental', reservationId, userId },
-			locale: 'ja'
+			locale: 'ja',
+			// UI表示: 予約確定画面で与信確保である旨をメモとして表示
+			custom_text: {
+				submit: {
+					message: 'カード情報を確認します。引き落としは現地QRスキャン時（チェックイン時）に行われます。'
+				}
+			}
 		});
 
 		return json({ url: session.url, sessionId: session.id });

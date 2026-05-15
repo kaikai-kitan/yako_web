@@ -14,29 +14,34 @@ export async function POST({ request }) {
 		const stripeKey = env.STRIPE_SECRET_KEY;
 		if (!stripeKey) throw error(500, 'STRIPE_SECRET_KEY が未設定です');
 
-		// Stripeで決済が完了しているか確認
+		// Stripe で与信確保が完了しているか確認
 		const stripe = new Stripe(stripeKey, { apiVersion: '2024-06-20' });
 		const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-		if (session.payment_status !== 'paid') throw error(402, '決済が完了していません');
-		if (session.metadata?.reservationId !== reservationId) throw error(400, '予約情報が一致しません');
+		// payment_status === 'paid' は auth-only（requires_capture）でも成立する
+		if (session.payment_status !== 'paid') {
+			throw error(402, '与信確保が完了していません');
+		}
+		if (session.metadata?.reservationId !== reservationId) {
+			throw error(400, '予約情報が一致しません');
+		}
 
-		const supabaseUrl = env.SUPABASE_URL ?? import.meta.env.VITE_SUPABASE_URL;
-		const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
-		if (!supabaseUrl || !serviceKey) throw error(500, 'Supabase設定が未設定です');
+		const paymentIntentId = session.payment_intent;
+		if (!paymentIntentId) throw error(400, '支払い情報が見つかりません');
 
-		const supabase = createClient(supabaseUrl, serviceKey);
+		const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
-		// 予約をアクティブ化（冪等性あり: すでにactiveでもOK）
+		// PaymentIntent ID を予約に保存する（status は pending のまま）
+		// 実際の引き落とし（Capture）は QR チェックイン時に /api/checkin-rental で実行
 		const { error: dbErr } = await supabase
 			.from('reservations')
-			.update({ status: 'active' })
+			.update({ stripe_payment_intent_id: paymentIntentId })
 			.eq('id', reservationId)
-			.in('status', ['pending', 'active']);
+			.in('status', ['pending']);
 
-		if (dbErr) throw error(500, 'DBの更新に失敗しました: ' + dbErr.message);
+		if (dbErr) throw error(500, 'DB の更新に失敗しました: ' + dbErr.message);
 
-		return json({ success: true });
+		return json({ authorized: true, paymentIntentId });
 
 	} catch (err) {
 		if (err?.status) throw err;

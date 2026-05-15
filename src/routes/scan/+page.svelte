@@ -4,12 +4,13 @@
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase.js';
 
-	let userId = $state('');
-	/** @type {'init'|'scanning'|'loading'|'success'|'error'} */
+	/** @type {'init'|'scanning'|'gps'|'loading'|'success'|'error'} */
 	let phase = $state('init');
 	let errorMsg = $state('');
-	let successData = $state(null);
+	/** @type {{ action: 'checkin'|'return', name: string } | null} */
+	let resultData = $state(null);
 	let html5QrCode = null;
+	let accessToken = '';
 
 	onMount(async () => {
 		const {
@@ -19,25 +20,17 @@
 			goto(`${base}/auth`);
 			return;
 		}
-		userId = session.user.id;
+		accessToken = session.access_token;
 
 		const params = new URLSearchParams(window.location.search);
 		const spaceId = params.get('space');
 		const yataiId = params.get('yatai');
-		const rentalDoneId = params.get('rental_done');
-		const stripeSessionId = params.get('session_id');
 
-		if (rentalDoneId && stripeSessionId) {
-			// Stripe決済完了後の返却 → 予約をアクティブ化
-			await activateFromStripe(rentalDoneId, stripeSessionId);
-		} else if (yataiId) {
-			// 屋台QRコード → 屋台IDで予約検索してStripe決済へ
-			await startPaymentByYatai(yataiId);
+		if (yataiId) {
+			await processTarget('yatai', yataiId);
 		} else if (spaceId) {
-			// スペースQRコード → スペースIDで予約検索してStripe決済へ
-			await startPayment(spaceId);
+			await processTarget('space', spaceId);
 		} else {
-			// パラメータなし → カメラスキャン
 			await startCamera();
 		}
 	});
@@ -46,142 +39,54 @@
 		stopCamera();
 	});
 
-	/** 屋台QRコード → 屋台IDで予約を検索してStripe決済へ（屋台+スペース両方を一括アクティブ化） */
-	async function startPaymentByYatai(yataiId) {
-		phase = 'loading';
-		try {
-			const { data: reservation } = await supabase
-				.from('reservations')
-				.select('id, start_datetime, end_datetime, planned_items, rental_space_id, stall_specs(stall_name), rental_spaces(name)')
-				.eq('user_id', userId)
-				.eq('stall_id', yataiId)
-				.eq('status', 'pending')
-				.order('start_datetime', { ascending: true })
-				.limit(1)
-				.maybeSingle();
-
-			if (!reservation) {
-				phase = 'error';
-				errorMsg = 'この屋台の有効な予約が見つかりません。予約状況をご確認ください。';
+	/** GPS 座標を取得する。タイムアウト 10 秒。失敗時は null を返す。 */
+	function getGPS() {
+		return new Promise((resolve) => {
+			if (!navigator.geolocation) {
+				resolve(null);
 				return;
 			}
+			navigator.geolocation.getCurrentPosition(
+				(pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+				() => resolve(null),
+				{ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+			);
+		});
+	}
 
-			const origin = window.location.origin;
-			const res = await fetch('/api/create-rental-checkout', {
+	/** type ('space'|'yatai') と id を受け取り、GPS 取得 → scan-action 呼び出し */
+	async function processTarget(type, id) {
+		phase = 'gps';
+		const coords = await getGPS();
+
+		phase = 'loading';
+		try {
+			const body = { type, id };
+			if (coords) {
+				body.lat = coords.lat;
+				body.lng = coords.lng;
+			}
+
+			const res = await fetch('/api/scan-action', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					reservationId: reservation.id,
-					userId,
-					successUrl: `${origin}/scan?yatai=${yataiId}&rental_done=${reservation.id}&session_id={CHECKOUT_SESSION_ID}`,
-					cancelUrl: `${origin}/map`
-				})
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${accessToken}`
+				},
+				body: JSON.stringify(body)
 			});
 
 			if (!res.ok) {
-				const msg = await res.text();
+				const text = await res.text();
+				let msg = text;
+				try { msg = JSON.parse(text)?.message ?? text; } catch { /* ignore */ }
 				phase = 'error';
-				errorMsg = `決済処理に失敗しました: ${msg}`;
+				errorMsg = msg || '処理に失敗しました';
 				return;
 			}
 
-			const { url, free } = await res.json();
-			if (free) {
-				successData = reservation;
-				phase = 'success';
-			} else {
-				window.location.href = url;
-			}
-		} catch (e) {
-			phase = 'error';
-			errorMsg = '処理に失敗しました: ' + e.message;
-		}
-	}
-
-	/** QRコードからスペースIDを読み取り、Stripe決済へ進む */
-	async function startPayment(spaceId) {
-		phase = 'loading';
-		try {
-			// このスペースに対するpending予約を取得
-			const { data: reservation } = await supabase
-				.from('reservations')
-				.select('id, start_datetime, end_datetime, planned_items, stall_specs(stall_name), rental_spaces(name)')
-				.eq('user_id', userId)
-				.eq('rental_space_id', spaceId)
-				.eq('status', 'pending')
-				.order('start_datetime', { ascending: true })
-				.limit(1)
-				.maybeSingle();
-
-			if (!reservation) {
-				phase = 'error';
-				errorMsg = 'この場所の有効な予約が見つかりません。予約状況をご確認ください。';
-				return;
-			}
-
-			const origin = window.location.origin;
-			const res = await fetch('/api/create-rental-checkout', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					reservationId: reservation.id,
-					userId,
-					successUrl: `${origin}/scan?space=${spaceId}&rental_done=${reservation.id}&session_id={CHECKOUT_SESSION_ID}`,
-					cancelUrl: `${origin}/map`
-				})
-			});
-
-			if (!res.ok) {
-				const msg = await res.text();
-				phase = 'error';
-				errorMsg = `決済処理に失敗しました: ${msg}`;
-				return;
-			}
-
-			const { url, free } = await res.json();
-
-			if (free) {
-				// 無料の場合はそのまま成功
-				successData = reservation;
-				phase = 'success';
-			} else {
-				// Stripe決済ページへリダイレクト
-				window.location.href = url;
-			}
-		} catch (e) {
-			phase = 'error';
-			errorMsg = '処理に失敗しました: ' + e.message;
-		}
-	}
-
-	/** Stripe決済完了後に予約をアクティブ化 */
-	async function activateFromStripe(reservationId, stripeSessionId) {
-		phase = 'loading';
-		window.history.replaceState({}, '', '/scan');
-		try {
-			const res = await fetch('/api/activate-rental', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					sessionId: stripeSessionId,
-					reservationId,
-					userId
-				})
-			});
-
-			if (res.ok) {
-				const { data } = await supabase
-					.from('reservations')
-					.select('rental_spaces(name), stall_specs(stall_name)')
-					.eq('id', reservationId)
-					.single();
-				successData = data;
-				phase = 'success';
-			} else {
-				const msg = await res.text();
-				phase = 'error';
-				errorMsg = `決済の確認に失敗しました: ${msg}`;
-			}
+			resultData = await res.json();
+			phase = 'success';
 		} catch (e) {
 			phase = 'error';
 			errorMsg = '処理に失敗しました: ' + e.message;
@@ -198,7 +103,6 @@
 				{ fps: 10, qrbox: { width: 240, height: 240 } },
 				async (text) => {
 					stopCamera();
-					// URLからspace/yataiパラメータを抽出
 					let spaceId = null;
 					let yataiId = null;
 					try {
@@ -206,13 +110,12 @@
 						spaceId = url.searchParams.get('space');
 						yataiId = url.searchParams.get('yatai');
 					} catch {
-						// URLでない場合はそのままspaceIdとして扱う
 						spaceId = text.trim() || null;
 					}
 					if (yataiId) {
-						await startPaymentByYatai(yataiId);
+						await processTarget('yatai', yataiId);
 					} else if (spaceId) {
-						await startPayment(spaceId);
+						await processTarget('space', spaceId);
 					} else {
 						phase = 'error';
 						errorMsg = '無効なQRコードです。スペースまたは屋台のQRコードを読み取ってください。';
@@ -220,7 +123,7 @@
 				},
 				() => {}
 			);
-		} catch (e) {
+		} catch {
 			phase = 'error';
 			errorMsg = 'カメラの起動に失敗しました。カメラの使用を許可してください。';
 		}
@@ -235,6 +138,7 @@
 
 	async function retry() {
 		errorMsg = '';
+		resultData = null;
 		await startCamera();
 	}
 </script>
@@ -244,6 +148,13 @@
 		<div class="status-box">
 			<div class="spinner"></div>
 			<p>{phase === 'loading' ? '処理中…' : '準備中…'}</p>
+		</div>
+
+	{:else if phase === 'gps'}
+		<div class="status-box">
+			<div class="spinner"></div>
+			<p>現在地を確認中…</p>
+			<p class="hint">位置情報の許可ダイアログが表示された場合は「許可」を選択してください</p>
 		</div>
 
 	{:else if phase === 'scanning'}
@@ -257,12 +168,15 @@
 	{:else if phase === 'success'}
 		<div class="status-box success">
 			<div class="result-icon success-icon">✓</div>
-			<h2 class="result-title">借り出し開始！</h2>
-			<p class="space-name">{successData?.rental_spaces?.name ?? 'スペース'}</p>
-			{#if successData?.stall_specs?.stall_name}
-				<p class="stall-name">🏮 {successData.stall_specs.stall_name}</p>
+			{#if resultData?.action === 'checkin'}
+				<h2 class="result-title">借り出し開始！</h2>
+				<p class="place-name">{resultData.name}</p>
+				<p class="result-note">マップ上で「出店中」として表示されます</p>
+			{:else}
+				<h2 class="result-title">返却完了！</h2>
+				<p class="place-name">{resultData?.name}</p>
+				<p class="result-note">ご利用ありがとうございました</p>
 			{/if}
-			<p class="result-note">マップ上で「出店中」として表示されます</p>
 			<button class="action-btn" onclick={() => goto(`${base}/map`)}>マップに戻る</button>
 		</div>
 
@@ -299,6 +213,13 @@
 		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 		max-width: 360px;
 		width: 100%;
+	}
+
+	.hint {
+		font-size: 0.8rem;
+		color: #9e9289;
+		line-height: 1.5;
+		margin: 0;
 	}
 
 	.spinner {
@@ -379,16 +300,10 @@
 		margin: 0;
 	}
 
-	.space-name {
-		font-size: 1.1rem;
+	.place-name {
+		font-size: 1.05rem;
 		font-weight: 600;
 		color: #26201a;
-		margin: 0;
-	}
-
-	.stall-name {
-		font-size: 0.95rem;
-		color: #7a6f67;
 		margin: 0;
 	}
 

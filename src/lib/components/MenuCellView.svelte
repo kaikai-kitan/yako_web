@@ -63,12 +63,15 @@
 	.menu-cell-container {
 		width: 100%;
 		box-sizing: border-box;
+		background: #fff;
+		border-radius: 10px;
+		overflow: hidden;
+		border: 1px solid #f0e8de;
 	}
 
 	.menu-image-container {
 		width: 100%;
-		margin-bottom: 0.5rem;
-		aspect-ratio: 3 / 4;
+		aspect-ratio: 1 / 1;
 	}
 
 	.menu-image-btn {
@@ -86,14 +89,6 @@
 		height: 100%;
 		object-fit: cover;
 		display: block;
-		clip-path: polygon(
-			0% 20px,
-			20px 0%,
-			100% 0px,
-			100% calc(100% - 20px),
-			calc(100% - 20px) 100%,
-			0px 100%
-		);
 	}
 
 	.no-image {
@@ -103,35 +98,30 @@
 		justify-content: center;
 		align-items: center;
 		background: rgb(238, 217, 192);
-		clip-path: polygon(
-			0% 20px,
-			20px 0%,
-			100% 0px,
-			100% calc(100% - 20px),
-			calc(100% - 20px) 100%,
-			0px 100%
-		);
+		font-size: 0.7rem;
+		color: #9e9289;
+		letter-spacing: 0.04em;
 	}
 
 	.menu-information {
 		width: 100%;
-		margin-bottom: 1rem;
+		padding: 8px 10px 10px;
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
-		gap: 4px;
-		padding: 0 2px;
+		gap: 6px;
 		box-sizing: border-box;
 	}
 
 	.menu-title {
-		font-size: 0.78rem;
+		font-size: 0.8rem;
 		color: #26201a;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		flex: 1;
 		min-width: 0;
+		font-weight: 500;
 	}
 
 	.menu-price-container {
@@ -141,8 +131,8 @@
 	.menu-price {
 		font-size: 0.78rem;
 		white-space: nowrap;
-		color: #26201a;
-		font-weight: 600;
+		color: #d56d04;
+		font-weight: 700;
 	}
 
 	/* ライトボックス */

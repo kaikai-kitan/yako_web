@@ -37,6 +37,8 @@
 	let selectedStall = $state(null);
 	let currentUser = $state(null);
 	let userProfile = $state(null);
+	let accessToken = $state('');
+	let isSuspended = $state(false);
 
 	// DBデータ
 	let availableSpaces = $state([]);
@@ -100,7 +102,7 @@
 	let myMenuItems = $state([]);
 
 	// QRスキャナー
-	let qrScanPhase = $state('idle'); // 'idle'|'scanning'|'verifying'|'error'
+	let qrScanPhase = $state('idle'); // 'idle'|'scanning'|'gps'|'verifying'|'error'
 	let qrErrorMsg = $state('');
 	let html5QrCode = null;
 
@@ -112,6 +114,7 @@
 			data: { session }
 		} = await supabase.auth.getSession();
 		currentUser = session?.user ?? null;
+		accessToken = session?.access_token ?? '';
 
 		try {
 			// getBookedStallIds はログイン不要なので base fetches に含める
@@ -137,6 +140,7 @@
 			if (currentUser) {
 				myUserReservations = results[5] ?? [];
 				userProfile = results[6];
+				isSuspended = userProfile?.is_suspended ?? false;
 				myMenuItems = results[7] ?? [];
 				allReservations = await getMyReservations(currentUser.id);
 
@@ -146,37 +150,33 @@
 					monthlySalesItems = await getMySalesThisMonth(currentUser.id);
 				}
 
-				// Stripe決済完了後の返却処理
+				// Stripe 与信確保完了後の処理（Auth & Capture フロー）
 				const urlParams = new URLSearchParams(window.location.search);
-				const rentalDoneId = urlParams.get('rental_done');
-				const stripeSessionId = urlParams.get('session_id');
+				const rentalAuthorizedId = urlParams.get('rental_authorized');
+				const stripeSessionId    = urlParams.get('session_id');
 
-				if (rentalDoneId && stripeSessionId) {
+				if (rentalAuthorizedId && stripeSessionId) {
 					window.history.replaceState({}, '', '/map');
 					try {
-						const activateRes = await fetch('/api/activate-rental', {
+						const authRes = await fetch('/api/activate-rental', {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
 							body: JSON.stringify({
 								sessionId: stripeSessionId,
-								reservationId: rentalDoneId,
+								reservationId: rentalAuthorizedId,
 								userId: currentUser.id
 							})
 						});
-						if (activateRes.ok) {
-							[myUserReservations, activeStalls] = await Promise.all([
+						if (authRes.ok) {
+							// 予約リストを更新（status は pending のまま）
+							[myUserReservations, allReservations] = await Promise.all([
 								getUserReservations(currentUser.id),
-								getActiveStalls()
+								getMyReservations(currentUser.id)
 							]);
-							currentReservationId = rentalDoneId;
-							const activatedRes = myUserReservations.find((r) => r.id === rentalDoneId);
-							if (activatedRes) {
-								plannedItemsList = parsePlannedItems(activatedRes.planned_items);
-								salesData = Object.fromEntries(
-									plannedItemsList.map((item) => [item.name, { count: 0, price: item.price || 0 }])
-								);
-							}
-							currentView = 'active';
+							authSuccessMsg = 'カードの与信確保が完了しました。当日、現地のQRコードをスキャンしてチェックインしてください。';
+							isReservationOpen = true;
+						} else {
+							console.error('auth confirm failed:', await authRes.text());
 						}
 					} catch (e) {
 						console.error('activate rental error:', e);
@@ -413,6 +413,8 @@
 	let reservationError = $state('');
 	let isReserving = $state(false);
 	let reservationSuccess = $state(false);
+	let agreedToNoshow = $state(false);
+	let authSuccessMsg = $state('');
 
 	/** Flow A: スペースから予約 */
 	function goReserve() {
@@ -428,6 +430,7 @@
 		reservationItems = [{ name: '', price: '' }];
 		reservationError = '';
 		reservationSuccess = false;
+		agreedToNoshow = false;
 		currentView = 'reserve';
 	}
 
@@ -446,6 +449,7 @@
 		reservationItems = [{ name: '', price: '' }];
 		reservationError = '';
 		reservationSuccess = false;
+		agreedToNoshow = false;
 		currentView = 'reserve';
 	}
 
@@ -515,7 +519,8 @@
 			const lockedSpaceFee = selectedSpace?.price ?? 0;
 			const lockedStallFee = selectedStallForRes?.rental_fee ?? 0;
 
-			await createReservation(currentUser.id, {
+			// DB に予約を作成（ID を受け取る）
+			const reservationId = await createReservation(currentUser.id, {
 				rentalSpaceId: reservationForm.spaceId || null,
 				stallId: (reservationMode === 'space-first' && !needsStall)
 					? null
@@ -525,18 +530,45 @@
 				lockedSpaceFee,
 				lockedStallFee
 			});
-			reservationSuccess = true;
-			// 予約一覧・予約済み屋台を再取得
-			[myUserReservations, bookedStallIds] = await Promise.all([
-				getUserReservations(currentUser.id),
-				getBookedStallIds()
-			]);
-			setTimeout(() => {
-				currentView = 'map';
-				selectedStall = null;
-				reservationSuccess = false;
-				updateMarkers(mapInstance);
-			}, 2000);
+
+			// Stripe 与信確保セッションを作成（Auth & Capture フロー）
+			const origin = window.location.origin;
+			const checkoutRes = await fetch('/api/create-rental-checkout', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					reservationId,
+					userId: currentUser.id,
+					successUrl: `${origin}/map?rental_authorized=${reservationId}&session_id={CHECKOUT_SESSION_ID}`,
+					cancelUrl: `${origin}/map`
+				})
+			});
+
+			if (!checkoutRes.ok) {
+				const d = await checkoutRes.json().catch(() => ({}));
+				throw new Error(d.message ?? 'チェックアウトセッションの作成に失敗しました');
+			}
+
+			const { url, free } = await checkoutRes.json();
+
+			if (free) {
+				// 無料レンタル: 与信不要なのでそのまま完了
+				reservationSuccess = true;
+				[myUserReservations, bookedStallIds] = await Promise.all([
+					getUserReservations(currentUser.id),
+					getBookedStallIds()
+				]);
+				setTimeout(() => {
+					currentView = 'map';
+					selectedStall = null;
+					reservationSuccess = false;
+					updateMarkers(mapInstance);
+				}, 2000);
+			} else {
+				// Stripe 与信確保ページへリダイレクト
+				// （戻り先: /map?rental_authorized=<id>&session_id=<sid>）
+				window.location.href = url;
+			}
 		} catch (e) {
 			reservationError = '予約に失敗しました: ' + e.message;
 		} finally {
@@ -581,51 +613,59 @@
 		salesData[name] = { ...current, count: Math.max(0, current.count + delta) };
 	}
 
-	/** QR解錠成功 → Stripe決済へリダイレクト（無料の場合は直接アクティブ化） */
-	async function unlockStall() {
-		if (!currentReservationId || !currentUser) return;
-		qrScanPhase = 'verifying';
+	function getGPS() {
+		return new Promise((resolve) => {
+			if (!navigator.geolocation) { resolve(null); return; }
+			navigator.geolocation.getCurrentPosition(
+				(pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+				() => resolve(null),
+				{ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+			);
+		});
+	}
 
+	/** GPS 取得 → scan-action API → アクティブ化 */
+	async function processScanAction(type, id) {
+		if (!currentUser) return;
+
+		qrScanPhase = 'gps';
+		const coords = await getGPS();
+
+		qrScanPhase = 'verifying';
 		try {
-			const origin = window.location.origin;
-			const res = await fetch('/api/create-rental-checkout', {
+			const body = { type, id };
+			if (coords) { body.lat = coords.lat; body.lng = coords.lng; }
+
+			const res = await fetch('/api/scan-action', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					reservationId: currentReservationId,
-					userId: currentUser.id,
-					successUrl: `${origin}/map?rental_done=${currentReservationId}&session_id={CHECKOUT_SESSION_ID}`,
-					cancelUrl: `${origin}/map`
-				})
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${accessToken}`
+				},
+				body: JSON.stringify(body)
 			});
 
 			if (!res.ok) {
-				const msg = await res.text();
+				const d = await res.json().catch(() => ({}));
 				qrScanPhase = 'error';
-				qrErrorMsg = `決済エラー: ${msg}`;
+				qrErrorMsg = d.message ?? '処理に失敗しました。もう一度お試しください。';
 				return;
 			}
 
-			const { url, free } = await res.json();
-
-			if (free) {
-				// 無料の場合は直接アクティブ化
-				const currentRes = myUserReservations.find((r) => r.id === currentReservationId);
-				plannedItemsList = parsePlannedItems(currentRes?.planned_items);
-				salesData = Object.fromEntries(
-					plannedItemsList.map((item) => [item.name, { count: 0, price: item.price || 0 }])
-				);
-				myUserReservations = myUserReservations.map((r) =>
-					r.id === currentReservationId ? { ...r, status: 'active' } : r
-				);
-				activeStalls = await getActiveStalls();
-				currentView = 'active';
-			} else {
-				window.location.href = url;
-			}
+			// 成功 → 売上管理画面へ
+			const currentRes = myUserReservations.find((r) => r.id === currentReservationId);
+			plannedItemsList = parsePlannedItems(currentRes?.planned_items);
+			salesData = Object.fromEntries(
+				plannedItemsList.map((item) => [item.name, { count: 0, price: item.price || 0 }])
+			);
+			myUserReservations = myUserReservations.map((r) =>
+				r.id === currentReservationId ? { ...r, status: 'active' } : r
+			);
+			activeStalls = await getActiveStalls();
+			currentView = 'active';
 		} catch (e) {
 			qrScanPhase = 'error';
-			qrErrorMsg = '決済処理に失敗しました: ' + e.message;
+			qrErrorMsg = '処理に失敗しました: ' + e.message;
 		}
 	}
 
@@ -697,39 +737,45 @@
 				{ fps: 10, qrbox: { width: 220, height: 220 } },
 				async (text) => {
 					stopQrCamera();
-					qrScanPhase = 'verifying';
 
-					// QRコードからスペースIDを抽出
-					let scannedSpaceId = null;
+					// QRコードから type / id を抽出
+					let scannedType = null;
+					let scannedId = null;
 					try {
 						const url = new URL(text);
-						scannedSpaceId = url.searchParams.get('space');
+						const yataiId = url.searchParams.get('yatai');
+						const spaceId = url.searchParams.get('space');
+						if (yataiId) { scannedType = 'yatai'; scannedId = yataiId; }
+						else if (spaceId) { scannedType = 'space'; scannedId = spaceId; }
 					} catch {
-						// URLでない場合はそのままIDとして扱う
-						scannedSpaceId = text.trim() || null;
+						scannedType = 'space';
+						scannedId = text.trim() || null;
 					}
 
-					if (!scannedSpaceId) {
+					if (!scannedId) {
 						qrScanPhase = 'error';
-						qrErrorMsg = '無効なQRコードです。スペースのQRコードを読み取ってください。';
+						qrErrorMsg = '無効なQRコードです。スペースまたは屋台のQRコードを読み取ってください。';
 						return;
 					}
 
-					// 予約のスペースIDと照合
+					// 予約との照合
 					const currentRes = myUserReservations.find((r) => r.id === currentReservationId);
-					const expectedSpaceId = currentRes?.rental_space_id;
-
-					if (expectedSpaceId && scannedSpaceId !== expectedSpaceId) {
-						qrScanPhase = 'error';
-						qrErrorMsg = '予約したスペースのQRコードではありません。正しいスペースのQRコードを読み取ってください。';
-						return;
+					if (currentRes) {
+						const expectedId = scannedType === 'yatai'
+							? currentRes.stall_id
+							: currentRes.rental_space_id;
+						if (expectedId && scannedId !== expectedId) {
+							qrScanPhase = 'error';
+							qrErrorMsg = '予約した場所のQRコードではありません。正しいQRコードを読み取ってください。';
+							return;
+						}
 					}
 
-					await unlockStall();
+					await processScanAction(scannedType, scannedId);
 				},
-				() => {} // フレームエラーは無視
+				() => {}
 			);
-		} catch (e) {
+		} catch {
 			qrScanPhase = 'error';
 			qrErrorMsg = 'カメラの起動に失敗しました。カメラの使用を許可してください。';
 		}
@@ -779,22 +825,48 @@
 		return { pending: 'res-pending', active: 'res-active', completed: 'res-done', cancelled: 'res-cancelled' }[status] ?? 'res-pending';
 	}
 
-	function canCancel(startDatetime, status) {
-		if (status === 'completed' || status === 'cancelled' || status === 'active') return false;
-		const threeDaysBefore = new Date(startDatetime);
-		threeDaysBefore.setDate(threeDaysBefore.getDate() - 3);
-		return new Date() < threeDaysBefore;
+	function canCancel(status) {
+		return status === 'pending';
 	}
 
-	async function handleCancelReservation(reservationId) {
-		if (!confirm('予約をキャンセルしますか？')) return;
+	async function handleCancelReservation(reservationId, startDatetime) {
+		const start = new Date(startDatetime);
+		const now = new Date();
+		const diffMs = start - now;
+		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+		let penaltyMsg = '';
+		if (diffDays <= 0) penaltyMsg = '（当日キャンセル: 信用スコア -3）';
+		else if (diffDays === 1) penaltyMsg = '（前日キャンセル: 信用スコア -2）';
+		else if (diffDays === 2) penaltyMsg = '（前々日キャンセル: 信用スコア -1）';
+
+		if (!confirm(`予約をキャンセルしますか？${penaltyMsg ? '\n' + penaltyMsg : ''}`)) return;
+
 		isCancellingRes = reservationId;
 		try {
-			await cancelReservation(reservationId);
+			const res = await fetch('/api/cancel-rental', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${accessToken}`
+				},
+				body: JSON.stringify({ reservationId })
+			});
+			if (!res.ok) {
+				const d = await res.json().catch(() => ({}));
+				throw new Error(d.message ?? 'キャンセルに失敗しました');
+			}
+			const result = await res.json();
 			allReservations = allReservations.map((r) =>
 				r.id === reservationId ? { ...r, status: 'cancelled' } : r
 			);
 			myUserReservations = myUserReservations.filter((r) => r.id !== reservationId);
+			if (result.isSuspended) {
+				isSuspended = true;
+				alert('キャンセルが完了しました。信用スコアが0以下になったため、アカウントが停止されました。新規予約・購入はご利用いただけません。');
+			} else if (result.penalty > 0) {
+				alert(`キャンセルしました。ペナルティ: 信用スコア -${result.penalty}（残り: ${result.newScore}）`);
+			}
 		} catch (e) {
 			alert('キャンセルに失敗しました: ' + e.message);
 		} finally {
@@ -849,6 +921,19 @@
 				<span class:active={mapMode === 'available'}>📍 予約可能</span>
 			</div>
 		</header>
+	{/if}
+
+	{#if isSuspended}
+		<div class="suspension-banner">
+			⚠️ アカウントが停止されています。新規予約・購入はご利用いただけません。詳細はお問い合わせください。
+		</div>
+	{/if}
+
+	{#if authSuccessMsg}
+		<div class="auth-success-banner">
+			✅ {authSuccessMsg}
+			<button class="auth-success-close" onclick={() => (authSuccessMsg = '')}>×</button>
+		</div>
 	{/if}
 
 	<main class="app-main">
@@ -913,6 +998,8 @@
 									</button>
 								{:else if bookedByOther}
 									<div class="booked-badge">予約済み（利用不可）</div>
+								{:else if isSuspended}
+									<div class="booked-badge">アカウント停止中（予約不可）</div>
 								{:else}
 									<button class="action-btn primary" onclick={goReserveFromStall}>
 										この屋台で予約する
@@ -946,6 +1033,8 @@
 									</button>
 								{:else if myReservedSpaceIds.has(selectedStall.id)}
 									<button class="action-btn secondary" disabled>予約済み</button>
+								{:else if isSuspended}
+									<div class="booked-badge">アカウント停止中（予約不可）</div>
 								{:else}
 									<button class="action-btn primary" onclick={goReserve}>予約する</button>
 								{/if}
@@ -1154,11 +1243,23 @@
 							</button>
 						</div>
 
+						<div class="auth-notice">
+							💳 予約時にクレジットカードの<strong>与信枠（仮押さえ）</strong>のみ確保します。<br />
+							実際の引き落としは<strong>現地QRコードスキャン（チェックイン）時</strong>に行われます。
+						</div>
+
 						{#if reservationError}
 							<div class="form-error">{reservationError}</div>
 						{/if}
 
-						<button class="reserve-submit-btn" onclick={submitReservation} disabled={isReserving}>
+						<label class="noshow-agree-label">
+							<input type="checkbox" bind:checked={agreedToNoshow} class="noshow-checkbox" />
+							<span class="noshow-agree-text">
+								利用規約に同意します。※予約開始時間から30分を過ぎてもチェックインが行われない場合、自動キャンセルとなり<strong>返金は行われません</strong>。また、サービスの信用スコアが低下します。
+							</span>
+						</label>
+
+						<button class="reserve-submit-btn" onclick={submitReservation} disabled={isReserving || !agreedToNoshow}>
 							{isReserving ? '処理中…' : '予約を確定する'}
 						</button>
 					</div>
@@ -1176,10 +1277,10 @@
 						<div id="qr-reader-map"></div>
 						<button class="text-btn" onclick={cancelQr}>キャンセル</button>
 
-					{:else if qrScanPhase === 'verifying' || qrScanPhase === 'idle'}
+					{:else if qrScanPhase === 'gps' || qrScanPhase === 'verifying' || qrScanPhase === 'idle'}
 						<div class="qr-loading">
 							<div class="qr-spinner"></div>
-							<p>{qrScanPhase === 'verifying' ? '確認中…' : '準備中…'}</p>
+							<p>{qrScanPhase === 'gps' ? '現在地を確認中…' : qrScanPhase === 'verifying' ? '確認中…' : '準備中…'}</p>
 						</div>
 
 					{:else if qrScanPhase === 'error'}
@@ -1454,10 +1555,10 @@
 										{isReturningRes === res.id ? '処理中…' : '🔄 返却する'}
 									</button>
 								{/if}
-								{#if canCancel(res.start_datetime, res.status)}
+								{#if canCancel(res.status)}
 									<button
 										class="res-action-btn res-action-cancel"
-										onclick={() => handleCancelReservation(res.id)}
+										onclick={() => handleCancelReservation(res.id, res.start_datetime)}
 										disabled={isCancellingRes === res.id}
 									>
 										{isCancellingRes === res.id ? 'キャンセル中…' : 'キャンセルする'}
@@ -1489,6 +1590,34 @@
 
 <style>
 	:global(body) { margin: 0; padding: 0; }
+
+	.suspension-banner {
+		background: #fef2f2; color: #991b1b;
+		border-bottom: 1px solid #fecaca;
+		padding: 10px 16px; font-size: 0.82rem;
+		font-weight: 600; text-align: center;
+		font-family: sans-serif;
+	}
+
+	.auth-success-banner {
+		display: flex; align-items: center; justify-content: center; gap: 10px;
+		background: #ecfdf5; color: #166534;
+		border-bottom: 1px solid #bbf7d0;
+		padding: 10px 16px; font-size: 0.82rem;
+		font-weight: 600; font-family: sans-serif;
+	}
+	.auth-success-close {
+		background: none; border: none; cursor: pointer;
+		font-size: 1rem; color: #166534; line-height: 1; padding: 0 4px;
+	}
+
+	.auth-notice {
+		background: #eff6ff; border: 1px solid #bfdbfe;
+		border-radius: 10px; padding: 12px 14px;
+		font-size: 0.8rem; color: #1e40af; line-height: 1.6;
+		margin-bottom: 12px;
+	}
+	.auth-notice strong { color: #1d4ed8; }
 
 	/* ── Leaflet マーカー（:global で DOM に直接挿入した要素に適用） ── */
 	:global(.lmap-marker) { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
@@ -1823,6 +1952,21 @@
 		text-align: left;
 	}
 	.load-menu-btn:hover { background: #facc15; color: #0f172a; }
+
+	.noshow-agree-label {
+		display: flex; align-items: flex-start; gap: 10px;
+		background: #fef9ec; border: 1px solid #fde68a;
+		border-radius: 10px; padding: 12px 14px;
+		margin-bottom: 14px; cursor: pointer;
+	}
+	.noshow-checkbox {
+		flex-shrink: 0; width: 18px; height: 18px;
+		margin-top: 2px; accent-color: #d56d04; cursor: pointer;
+	}
+	.noshow-agree-text {
+		font-size: 0.8rem; color: #4a3f38; line-height: 1.6;
+	}
+	.noshow-agree-text strong { color: #991b1b; }
 
 	.reserve-submit-btn {
 		width: 100%; padding: 14px; background: #facc15; color: #0f172a;

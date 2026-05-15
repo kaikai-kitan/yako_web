@@ -69,9 +69,11 @@
 					</div>
 				</div>
 
-				<a href="/yatakari" target="_blank" rel="noopener noreferrer" class="yatakari-cta">
-					YATAKARIを開く <span class="cta-arrow">↗</span>
-				</a>
+				<div class="yatakari-cta-wrap">
+					<a href="/yatakari" target="_blank" rel="noopener noreferrer" class="yatakari-cta">
+						YATAKARIを開く <span class="cta-arrow">↗</span>
+					</a>
+				</div>
 			</div>
 		{/if}
 	{/each}
@@ -237,13 +239,17 @@
 		line-height: 1.4;
 	}
 
-	.yatakari-cta {
+	.yatakari-cta-wrap {
 		display: flex;
-		align-items: center;
 		justify-content: center;
+		margin-top: 4px;
+	}
+
+	.yatakari-cta {
+		display: inline-flex;
+		align-items: center;
 		gap: 8px;
-		width: 100%;
-		padding: 13px;
+		padding: 13px 32px;
 		background: #d56d04;
 		color: #fff;
 		border-radius: 12px;
@@ -252,6 +258,7 @@
 		text-decoration: none;
 		letter-spacing: 0.04em;
 		transition: background 0.15s;
+		white-space: nowrap;
 	}
 
 	.yatakari-cta:hover { background: #b85d03; }

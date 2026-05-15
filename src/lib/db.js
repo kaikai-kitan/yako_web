@@ -579,7 +579,7 @@ export async function createReservation(
 			throw new Error('この屋台はすでに予約が入っています。別の屋台をお選びください。');
 		}
 	}
-	const { error } = await supabase.from('reservations').insert({
+	const { data, error } = await supabase.from('reservations').insert({
 		user_id: userId,
 		rental_space_id: rentalSpaceId || null,
 		stall_id: stallId || null,
@@ -588,8 +588,9 @@ export async function createReservation(
 		planned_items: plannedItems || null,
 		locked_space_fee: lockedSpaceFee ?? 0,
 		locked_stall_fee: lockedStallFee ?? 0
-	});
+	}).select('id').single();
 	if (error) throw error;
+	return data.id;
 }
 
 // =====================================================

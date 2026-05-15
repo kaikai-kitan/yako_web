@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 import { env } from '$env/dynamic/private';
 import { json, error } from '@sveltejs/kit';
 
@@ -17,6 +18,18 @@ export async function POST({ request }) {
 
 		if (!items || items.length === 0) {
 			throw error(400, 'カートが空です');
+		}
+
+		if (userId) {
+			const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+			const { data: profile } = await supabase
+				.from('user_profiles')
+				.select('is_suspended')
+				.eq('user_id', userId)
+				.maybeSingle();
+			if (profile?.is_suspended) {
+				throw error(403, 'アカウントが停止されているため、購入できません。');
+			}
 		}
 
 		const key = env.STRIPE_SECRET_KEY;

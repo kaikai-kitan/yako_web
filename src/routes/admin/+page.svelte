@@ -102,6 +102,11 @@
 <div class="page">
 	<h1 class="page-title">管理者ダッシュボード</h1>
 
+	<div class="admin-nav">
+		<a href="{base}/admin/applications" class="admin-nav-link">📋 出品申請管理</a>
+		<a href="{base}/admin/users" class="admin-nav-link">👥 ユーザー管理</a>
+	</div>
+
 	<!-- フィルター -->
 	<div class="filter-bar">
 		<label>
@@ -208,6 +213,18 @@
 {/if}
 
 <style>
+	.admin-nav {
+		display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;
+	}
+	.admin-nav-link {
+		display: inline-block; padding: 8px 16px;
+		background: white; border: 1px solid #e8e0d8;
+		border-radius: 8px; font-size: 0.85rem;
+		font-weight: 600; color: #26201a;
+		text-decoration: none;
+	}
+	.admin-nav-link:hover { background: #faf8f5; border-color: #d56d04; color: #d56d04; }
+
 	.loading {
 		text-align: center;
 		padding: 80px 20px;
