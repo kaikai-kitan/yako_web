@@ -237,16 +237,16 @@
     .primary-nav-item.nav-active { color: #26201a; position: relative; }
     .primary-nav-item.nav-active::after {
         content: ''; position: absolute; bottom: -2px; left: 20%; right: 20%;
-        height: 3px; background: #f97316; border-radius: 2px;
+        height: 3px; background: var(--accent); border-radius: 2px;
     }
 
     /* YATAKARIボタン */
     .yatakari-btn { border: 1px solid #e8e0d8; }
-    .yatakari-btn:hover { border-color: #d56d04; }
+    .yatakari-btn:hover { border-color: var(--accent); }
 
     /* ストアボタン */
     .shop-btn { border: 1px solid #e8e0d8; }
-    .shop-btn:hover { border-color: #d56d04; }
+    .shop-btn:hover { border-color: var(--accent); }
 
     .nav-icon { width: 22px; height: 22px; stroke: currentColor; }
     .nav-icon.yatakari-icon { object-fit: contain; stroke: none; }
@@ -271,7 +271,7 @@
         display: flex; align-items: center; justify-content: center;
         cursor: pointer; padding: 6px; transition: border-color 0.15s;
     }
-    .user-icon-btn:hover { border-color: #d56d04; }
+    .user-icon-btn:hover { border-color: var(--accent); }
     .user-svg { width: 20px; height: 20px; color: #26201a; }
 
     .user-dropdown {

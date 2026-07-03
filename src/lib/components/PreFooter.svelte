@@ -106,7 +106,7 @@
         display: inline-block;
         margin-top: 18px;
         padding: 10px 18px;
-        background: #d56d04;
+        background: var(--accent);
         color: #fff !important;
         border-radius: 8px;
         font-size: 0.85rem;
@@ -115,7 +115,7 @@
         transition: background 0.15s;
         white-space: nowrap;
     }
-    .cta-btn:hover { background: #b85d03; }
+    .cta-btn:hover { background: var(--accent-deep); }
 
     /* Instagramリンク */
     .ig-link {

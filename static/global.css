@@ -1,3 +1,33 @@
+/* ===== デザイントークン =====
+   微小夜行電灯：和紙・墨・提灯のあかり・鴨川の夜。
+   彩度を抑え、余白と罫線と明朝で品を出す。 */
+:root {
+  /* 紙・面 */
+  --paper: #f7f1e6;      /* ベース（和紙） */
+  --surface: #fffdf7;    /* カード面 */
+  --surface-sunk: #efe6d6;
+  /* 墨（文字） */
+  --ink: #262019;
+  --ink-2: #5c5248;
+  --ink-3: #948979;
+  /* 罫線 */
+  --line: #e6dcc9;
+  --line-strong: #d8ccb5;
+  /* 柿色のあかり（アクセント。控えめに使う） */
+  --accent: #b85c2b;
+  --accent-deep: #9c4b20;
+  --accent-tint: #f0e4d4;
+  /* 夜の藍（奥行き・反転面） */
+  --night: #2b3340;
+  --night-2: #3c4658;
+  /* 角丸・影 */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 18px;
+  --shadow-1: 0 1px 3px rgba(40, 30, 20, 0.05);
+  --shadow-2: 0 6px 24px rgba(40, 30, 20, 0.08);
+}
+
 html {
   overflow-x: clip; /* ピンチズーム時の横余白を防ぐ（sticky を壊さない） */
 }
@@ -13,8 +43,8 @@ body {
   font-family: "Hiragino Mincho ProN", "Zen Antique", "Yu Mincho", "游明朝", YuMincho, serif;
   font-size: 16px;
   font-weight: 400;
-  background-color: #fbf3ea;
-  color: #26201a;
+  background-color: var(--paper);
+  color: var(--ink);
   margin: 0;
   padding: 0;
   max-width: 100%;

@@ -1,19 +1,19 @@
-<!-- 夜行人図鑑（説明 + 今日の話題の夜行人） -->
+<!-- 夜行人図鑑（説明 + 今日の夜行人） -->
 <script>
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import seedNetwork from '$lib/assets/data/network.json';
 
+	// 抑えた和の配色（グラフと共通）
 	const ROLE_COLOR = {
-		'屋台営業者': '#d56d04',
-		'屋台オーナー': '#e0a72e',
-		'土地オーナー': '#22a06b',
-		'流浪人': '#7d8aa5'
+		'屋台営業者': '#b85c2b',
+		'屋台オーナー': '#b5892e',
+		'土地オーナー': '#5f7a52',
+		'流浪人': '#6b7688'
 	};
 
-	let featured = $state([]); // 今日の話題の夜行人
+	let featured = $state([]); // 今日の夜行人
 
-	// 日付シードの簡易乱数（毎日同じ並び、日が変わると変わる）
 	function seededPick(people, n) {
 		const today = new Date();
 		const seedBase = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
@@ -21,7 +21,6 @@
 			let h = seedBase;
 			const s = String(p.id);
 			for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 1000000007;
-			// つながりが多い人ほど「話題」になりやすいよう軽く加点
 			return { p, score: (h % 1000) + (p.degree ?? 0) * 3 };
 		});
 		scored.sort((a, b) => b.score - a.score);
@@ -46,95 +45,168 @@
 <svelte:head><title>夜行人図鑑 | 微小夜行電灯</title></svelte:head>
 
 <main>
-	<h1 class="title">夜行人図鑑</h1>
-	<span class="sep"></span>
+	<header class="masthead">
+		<p class="kicker">夜 行 人 図 鑑</p>
+		<h1 class="title">名も無き灯りたち</h1>
+		<div class="rule"><span></span></div>
+	</header>
+
 	<p class="lead">
-		夜行人図鑑とは、屋台に集まった<strong>ちょっと変わったところのある人</strong>たちが発する
-		迷言や名言を図鑑として残していく試みです。<br />
-		屋台をきっかけに生まれた縁は、夜ごと少しずつ広がっていきます。
-		その繋がりを 3D の星図のように可視化したのが「夜行人ネットワーク」です。
+		屋台に集まった、ちょっと変わったところのある人たち。
+		彼らが夜ごとにこぼす迷言や名言を、そっと図鑑に書き留めています。
+		屋台をきっかけに生まれた縁は、夜のあいだに少しずつ広がっていきます。
 	</p>
 
-	<a href="{base}/network" class="network-cta">🕸 夜行人ネットワークを見る（3D）</a>
+	<!-- ネットワークへの入口 -->
+	<a href="{base}/network" class="portal">
+		<div class="portal-body">
+			<span class="portal-kicker">星図をひらく</span>
+			<span class="portal-title">夜行人ネットワーク</span>
+			<span class="portal-desc">縁のつながりを立体の星図でたどる</span>
+		</div>
+		<span class="portal-arrow" aria-hidden="true">→</span>
+	</a>
 
-	<!-- 今日の話題の夜行人 -->
-	<section class="featured">
-		<h2 class="featured-title">✨ 今日の話題の夜行人</h2>
-		<p class="featured-sub">毎日入れ替わる、注目の夜行人たち</p>
+	<!-- 今日の夜行人 -->
+	<section class="today">
+		<div class="section-head">
+			<span class="section-kicker">今日の夜行人</span>
+			<span class="section-line"></span>
+		</div>
 
 		{#if featured.length === 0}
-			<p class="muted">まだ登録された夜行人がいません。</p>
+			<p class="muted">まだ名を連ねた夜行人はいません。</p>
 		{:else}
-			<div class="cards">
+			<ul class="people">
 				{#each featured as p}
-					<a href="{base}/network" class="card">
-						{#if p.img}
-							<img src={p.img.startsWith('http') ? p.img : base + p.img} alt={p.name} class="avatar" />
-						{:else}
-							<div class="avatar placeholder">{p.name?.charAt(0) ?? '?'}</div>
-						{/if}
-						<div class="card-body">
-							<span class="card-name">{p.name}</span>
-							{#if p.roles?.length}
-								<span class="card-roles">
-									{#each p.roles as r}
-										<span class="rc" style="border-color:{ROLE_COLOR[r] ?? '#b9ab97'};color:{ROLE_COLOR[r] ?? '#b9ab97'}">{r}</span>
-									{/each}
-								</span>
+					<li>
+						<a href="{base}/network" class="person">
+							{#if p.img}
+								<img src={p.img.startsWith('http') ? p.img : base + p.img} alt={p.name} class="face" />
+							{:else}
+								<span class="face placeholder">{p.name?.charAt(0) ?? '?'}</span>
 							{/if}
-							{#if p.message}<span class="card-msg">{p.message}</span>{/if}
-						</div>
-					</a>
+							<div class="person-body">
+								<span class="person-name">{p.name}</span>
+								{#if p.roles?.length}
+									<span class="person-roles">
+										{#each p.roles as r}
+											<span class="role"><i style="background:{ROLE_COLOR[r] ?? '#6b7688'}"></i>{r}</span>
+										{/each}
+									</span>
+								{/if}
+								{#if p.message && p.message.replace(/[「」\s]/g, '')}<span class="person-quote">{p.message}</span>{/if}
+							</div>
+						</a>
+					</li>
 				{/each}
-			</div>
+			</ul>
 		{/if}
 	</section>
 
 	<div class="join">
-		<p>あなたも夜行人として星図に加わりませんか？</p>
-		<a href="{base}/yakonin/setup" class="join-btn">＋ 夜行人ネットワークに参加する</a>
+		<p class="join-lead">あなたも、この星図に名を連ねませんか。</p>
+		<a href="{base}/yakonin/setup" class="join-link">夜行人になる</a>
 	</div>
-	<span class="sep"></span>
 </main>
 
 <style>
-	main { max-width: 15cm; margin: auto; padding: 2rem 16px 3rem; box-sizing: border-box; display: flex; flex-direction: column; }
-	.title { text-align: center; color: #26201a; margin: 0 0 1rem; }
-	.lead { line-height: 1.85; color: #4a3f38; font-size: 0.95rem; margin: 0 0 1.6rem; }
-	.muted { color: #9e8f7a; font-size: 0.85rem; text-align: center; }
-	.sep { display: block; background: #d56d04; width: 60px; height: 1px; margin: 16px 0; }
-
-	.network-cta {
-		display: block; text-align: center; text-decoration: none;
-		background: #1a1410; color: #e8c97a; font-weight: 700; font-size: 0.95rem;
-		padding: 15px; border-radius: 14px; letter-spacing: 0.04em; margin-bottom: 2.4rem;
-		transition: background 0.15s;
+	main {
+		max-width: 640px;
+		margin: 0 auto;
+		padding: 3.5rem 22px 4rem;
+		box-sizing: border-box;
 	}
-	.network-cta:hover { background: #26201a; }
 
-	.featured-title { font-size: 1.05rem; color: #26201a; margin: 0 0 0.2rem; }
-	.featured-sub { font-size: 0.78rem; color: #9e8f7a; margin: 0 0 1rem; }
-	.cards { display: flex; flex-direction: column; gap: 12px; }
-	.card {
-		display: flex; align-items: center; gap: 14px; padding: 14px;
-		background: #fff; border: 1px solid #ede4d5; border-radius: 14px;
-		text-decoration: none; transition: border-color 0.15s, transform 0.15s;
+	/* ── 見出し ── */
+	.masthead { text-align: center; margin-bottom: 2rem; }
+	.kicker {
+		font-size: 0.72rem; letter-spacing: 0.5em; color: var(--ink-3);
+		margin: 0 0 1rem; padding-left: 0.5em; font-family: "Zen Antique", serif;
 	}
-	.card:hover { border-color: #d56d04; transform: translateY(-2px); }
-	.avatar { width: 54px; height: 54px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-	.avatar.placeholder { display: flex; align-items: center; justify-content: center; background: #e9dcc8; color: #7a6a4c; font-weight: 700; font-size: 1.4rem; }
-	.card-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-	.card-name { font-size: 0.95rem; font-weight: 700; color: #26201a; }
-	.card-roles { display: flex; gap: 5px; flex-wrap: wrap; }
-	.rc { font-size: 0.66rem; font-weight: 700; padding: 1px 7px; border: 1px solid; border-radius: 100px; }
-	.card-msg { font-size: 0.8rem; color: #6b5f54; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.title {
+		font-family: "Zen Antique", "Yu Mincho", serif;
+		font-size: clamp(1.7rem, 6vw, 2.3rem); font-weight: 500; color: var(--ink);
+		letter-spacing: 0.14em; line-height: 1.4; margin: 0;
+	}
+	.rule { display: flex; justify-content: center; margin-top: 1.2rem; }
+	.rule span { width: 44px; height: 1px; background: var(--accent); opacity: 0.7; }
 
-	.join { text-align: center; margin-top: 2.4rem; }
-	.join p { font-size: 0.88rem; color: #6b5f54; margin: 0 0 12px; }
-	.join-btn {
-		display: inline-block; padding: 12px 24px; border-radius: 100px;
-		background: #fff; border: 1.5px solid #d56d04; color: #d56d04;
-		font-size: 0.88rem; font-weight: 700; text-decoration: none; transition: all 0.15s;
+	.lead {
+		font-size: 0.95rem; line-height: 2.05; color: var(--ink-2);
+		text-align: justify; margin: 0 0 2.6rem;
 	}
-	.join-btn:hover { background: #d56d04; color: #fff; }
+
+	/* ── ネットワーク入口 ── */
+	.portal {
+		display: flex; align-items: center; gap: 16px;
+		background: var(--night); color: #efe7d8; text-decoration: none;
+		border-radius: var(--r-lg); padding: 22px 24px; margin-bottom: 3.2rem;
+		position: relative; overflow: hidden;
+		transition: transform 0.2s ease, box-shadow 0.2s ease;
+		box-shadow: var(--shadow-2);
+	}
+	.portal::before {
+		content: ''; position: absolute; top: -40%; right: -10%;
+		width: 180px; height: 180px; border-radius: 50%;
+		background: radial-gradient(circle, rgba(230,170,90,0.28), transparent 70%);
+	}
+	.portal:hover { transform: translateY(-2px); }
+	.portal-body { display: flex; flex-direction: column; gap: 4px; position: relative; }
+	.portal-kicker { font-size: 0.66rem; letter-spacing: 0.32em; color: #c9a06a; }
+	.portal-title {
+		font-family: "Zen Antique", serif; font-size: 1.2rem; letter-spacing: 0.12em; color: #f3ece0;
+	}
+	.portal-desc { font-size: 0.76rem; color: #a99f8f; letter-spacing: 0.04em; }
+	.portal-arrow { margin-left: auto; font-size: 1.3rem; color: #c9a06a; position: relative; }
+
+	/* ── セクション見出し ── */
+	.section-head { display: flex; align-items: center; gap: 14px; margin-bottom: 1.4rem; }
+	.section-kicker {
+		font-family: "Zen Antique", serif; font-size: 0.95rem; letter-spacing: 0.2em;
+		color: var(--ink); white-space: nowrap;
+	}
+	.section-line { flex: 1; height: 1px; background: var(--line-strong); }
+
+	/* ── 人の一覧（エディトリアル） ── */
+	.people { list-style: none; margin: 0; padding: 0; }
+	.people li { border-top: 1px solid var(--line); }
+	.people li:last-child { border-bottom: 1px solid var(--line); }
+	.person {
+		display: flex; align-items: center; gap: 16px; padding: 18px 4px;
+		text-decoration: none; color: inherit; transition: background 0.15s;
+	}
+	.person:hover { background: rgba(184, 92, 43, 0.04); }
+	.face {
+		width: 54px; height: 54px; border-radius: 50%; object-fit: cover;
+		flex-shrink: 0; border: 1px solid var(--line);
+	}
+	.face.placeholder {
+		display: flex; align-items: center; justify-content: center;
+		background: var(--surface-sunk); color: var(--ink-3);
+		font-family: "Zen Antique", serif; font-size: 1.4rem;
+	}
+	.person-body { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+	.person-name {
+		font-family: "Zen Antique", serif; font-size: 1.05rem; letter-spacing: 0.06em; color: var(--ink);
+	}
+	.person-roles { display: flex; gap: 12px; flex-wrap: wrap; }
+	.role { display: inline-flex; align-items: center; gap: 5px; font-size: 0.7rem; color: var(--ink-3); letter-spacing: 0.06em; }
+	.role i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+	.person-quote {
+		font-size: 0.86rem; color: var(--ink-2); font-style: italic; line-height: 1.5;
+		overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+	}
+
+	/* ── 参加 ── */
+	.join { text-align: center; margin-top: 3.4rem; }
+	.join-lead { font-size: 0.9rem; color: var(--ink-2); letter-spacing: 0.06em; margin: 0 0 1rem; }
+	.join-link {
+		display: inline-block; font-family: "Zen Antique", serif; font-size: 0.92rem;
+		letter-spacing: 0.14em; color: var(--accent-deep); text-decoration: none;
+		padding: 10px 4px; border-bottom: 1px solid var(--accent); transition: color 0.15s;
+	}
+	.join-link:hover { color: var(--accent); }
+
+	.muted { color: var(--ink-3); font-size: 0.88rem; text-align: center; }
 </style>

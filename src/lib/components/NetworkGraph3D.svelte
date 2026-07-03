@@ -24,14 +24,14 @@
 	let currentHighlight = null;
 
 	const ROLE_COLOR = {
-		'屋台営業者': '#d56d04',
-		'屋台オーナー': '#e0a72e',
-		'土地オーナー': '#22a06b',
-		'流浪人': '#7d8aa5'
+		'屋台営業者': '#b85c2b',
+		'屋台オーナー': '#b5892e',
+		'土地オーナー': '#5f7a52',
+		'流浪人': '#6b7688'
 	};
-	const DEFAULT_RING = '#7d8aa5';
+	const DEFAULT_RING = '#6b7688';
 
-	const BG = '#e9e2d6'; // 立体感を出すためのわずかに暖色グレー
+	const BG = '#ece4d6'; // 立体感を出すためのわずかに暖色グレー（和紙）
 
 	// つながり数 → アイコン倍率（依頼の例に沿った区分線形補間）
 	const SIZE_STOPS = [[0, 1], [5, 1.5], [30, 3], [70, 5], [100, 8], [300, 20]];
@@ -305,7 +305,7 @@
 	.graph-host {
 		width: 100%;
 		min-height: 320px;
-		background: #e9e2d6;
+		background: #ece4d6;
 		touch-action: none;
 	}
 	.graph-host :global(canvas) {
