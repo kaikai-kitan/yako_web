@@ -321,6 +321,9 @@ export async function getMyStalls(userId) {
 
 /** 自分の予約一覧を取得 */
 export async function getMyReservations(userId) {
+	// ユーザー画面には直近1ヶ月以内の予約のみ表示する。
+	// （DB からは削除せず、内部監査用に保持。表示だけを絞る）
+	const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 	const { data, error } = await supabase
 		.from('reservations')
 		.select(`
@@ -329,6 +332,7 @@ export async function getMyReservations(userId) {
 			stall_specs ( stall_name )
 		`)
 		.eq('user_id', userId)
+		.gte('start_datetime', cutoff)
 		.order('start_datetime', { ascending: false });
 	if (error) throw error;
 	return data ?? [];

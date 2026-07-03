@@ -11,6 +11,11 @@
     let saveMessage = $state('');
     let saveError = $state('');
 
+    // 公式ストア開設に必要な信頼ポイント
+    const STORE_MIN_CREDIT = 200;
+    let creditScore = $state(0);
+    let blocked = $state(false);
+
     // フォームフィールド
     let storeName = $state('');
     let storeDescription = $state('');
@@ -29,6 +34,19 @@
             return;
         }
         currentUser = session.user;
+
+        // 信頼ポイントの確認（200超でないと開設不可）
+        const { data: prof } = await supabase
+            .from('user_profiles')
+            .select('credit_score')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+        creditScore = prof?.credit_score ?? 0;
+        if (creditScore <= STORE_MIN_CREDIT) {
+            blocked = true;
+            isLoading = false;
+            return;
+        }
 
         // 既存データ読み込み
         const { data } = await supabase
@@ -140,6 +158,12 @@
                 <a href="{base}/auth?redirectTo={encodeURIComponent(`${base}/store-setup`)}" class="login-btn">
                     ログイン / 新規登録
                 </a>
+            </div>
+        {:else if blocked}
+            <div class="auth-prompt">
+                <p>公式オンラインストアの開設には、信頼ポイント <strong>{STORE_MIN_CREDIT}超</strong> が必要です。</p>
+                <p class="blocked-sub">現在の信頼ポイント：{creditScore}<br />YATAKARI のご利用で信頼を積み重ねてから、あらためて開設をお試しください。</p>
+                <a href="{base}/mypage" class="login-btn">マイページへ</a>
             </div>
         {:else}
             <form onsubmit={(e) => { e.preventDefault(); handleSave(); }} class="store-form">
@@ -287,6 +311,7 @@
 
     .auth-prompt { text-align: center; padding: 40px 0; }
     .auth-prompt p { color: #7a6f67; margin-bottom: 16px; }
+    .blocked-sub { font-size: 0.85rem; line-height: 1.7; }
     .login-btn {
         display: inline-block; padding: 12px 28px;
         background: #26201a; color: white; border-radius: 10px;

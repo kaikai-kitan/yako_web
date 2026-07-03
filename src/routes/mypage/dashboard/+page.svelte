@@ -198,7 +198,7 @@
 			<input type="month" bind:value={selectedMonth} class="month-input" />
 		</label>
 		<a href="{base}/mypage/inventory" class="inventory-link">
-			📦 在庫管理
+			在庫管理
 			{#if inventoryAlert > 0}
 				<span class="alert-badge">{inventoryAlert}</span>
 			{/if}
@@ -210,7 +210,7 @@
 	{:else}
 		<!-- 総利益カード -->
 		<div class="total-card">
-			<div class="total-label">📊 {selectedMonth} 総利益</div>
+			<div class="total-label">{selectedMonth} 総利益</div>
 			<div class="total-value">{fmt(totalRevenue)}</div>
 			<div class="total-sub">すべてのロールの合計収益</div>
 		</div>
@@ -220,7 +220,6 @@
 			{#if hasYataiUserRole}
 				<div class="role-card yatai-user">
 					<div class="role-header">
-						<span class="role-icon">🍜</span>
 						<div>
 							<div class="role-name">屋台利用者</div>
 							<div class="role-desc">屋台販売売上</div>
@@ -239,7 +238,6 @@
 			{#if hasYataiOwnerRole}
 				<div class="role-card yatai-owner">
 					<div class="role-header">
-						<span class="role-icon">🏮</span>
 						<div>
 							<div class="role-name">屋台主</div>
 							<div class="role-desc">屋台貸し出し収益</div>
@@ -258,7 +256,6 @@
 			{#if hasLandRole}
 				<div class="role-card land-owner">
 					<div class="role-header">
-						<span class="role-icon">🏡</span>
 						<div>
 							<div class="role-name">土地主</div>
 							<div class="role-desc">土地利用収益</div>
@@ -277,7 +274,6 @@
 			{#if hasShopRole}
 				<div class="role-card shop-op">
 					<div class="role-header">
-						<span class="role-icon">🛍️</span>
 						<div>
 							<div class="role-name">ショップ運営者</div>
 							<div class="role-desc">オンラインストア売上</div>
@@ -306,7 +302,7 @@
 		{#if chartData.length > 0}
 			{@const maxVal = Math.max(...chartData.map((d) => d.total), 1)}
 			<div class="chart-section">
-				<h2 class="section-title">📈 売上推移（直近6ヶ月）</h2>
+				<h2 class="section-title">売上推移（直近6ヶ月）</h2>
 				<div class="chart-wrap">
 					<svg
 						class="chart-svg"
@@ -356,14 +352,14 @@
 		<!-- 夜行人ネットワーク接続タグ -->
 		{#if myStalls.length > 0}
 			<div class="network-section">
-				<h2 class="section-title">🕸 夜行人ネットワーク 接続タグ</h2>
+				<h2 class="section-title">夜行人ネットワーク 接続タグ</h2>
 				<p class="network-lead">
 					屋台に QR / NFC タグを設置すると、来場者がスマホをかざすだけで<a href="{base}/network">夜行人ネットワーク</a>につながります。
 				</p>
 				<div class="stall-tag-list">
 					{#each myStalls as stall}
 						<a href="{base}/yakonin/tag/{stall.id}" class="stall-tag-row">
-							<span class="stall-tag-name">🏮 {stall.stall_name ?? '屋台'}</span>
+							<span class="stall-tag-name">{stall.stall_name ?? '屋台'}</span>
 							<span class="stall-tag-cta">接続タグを発行 ›</span>
 						</a>
 					{/each}

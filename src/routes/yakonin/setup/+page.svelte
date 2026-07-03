@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase.js';
+	import { uploadImage } from '$lib/db.js';
 
 	let currentUser = $state(null);
 	let isLoading = $state(true);
@@ -17,6 +18,17 @@
 	let oneLiner = $state('');
 	let avatarPath = $state('');
 	let isPublic = $state(true);
+
+	// アイコン画像（ファイル選択→アップロード）
+	let avatarFile = null;
+	let avatarPreview = $state('');
+
+	function onAvatarChange(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		avatarFile = file;
+		avatarPreview = URL.createObjectURL(file);
+	}
 
 	let connectCode = $state('');
 	let connectQr = $state('');
@@ -47,6 +59,9 @@
 			status      = data.status ?? '';
 			oneLiner    = data.one_liner ?? '';
 			avatarPath  = data.avatar_path ?? '';
+			avatarPreview = avatarPath.startsWith('http') || avatarPath.startsWith('/')
+				? (avatarPath.startsWith('http') ? avatarPath : base + avatarPath)
+				: '';
 			isPublic    = data.is_public ?? true;
 			connectCode = data.connect_code ?? '';
 			await renderQr();
@@ -72,6 +87,18 @@
 		isSaving = true;
 		saveError = '';
 		saved = false;
+
+		// 新しい写真が選ばれていればアップロード
+		if (avatarFile) {
+			try {
+				avatarPath = await uploadImage(currentUser.id, avatarFile, 'profile-images');
+				avatarFile = null;
+			} catch (e) {
+				saveError = '画像のアップロードに失敗しました: ' + e.message;
+				isSaving = false;
+				return;
+			}
+		}
 
 		const payload = {
 			user_id:     currentUser.id,
@@ -141,10 +168,18 @@
 					placeholder="例：自分の人生は自分で歩め。夜は誰かと行け。"></textarea>
 			</label>
 
-			<label class="field">
-				<span class="label">アイコン画像URL（任意）</span>
-				<input type="text" bind:value={avatarPath} placeholder="/images/yatainin/01.png など" />
-			</label>
+			<div class="field">
+				<span class="label">アイコン写真（任意）</span>
+				<label class="avatar-pick" for="avatar-file">
+					{#if avatarPreview}
+						<img src={avatarPreview} alt="アイコンプレビュー" class="avatar-preview" />
+						<span class="avatar-hint">タップして変更</span>
+					{:else}
+						<span class="avatar-empty">＋ 写真を選ぶ</span>
+					{/if}
+				</label>
+				<input id="avatar-file" type="file" accept="image/*" class="hidden-file" onchange={onAvatarChange} />
+			</div>
 
 			<label class="toggle">
 				<input type="checkbox" bind:checked={isPublic} />
@@ -194,6 +229,16 @@
 	}
 	input:focus, textarea:focus { outline: none; border-color: #d56d04; }
 	textarea { resize: vertical; }
+
+	.hidden-file { display: none; }
+	.avatar-pick {
+		display: flex; flex-direction: column; align-items: center; gap: 8px;
+		cursor: pointer; border: 1px dashed var(--line-strong); border-radius: 14px;
+		padding: 18px; background: var(--surface); transition: border-color 0.15s;
+	}
+	.avatar-pick:hover { border-color: var(--accent); }
+	.avatar-preview { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }
+	.avatar-hint, .avatar-empty { font-size: 0.8rem; color: var(--ink-3); letter-spacing: 0.04em; }
 
 	.toggle { display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; color: #4a3f38; line-height: 1.5; }
 	.toggle input { margin-top: 2px; flex-shrink: 0; }

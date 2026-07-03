@@ -218,6 +218,17 @@
 		goto(`${base}/map`);
 	}
 
+	// 前の画面へ戻る（履歴が無ければマップへ）
+	function goBack() {
+		if (typeof window !== 'undefined' && window.history.length > 1) window.history.back();
+		else goto(`${base}/map`);
+	}
+
+	// 公式オンラインストア開設に必要な信頼ポイント
+	const STORE_MIN_CREDIT = 200;
+	let creditScore = $derived(profile?.credit_score ?? 0);
+	let canOpenStore = $derived(creditScore > STORE_MIN_CREDIT);
+
 	function openRoleModal(role) {
 		addingRole = role;
 		roleFormError = '';
@@ -293,7 +304,7 @@
 </script>
 
 <div class="page">
-	<a href="{base}/map" class="back-to-map">← マップに戻る</a>
+	<button class="back-to-map" onclick={goBack}>← 前の画面に戻る</button>
 
 	{#if isLoading}
 		<div class="loading">読み込み中…</div>
@@ -321,6 +332,21 @@
 				<span class="badge user">さすらい屋台人</span>
 				{#if profile.owners}<span class="badge owner">土地貸し出し人</span>{/if}
 				{#if profile.operators}<span class="badge operator">屋台主</span>{/if}
+			</div>
+
+			<!-- 信頼ポイント -->
+			<div class="credit-box">
+				<div class="credit-head">
+					<span class="credit-label">信頼ポイント</span>
+					<span class="credit-value" class:low={creditScore <= STORE_MIN_CREDIT}>{creditScore}</span>
+				</div>
+				<div class="credit-bar">
+					<div class="credit-fill" style="width: {Math.max(0, Math.min(100, (creditScore / 300) * 100))}%"></div>
+				</div>
+				<p class="credit-note">
+					キャンセルやノーショーで減点されます。
+					{#if !canOpenStore}<br />公式オンラインストアの開設には <strong>{STORE_MIN_CREDIT}超</strong> が必要です。{/if}
+				</p>
 			</div>
 
 			<!-- 名前 -->
@@ -352,7 +378,6 @@
 		<section class="section dashboard-section">
 			<!-- 収益ダッシュボード（全員） -->
 			<a href="{base}/mypage/dashboard" class="dashboard-link revenue-link">
-				<span class="dl-icon">📊</span>
 				<div class="dl-text">
 					<strong>収益ダッシュボード</strong>
 					<span>売上集計・ロール別収益・売上推移</span>
@@ -361,7 +386,6 @@
 			</a>
 			<!-- 在庫管理（全員） -->
 			<a href="{base}/mypage/inventory" class="dashboard-link inventory-link">
-				<span class="dl-icon">📦</span>
 				<div class="dl-text">
 					<strong>在庫管理</strong>
 					<span>商品の必要数・現在数・不足資金を管理</span>
@@ -370,7 +394,6 @@
 			</a>
 			<!-- 夜行人プロフィール（全員） -->
 			<a href="{base}/yakonin/setup" class="dashboard-link yakonin-link">
-				<span class="dl-icon">🕸</span>
 				<div class="dl-text">
 					<strong>夜行人プロフィール</strong>
 					<span>ニックネーム・一言・アイコンの編集、接続QR</span>
@@ -379,17 +402,15 @@
 			</a>
 			{#if profile.operators}
 				<a href="{base}/mypage/operator" class="dashboard-link operator-link">
-					<span class="dl-icon">🛍️</span>
 					<div class="dl-text">
 						<strong>出店者ダッシュボード</strong>
 						<span>受注管理・売上確認・口座設定</span>
 					</div>
 					<span class="dl-arrow">›</span>
 				</a>
-			{:else}
+			{:else if canOpenStore}
 				<div class="operator-cta">
 					<div class="cta-text">
-						<span class="cta-icon">🛍️</span>
 						<div>
 							<strong>オンラインストアで出店する</strong>
 							<p>商品を出品して販売できます。屋号・電話番号を登録してください。</p>
@@ -398,6 +419,15 @@
 					<button class="cta-btn" onclick={() => openRoleModal('屋台提供者')}>
 						出店申請する →
 					</button>
+				</div>
+			{:else}
+				<div class="operator-cta locked">
+					<div class="cta-text">
+						<div>
+							<strong>オンラインストアの開設は準備中</strong>
+							<p>公式オンラインストアの開設には、信頼ポイント <strong>{STORE_MIN_CREDIT}超</strong> が必要です（現在 {creditScore}）。YATAKARI を使って信頼を積み重ねましょう。</p>
+						</div>
+					</div>
 				</div>
 			{/if}
 		</section>
@@ -757,8 +787,29 @@
 		color: #64748b;
 		text-decoration: none;
 		padding: 6px 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-family: inherit;
 	}
 	.back-to-map:hover { color: #0f172a; }
+
+	/* 信頼ポイント */
+	.credit-box {
+		margin: 16px 0 4px;
+		padding: 14px 16px;
+		background: var(--surface, #fffdf7);
+		border: 1px solid var(--line, #e6dcc9);
+		border-radius: 12px;
+	}
+	.credit-head { display: flex; align-items: baseline; justify-content: space-between; }
+	.credit-label { font-size: 0.8rem; color: var(--ink-2, #5c5248); letter-spacing: 0.06em; }
+	.credit-value { font-size: 1.5rem; font-weight: 700; color: var(--ink, #262019); }
+	.credit-value.low { color: #b0402c; }
+	.credit-bar { height: 6px; background: #efe6d6; border-radius: 3px; overflow: hidden; margin: 8px 0; }
+	.credit-fill { height: 100%; background: var(--accent, #b85c2b); border-radius: 3px; transition: width 0.4s ease; }
+	.credit-note { font-size: 0.74rem; color: var(--ink-3, #948979); line-height: 1.6; margin: 0; }
+	.operator-cta.locked { opacity: 0.85; background: var(--surface-sunk, #efe6d6); }
 
 	.loading { text-align: center; padding: 60px; color: #64748b; }
 

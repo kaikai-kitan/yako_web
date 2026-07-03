@@ -284,7 +284,7 @@
 		L.marker([lat + 0.0056, lng], {
 			icon: L.divIcon({
 				className: '',
-				html: '<div class="ksu-badge-active">🏮 実証実験エリア<br><small>京都産業大学</small></div>',
+				html: '<div class="ksu-badge-active">実証実験エリア<br><small>京都産業大学</small></div>',
 				iconSize: [160, 44],
 				iconAnchor: [80, -6]
 			}),
@@ -917,8 +917,8 @@
 			<div class="toggle-switch" onclick={toggleMode} role="button" tabindex="0"
 				onkeydown={(e) => e.key === 'Enter' && toggleMode()}>
 				<div class="toggle-bg" style="left: {mapMode === 'active' ? '3px' : 'calc(50% + 1px)'};"></div>
-				<span class:active={mapMode === 'active'}>🏮 出店中</span>
-				<span class:active={mapMode === 'available'}>📍 予約可能</span>
+				<span class:active={mapMode === 'active'}>出店中</span>
+				<span class:active={mapMode === 'available'}>予約可能</span>
 			</div>
 		</header>
 	{/if}
@@ -990,11 +990,11 @@
 								{@const bookedByOther = bookedStallIds.has(selectedStall.id) && !pendingRes && !activeRes}
 								{#if activeRes}
 									<button class="action-btn primary" onclick={() => resumeActive(activeRes)}>
-										🏮 利用中・売上管理へ
+										利用中・売上管理へ
 									</button>
 								{:else if pendingRes}
 									<button class="action-btn primary" onclick={() => goQR(pendingRes.id)}>
-										📱 QRで受け取りを開始
+										QRで受け取りを開始
 									</button>
 								{:else if bookedByOther}
 									<div class="booked-badge">予約済み（利用不可）</div>
@@ -1025,11 +1025,11 @@
 								{@const pendingRes = myUserReservations.find((r) => r.rental_space_id === selectedStall.id && r.status === 'pending')}
 								{#if activeRes}
 									<button class="action-btn primary" onclick={() => resumeActive(activeRes)}>
-										🏮 利用中・売上管理へ
+										利用中・売上管理へ
 									</button>
 								{:else if pendingRes}
 									<button class="action-btn primary" onclick={() => goQR(pendingRes.id)}>
-										📱 QRで受け取りを開始
+										QRで受け取りを開始
 									</button>
 								{:else if myReservedSpaceIds.has(selectedStall.id)}
 									<button class="action-btn secondary" disabled>予約済み</button>
@@ -1155,7 +1155,7 @@
 							<!-- ===== Flow B: 屋台優先 ===== -->
 							<div class="form-section">
 								<span class="form-label">予約屋台</span>
-								<div class="form-value">🏮 {reservationForm.stallName}</div>
+								<div class="form-value">{reservationForm.stallName}</div>
 							</div>
 							<div class="form-section">
 								<label class="form-label" for="operating-location">
@@ -1372,7 +1372,7 @@
 						<p class="empty-history">ログインするとデータが表示されます</p>
 					{:else if userProfile?.owners || userProfile?.operators}
 						<p class="dashboard-role-label">
-							{#if userProfile?.owners}📍 土地貸し出し人{:else}🏮 屋台主{/if}
+							{#if userProfile?.owners}土地貸し出し人{:else}屋台主{/if}
 						</p>
 						<div class="kpi-container">
 							<div class="kpi-card">
@@ -1493,7 +1493,7 @@
 	>
 		<div class="modal-content">
 			<button class="modal-close-btn" onclick={() => (isReservationOpen = false)}>×</button>
-			<h2 class="dashboard-title">📅 予約確認</h2>
+			<h2 class="dashboard-title">予約確認</h2>
 
 			{#if !currentUser}
 				<p class="empty-history">ログインすると予約履歴を確認できます</p>
@@ -1508,7 +1508,7 @@
 						<div class="res-filter-btns">
 							<button class="res-filter-btn" class:active={resTypeFilter === 'all'} onclick={() => (resTypeFilter = 'all')}>すべて</button>
 							<button class="res-filter-btn" class:active={resTypeFilter === 'space'} onclick={() => (resTypeFilter = 'space')}>📍 スペース</button>
-							<button class="res-filter-btn" class:active={resTypeFilter === 'stall'} onclick={() => (resTypeFilter = 'stall')}>🏮 屋台</button>
+							<button class="res-filter-btn" class:active={resTypeFilter === 'stall'} onclick={() => (resTypeFilter = 'stall')}>屋台</button>
 						</div>
 					</div>
 					<div class="res-filter-group">
@@ -1527,12 +1527,12 @@
 						<div class="res-card">
 							<div class="res-card-header">
 								<span class="res-space-name">
-									{res.rental_spaces?.name ?? (res.stall_specs?.stall_name ? '🏮 屋台のみ予約' : '不明')}
+									{res.rental_spaces?.name ?? (res.stall_specs?.stall_name ? '屋台のみ予約' : '不明')}
 								</span>
 								<span class="res-badge {resStatusClass(res.status)}">{resStatusLabel(res.status)}</span>
 							</div>
 							{#if res.stall_specs?.stall_name}
-								<div class="res-detail">🏮 {res.stall_specs.stall_name}</div>
+								<div class="res-detail">{res.stall_specs.stall_name}</div>
 							{/if}
 							{#if res.planned_items}
 								<div class="res-detail">品目: {formatPlannedItems(res.planned_items)}</div>
@@ -1543,7 +1543,7 @@
 							<div class="res-actions">
 								{#if res.status === 'pending' && res.rental_space_id}
 									<a href="{base}/scan?space={res.rental_space_id}" class="res-action-btn res-action-scan">
-										📷 QRスキャンで借り出し開始
+										QRスキャンで借り出し開始
 									</a>
 								{/if}
 								{#if res.status === 'active'}

@@ -3,6 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
+	import { supabase } from '$lib/supabase.js';
 	import seedNetwork from '$lib/assets/data/network.json';
 	import NetworkGraph3D from '$lib/components/NetworkGraph3D.svelte';
 
@@ -49,9 +50,21 @@
 
 	onDestroy(() => stopScan());
 
-	function handleNodeClick(node) {
+	let selectedStalls = $state([]);
+
+	async function handleNodeClick(node) {
 		if (node.type === 'stall') { selected = null; return; }
 		selected = node;
+		selectedStalls = [];
+		// 屋台営業者なら、その人の屋台情報を取得してリンク表示
+		if (node.roles?.includes('屋台営業者') && node.id?.startsWith('u:')) {
+			const uid = node.id.slice(2);
+			const { data } = await supabase
+				.from('stall_specs')
+				.select('id, stall_name')
+				.eq('user_id', uid);
+			selectedStalls = data ?? [];
+		}
 	}
 
 	function connectLabel(deg) {
@@ -167,7 +180,18 @@
 				</div>
 			{/if}
 			{#if selected.status}<p class="detail-status">{selected.status}</p>{/if}
-			{#if selected.message}<p class="detail-msg">{selected.message}</p>{/if}
+			{#if selected.message && selected.message.replace(/[「」\s]/g, '')}<p class="detail-msg">{selected.message}</p>{/if}
+
+			{#if selectedStalls.length > 0}
+				<div class="detail-stalls">
+					<span class="detail-stalls-label">屋台の営業情報</span>
+					{#each selectedStalls as st}
+						<a href="{base}/yatakari/{st.id}" class="stall-link">
+							{st.stall_name ?? '屋台'}<span class="stall-arrow">→</span>
+						</a>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	{/if}
 
@@ -263,6 +287,16 @@
 	.role-chip::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--dot, #6b7688); }
 	.detail-status { font-size: 0.85rem; color: var(--ink-2); margin: 14px 0 0; letter-spacing: 0.03em; }
 	.detail-msg { font-size: 0.9rem; color: var(--ink-2); margin: 8px 0 0; line-height: 1.7; font-style: italic; }
+	.detail-stalls { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+	.detail-stalls-label { font-size: 0.72rem; color: var(--ink-3); letter-spacing: 0.08em; }
+	.stall-link {
+		display: flex; align-items: center; justify-content: space-between;
+		padding: 11px 14px; background: var(--surface-sunk); border-radius: var(--r-md);
+		text-decoration: none; color: var(--ink); font-size: 0.9rem; letter-spacing: 0.04em;
+		transition: background 0.15s;
+	}
+	.stall-link:hover { background: #e6dcc9; }
+	.stall-arrow { color: var(--accent); }
 
 	/* スキャナ */
 	.scan-modal {
