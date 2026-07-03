@@ -173,10 +173,10 @@
 		width: 100%;
 		height: calc(100svh - 60px);
 		overflow: hidden;
-		background: #0f0b07;
+		background: #ffffff;
 	}
 	.loading { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-	.spinner { width: 44px; height: 44px; border: 4px solid #3a2f22; border-top-color: #d56d04; border-radius: 50%; animation: spin 0.8s linear infinite; }
+	.spinner { width: 44px; height: 44px; border: 4px solid #ece3d6; border-top-color: #d56d04; border-radius: 50%; animation: spin 0.8s linear infinite; }
 	@keyframes spin { to { transform: rotate(360deg); } }
 
 	.topbar {
@@ -191,7 +191,7 @@
 		box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 	}
 	.legend { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-	.lg { display: flex; align-items: center; gap: 4px; font-size: 0.68rem; color: #e8ddcb; background: rgba(0,0,0,0.35); padding: 4px 8px; border-radius: 100px; }
+	.lg { display: flex; align-items: center; gap: 4px; font-size: 0.68rem; color: #5a4f45; background: rgba(255,255,255,0.9); box-shadow: 0 1px 6px rgba(0,0,0,0.12); padding: 4px 9px; border-radius: 100px; }
 	.lg i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 
 	.seed-note {
