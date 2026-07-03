@@ -117,7 +117,8 @@
 	<h1 class="title">夜行人プロフィール</h1>
 	<p class="lead">
 		夜行人ネットワークに載せる<strong>公開ペルソナ</strong>です。<br />
-		実名やメールは使いません。ニックネームと一言だけでOK。
+		実名やメールは使いません。ニックネームと一言だけでOK。<br />
+		<span class="edit-note">一言・アイコンは<strong>いつでもこの画面から変更</strong>できます（マイページ →「夜行人プロフィール」）。</span>
 	</p>
 
 	{#if isLoading}
@@ -179,6 +180,7 @@
 	main { max-width: 15cm; margin: auto; padding: 2rem 16px 3rem; box-sizing: border-box; }
 	.title { text-align: center; color: #26201a; margin-bottom: 0.8rem; }
 	.lead { text-align: center; color: #4a3f38; line-height: 1.7; font-size: 0.9rem; margin-bottom: 1.8rem; }
+	.edit-note { display: inline-block; margin-top: 8px; font-size: 0.8rem; color: #8a5a12; background: #fff7ed; padding: 6px 12px; border-radius: 8px; }
 	.muted { color: #9e8f7a; font-size: 0.85rem; text-align: center; }
 
 	.form { display: flex; flex-direction: column; gap: 16px; }

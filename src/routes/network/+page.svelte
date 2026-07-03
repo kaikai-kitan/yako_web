@@ -9,6 +9,13 @@
 	let graphData = $state(null);
 	let usingSeed = $state(false);
 	let selected = $state(null); // クリックされた人物ノード
+	let highlightRole = $state(null); // 凡例クリックで属性ハイライト
+
+	const ROLES = ['屋台営業者', '屋台オーナー', '土地オーナー', '流浪人'];
+
+	function toggleRole(r) {
+		highlightRole = highlightRole === r ? null : r;
+	}
 
 	// QR スキャナ
 	let scanning = $state(false);
@@ -18,7 +25,8 @@
 	const ROLE_COLOR = {
 		'屋台営業者': '#d56d04',
 		'屋台オーナー': '#e0a72e',
-		'土地オーナー': '#22a06b'
+		'土地オーナー': '#22a06b',
+		'流浪人': '#7d8aa5'
 	};
 
 	onMount(async () => {
@@ -103,7 +111,7 @@
 
 <div class="net-wrap">
 	{#if graphData}
-		<NetworkGraph3D data={graphData} onNodeClick={handleNodeClick} height="100%" />
+		<NetworkGraph3D data={graphData} onNodeClick={handleNodeClick} height="100%" {highlightRole} />
 	{:else}
 		<div class="loading"><div class="spinner"></div></div>
 	{/if}
@@ -112,11 +120,21 @@
 	<div class="topbar">
 		<a href="{base}/directory" class="chip">‹ 夜行人図鑑</a>
 		<div class="legend">
-			<span class="lg"><i style="background:#d56d04"></i>屋台営業者</span>
-			<span class="lg"><i style="background:#e0a72e"></i>屋台オーナー</span>
-			<span class="lg"><i style="background:#22a06b"></i>土地オーナー</span>
+			{#each ROLES as r}
+				<button
+					class="lg"
+					class:active={highlightRole === r}
+					class:dimmed={highlightRole && highlightRole !== r}
+					onclick={() => toggleRole(r)}
+				>
+					<i style="background:{ROLE_COLOR[r]}"></i>{r}
+				</button>
+			{/each}
 		</div>
 	</div>
+	{#if highlightRole}
+		<div class="hl-note">「{highlightRole}」をハイライト中 — もう一度タップで解除</div>
+	{/if}
 
 	{#if usingSeed}
 		<div class="seed-note">デモ表示中（登録が2人以上になると実データに切り替わります）</div>
@@ -190,9 +208,23 @@
 		font-size: 0.82rem; font-weight: 700; padding: 8px 14px; border-radius: 100px;
 		box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 	}
-	.legend { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-	.lg { display: flex; align-items: center; gap: 4px; font-size: 0.68rem; color: #5a4f45; background: rgba(255,255,255,0.9); box-shadow: 0 1px 6px rgba(0,0,0,0.12); padding: 4px 9px; border-radius: 100px; }
-	.lg i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+	.legend { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; pointer-events: auto; }
+	.lg {
+		display: flex; align-items: center; gap: 5px; font-size: 0.7rem; color: #5a4f45;
+		background: rgba(255,255,255,0.92); box-shadow: 0 1px 6px rgba(0,0,0,0.12);
+		padding: 5px 11px; border-radius: 100px; border: 1.5px solid transparent;
+		cursor: pointer; font-family: inherit; transition: all 0.15s;
+	}
+	.lg i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+	.lg.active { border-color: #26201a; background: #fff; font-weight: 700; }
+	.lg.dimmed { opacity: 0.45; }
+	.lg:hover { opacity: 1; }
+
+	.hl-note {
+		position: absolute; top: 52px; right: 12px; z-index: 6;
+		background: rgba(38,32,26,0.85); color: #fff; font-size: 0.72rem;
+		padding: 5px 12px; border-radius: 100px;
+	}
 
 	.seed-note {
 		position: absolute; top: 54px; left: 50%; transform: translateX(-50%); z-index: 5;

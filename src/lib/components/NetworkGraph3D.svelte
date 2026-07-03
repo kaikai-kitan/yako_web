@@ -12,20 +12,26 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { base } from '$app/paths';
 
-	let { data, onNodeClick, height = '60vh' } = $props();
+	let { data, onNodeClick, height = '60vh', highlightRole = null } = $props();
 
 	let container = $state();
 	let graph = null;
 	let resizeObs = null;
 	let mounted = false;
+	let ready = false;
 	let resumeTimer = null;
+	let prepared = null;
+	let currentHighlight = null;
 
 	const ROLE_COLOR = {
 		'屋台営業者': '#d56d04',
 		'屋台オーナー': '#e0a72e',
-		'土地オーナー': '#22a06b'
+		'土地オーナー': '#22a06b',
+		'流浪人': '#7d8aa5'
 	};
-	const DEFAULT_RING = '#cbb48f';
+	const DEFAULT_RING = '#7d8aa5';
+
+	const BG = '#e9e2d6'; // 立体感を出すためのわずかに暖色グレー
 
 	// つながり数 → アイコン倍率（依頼の例に沿った区分線形補間）
 	const SIZE_STOPS = [[0, 1], [5, 1.5], [30, 3], [70, 5], [100, 8], [300, 20]];
@@ -53,22 +59,27 @@
 		return deg;
 	}
 
-	// 円形アイコン（＋ロール色の細いリング）
+	const TEX = 320;      // テクスチャ解像度
+	const R = TEX * 0.46; // 円半径（端に余白を残しリングの見切れを防ぐ）
+
+	// 円形アイコン（＋ロール色の細いリング）。中央を正方形 cover クロップ。
 	function circleTexture(THREE, img, ringColor) {
-		const size = 256;
 		const canvas = document.createElement('canvas');
-		canvas.width = canvas.height = size;
+		canvas.width = canvas.height = TEX;
 		const ctx = canvas.getContext('2d');
+		const cx = TEX / 2;
 		ctx.save();
 		ctx.beginPath();
-		ctx.arc(size / 2, size / 2, size / 2, 0, 2 * Math.PI);
+		ctx.arc(cx, cx, R, 0, 2 * Math.PI);
 		ctx.clip();
-		const m = Math.min(img.width, img.height);
-		ctx.drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, size, size);
+		const m = Math.min(img.width, img.height);        // 短辺で正方形に切り出す
+		const sx = (img.width - m) / 2;
+		const sy = (img.height - m) / 2;
+		ctx.drawImage(img, sx, sy, m, m, cx - R, cx - R, R * 2, R * 2);
 		ctx.restore();
 		ctx.beginPath();
-		ctx.arc(size / 2, size / 2, size / 2 - size * 0.03, 0, 2 * Math.PI);
-		ctx.lineWidth = size * 0.06;
+		ctx.arc(cx, cx, R, 0, 2 * Math.PI);
+		ctx.lineWidth = TEX * 0.05;
 		ctx.strokeStyle = ringColor;
 		ctx.stroke();
 		const tex = new THREE.Texture(canvas);
@@ -79,27 +90,54 @@
 
 	// 画像なしのプレースホルダ（頭文字＋ロール色リング）
 	function placeholderTexture(THREE, name, ringColor) {
-		const size = 256;
 		const canvas = document.createElement('canvas');
-		canvas.width = canvas.height = size;
+		canvas.width = canvas.height = TEX;
 		const ctx = canvas.getContext('2d');
+		const cx = TEX / 2;
 		ctx.beginPath();
-		ctx.arc(size / 2, size / 2, size / 2, 0, 2 * Math.PI);
+		ctx.arc(cx, cx, R, 0, 2 * Math.PI);
 		ctx.fillStyle = '#efe7da';
 		ctx.fill();
-		ctx.lineWidth = size * 0.06;
+		ctx.lineWidth = TEX * 0.05;
 		ctx.strokeStyle = ringColor;
 		ctx.stroke();
 		ctx.fillStyle = '#8a7a5c';
-		ctx.font = `bold ${size * 0.4}px sans-serif`;
+		ctx.font = `bold ${TEX * 0.36}px sans-serif`;
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-		ctx.fillText((name || '?').charAt(0), size / 2, size / 2 + size * 0.02);
+		ctx.fillText((name || '?').charAt(0), cx, cx + TEX * 0.02);
 		const tex = new THREE.Texture(canvas);
 		tex.colorSpace = THREE.SRGBColorSpace;
 		tex.needsUpdate = true;
 		return tex;
 	}
+
+	// ロールハイライト：該当ロールのノードだけ強調、他を減光
+	function nodeMatches(n, role) {
+		return n && n.type !== 'stall' && (n.roles || []).includes(role);
+	}
+	function applyHighlight(role) {
+		currentHighlight = role || null;
+		if (!prepared) return;
+		for (const n of prepared.nodes) {
+			const op = !role ? 1 : nodeMatches(n, role) ? 1 : 0.1;
+			if (n.__sprite) { n.__sprite.material.transparent = true; n.__sprite.material.opacity = op; }
+			if (n.__label) { n.__label.material.transparent = true; n.__label.material.opacity = op; }
+		}
+		if (graph) {
+			graph.linkOpacity((l) => {
+				if (!currentHighlight) return 0.5;
+				const s = typeof l.source === 'object' ? l.source : null;
+				const t = typeof l.target === 'object' ? l.target : null;
+				return nodeMatches(s, currentHighlight) || nodeMatches(t, currentHighlight) ? 0.6 : 0.04;
+			});
+		}
+	}
+
+	$effect(() => {
+		const role = highlightRole; // 依存にする
+		if (ready) applyHighlight(role);
+	});
 
 	onMount(async () => {
 		mounted = true;
@@ -113,7 +151,7 @@
 		if (!mounted || !container) return;
 
 		// JSON ディープクローン（Svelte 5 の $state プロキシは structuredClone 不可）
-		const prepared = JSON.parse(JSON.stringify(data));
+		prepared = JSON.parse(JSON.stringify(data));
 		const deg = computeDegrees(prepared.nodes, prepared.links);
 		let isolatedCount = 0;
 		for (const n of prepared.nodes) {
@@ -126,13 +164,13 @@
 		const ringRadius = Math.max(180, 110 + isolatedCount * 10);
 
 		graph = new ForceGraph3D(container)
-			.backgroundColor('#ffffff')
+			.backgroundColor(BG)
 			.showNavInfo(false)
 			.enableNodeDrag(false)
 			.nodeLabel((n) => (n.type === 'stall' ? `🏮 ${n.name}` : n.name))
-			.linkColor((l) => (l.origin === 'stall' ? '#c9b48f' : '#111111'))
+			.linkColor((l) => (l.origin === 'stall' ? '#b9a888' : '#3a3128'))
 			.linkOpacity(0.5)
-			.linkWidth(0.4)
+			.linkWidth(0.5)
 			.nodeThreeObject((node) => {
 				const group = new THREE.Group();
 				const scale = BASE * (node.__mult ?? 1);
@@ -147,11 +185,13 @@
 
 				const ringColor = ROLE_COLOR[node.roles?.[0]] ?? DEFAULT_RING;
 				const material = new THREE.SpriteMaterial({
-					map: placeholderTexture(THREE, node.name, ringColor)
+					map: placeholderTexture(THREE, node.name, ringColor),
+					transparent: true
 				});
 				const sprite = new THREE.Sprite(material);
 				sprite.scale.set(scale, scale, 1);
 				group.add(sprite);
+				node.__sprite = sprite;
 
 				if (node.img) {
 					const image = new Image();
@@ -165,9 +205,11 @@
 
 				const label = new SpriteText(node.name);
 				label.color = '#26201a';
+				label.material.transparent = true;
 				label.textHeight = Math.max(4, scale * 0.2);
 				label.position.set(0, -(scale / 2 + label.textHeight), 0);
 				group.add(label);
+				node.__label = label;
 
 				return group;
 			})
@@ -184,6 +226,12 @@
 			});
 
 		graph.graphData(prepared);
+
+		// 立体感を出すフォグ（遠いノードが背景に溶ける＝奥行き知覚）
+		try {
+			const scene = graph.scene();
+			scene.fog = new THREE.Fog(BG, 240, 1100);
+		} catch { /* noop */ }
 
 		// 孤立ノード（流浪人）を安定した radial 力で外周へ（土星の環）
 		if (isolatedCount > 0 && d3force?.forceRadial) {
@@ -209,8 +257,25 @@
 		});
 
 		graph.onEngineStop(() => {
-			try { graph.zoomToFit(700, 60); } catch { /* noop */ }
+			try { graph.zoomToFit(700, 80); } catch { /* noop */ }
+			// 単一・少数ノードでカメラが寄りすぎて見切れるのを防ぐ（最小距離）
+			try {
+				const cam = graph.cameraPosition();
+				const dist = Math.hypot(cam.x || 0, cam.y || 0, cam.z || 0);
+				const MIN = 160;
+				if (isFinite(dist) && dist < MIN) {
+					if (dist < 1) graph.cameraPosition({ x: 0, y: 0, z: MIN });
+					else {
+						const k = MIN / dist;
+						graph.cameraPosition({ x: cam.x * k, y: cam.y * k, z: cam.z * k });
+					}
+				}
+			} catch { /* noop */ }
 		});
+
+		ready = true;
+		// スプライトはレンダリングループで後から生成されるため、少し遅延して初期ハイライトを適用
+		setTimeout(() => applyHighlight(highlightRole), 400);
 
 		resizeObs = new ResizeObserver(syncSize);
 		resizeObs.observe(container);
@@ -240,7 +305,7 @@
 	.graph-host {
 		width: 100%;
 		min-height: 320px;
-		background: #ffffff;
+		background: #e9e2d6;
 		touch-action: none;
 	}
 	.graph-host :global(canvas) {

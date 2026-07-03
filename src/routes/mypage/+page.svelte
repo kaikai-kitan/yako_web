@@ -368,6 +368,15 @@
 				</div>
 				<span class="dl-arrow">›</span>
 			</a>
+			<!-- 夜行人プロフィール（全員） -->
+			<a href="{base}/yakonin/setup" class="dashboard-link yakonin-link">
+				<span class="dl-icon">🕸</span>
+				<div class="dl-text">
+					<strong>夜行人プロフィール</strong>
+					<span>ニックネーム・一言・アイコンの編集、接続QR</span>
+				</div>
+				<span class="dl-arrow">›</span>
+			</a>
 			{#if profile.operators}
 				<a href="{base}/mypage/operator" class="dashboard-link operator-link">
 					<span class="dl-icon">🛍️</span>

@@ -5,12 +5,14 @@ import { createClient } from '@supabase/supabase-js';
 export const prerender = false;
 
 // user_profiles のロールフラグ → 表示ラベル
+// ビジネスロールを持たない人は「流浪人」（既定）
 function rolesFor(p) {
-	if (!p) return [];
+	if (!p) return ['流浪人'];
 	const roles = [];
 	if (p.is_shop_operator || p.user_type === '屋台営業者') roles.push('屋台営業者');
 	if (p.is_yatai_owner || p.user_type === '屋台提供者') roles.push('屋台オーナー');
 	if (p.is_land_owner || p.user_type === '土地オーナー') roles.push('土地オーナー');
+	if (roles.length === 0) roles.push('流浪人');
 	return roles;
 }
 
@@ -65,7 +67,7 @@ export async function GET({ setHeaders }) {
 		img: p.avatar_path || '',
 		status: p.status || '',
 		message: p.one_liner || '',
-		roles: roleMap[p.user_id] ?? [],
+		roles: roleMap[p.user_id] ?? ['流浪人'],
 		degree: degree[p.user_id] ?? 0,
 		type: 'person'
 	}));
