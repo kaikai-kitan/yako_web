@@ -1,10 +1,12 @@
 {
   "nodes": [
-    { "id": "tao",   "name": "タオ",   "age": "20代", "status": "浪漫家科学教徒",   "img": "/images/yatainin/01.png", "message": "「自分の人生は自分で歩め。夜は誰かと行け。」" },
-    { "id": "kaido", "name": "カイドウ", "age": "20代", "status": "猫の世話をする人", "img": "", "message": "「頑張んなくてもいいんじゃね」" },
-    { "id": "yanny", "name": "ヤニー",   "age": "20代", "status": "ハムスター愛好家", "img": "", "message": "「」" },
-    { "id": "askr",  "name": "ASKR",    "age": "20代", "status": "料理人",          "img": "", "message": "「」" },
-    { "id": "damoto","name": "ダー本",   "age": "20代", "status": "何でもする人",     "img": "", "message": "「コーヒーはブラックで。」" }
+    { "id": "tao",   "name": "タオ",   "status": "浪漫家科学教徒",   "img": "/images/yatainin/01.png", "message": "「自分の人生は自分で歩め。夜は誰かと行け。」", "roles": ["屋台営業者"], "type": "person" },
+    { "id": "kaido", "name": "カイドウ", "status": "猫の世話をする人", "img": "", "message": "「頑張んなくてもいいんじゃね」", "roles": ["土地オーナー"], "type": "person" },
+    { "id": "yanny", "name": "ヤニー",   "status": "ハムスター愛好家", "img": "", "message": "「」", "roles": ["屋台オーナー"], "type": "person" },
+    { "id": "askr",  "name": "ASKR",    "status": "料理人",          "img": "", "message": "「」", "roles": ["屋台営業者"], "type": "person" },
+    { "id": "damoto","name": "ダー本",   "status": "何でもする人",     "img": "", "message": "「コーヒーはブラックで。」", "roles": [], "type": "person" },
+    { "id": "ronin1","name": "名もなき夜行人", "status": "流浪人", "img": "", "message": "「まだ誰とも出会っていない」", "roles": [], "type": "person" },
+    { "id": "ronin2","name": "旅の途中", "status": "流浪人", "img": "", "message": "「そのうち誰かと」", "roles": [], "type": "person" }
   ],
   "links": [
     { "source": "tao",   "target": "kaido" },

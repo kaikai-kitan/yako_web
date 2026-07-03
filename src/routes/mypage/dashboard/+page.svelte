@@ -358,7 +358,7 @@
 			<div class="network-section">
 				<h2 class="section-title">🕸 夜行人ネットワーク 接続タグ</h2>
 				<p class="network-lead">
-					屋台に QR / NFC タグを設置すると、来場者がスマホをかざすだけで<a href="{base}/directory">夜行人ネットワーク</a>につながります。
+					屋台に QR / NFC タグを設置すると、来場者がスマホをかざすだけで<a href="{base}/network">夜行人ネットワーク</a>につながります。
 				</p>
 				<div class="stall-tag-list">
 					{#each myStalls as stall}

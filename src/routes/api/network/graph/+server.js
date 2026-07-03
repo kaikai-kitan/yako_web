@@ -4,6 +4,16 @@ import { createClient } from '@supabase/supabase-js';
 
 export const prerender = false;
 
+// user_profiles のロールフラグ → 表示ラベル
+function rolesFor(p) {
+	if (!p) return [];
+	const roles = [];
+	if (p.is_shop_operator || p.user_type === '屋台営業者') roles.push('屋台営業者');
+	if (p.is_yatai_owner || p.user_type === '屋台提供者') roles.push('屋台オーナー');
+	if (p.is_land_owner || p.user_type === '土地オーナー') roles.push('土地オーナー');
+	return roles;
+}
+
 // 公開夜行人ネットワークを {nodes, links} で返す（PII なし・公開プロフィールのみ）
 export async function GET({ setHeaders }) {
 	if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -22,18 +32,19 @@ export async function GET({ setHeaders }) {
 	const profiles = profilesRes.data ?? [];
 	const publicIds = new Set(profiles.map((p) => p.user_id));
 
-	// --- 人ノード ---
-	const nodes = profiles.map((p) => ({
-		id: `u:${p.user_id}`,
-		name: p.handle,
-		img: p.avatar_path || '',
-		status: p.status || '',
-		message: p.one_liner || '',
-		type: 'person'
-	}));
+	// ロール取得（user_profiles をまとめて引く）
+	let roleMap = {};
+	if (profiles.length > 0) {
+		const { data: ups } = await supabase
+			.from('user_profiles')
+			.select('user_id, is_shop_operator, is_yatai_owner, is_land_owner, user_type')
+			.in('user_id', [...publicIds]);
+		for (const p of ups ?? []) roleMap[p.user_id] = rolesFor(p);
+	}
 
 	// --- 人 ↔ 人 エッジ（両端が公開者のみ） ---
 	const links = [];
+	const degree = {}; // user_id → 人とのつながり数
 	for (const e of edgesRes.data ?? []) {
 		if (publicIds.has(e.user_a) && publicIds.has(e.user_b)) {
 			links.push({
@@ -42,8 +53,22 @@ export async function GET({ setHeaders }) {
 				weight: e.weight ?? 1,
 				origin: e.origin ?? 'manual'
 			});
+			degree[e.user_a] = (degree[e.user_a] ?? 0) + 1;
+			degree[e.user_b] = (degree[e.user_b] ?? 0) + 1;
 		}
 	}
+
+	// --- 人ノード ---
+	const nodes = profiles.map((p) => ({
+		id: `u:${p.user_id}`,
+		name: p.handle,
+		img: p.avatar_path || '',
+		status: p.status || '',
+		message: p.one_liner || '',
+		roles: roleMap[p.user_id] ?? [],
+		degree: degree[p.user_id] ?? 0,
+		type: 'person'
+	}));
 
 	// --- 屋台ハブ（公開者からのリンクがある屋台だけをノード化） ---
 	const stallLinks = (stallLinksRes.data ?? []).filter((l) => publicIds.has(l.user_id));
@@ -61,7 +86,7 @@ export async function GET({ setHeaders }) {
 		);
 
 		for (const [id, name] of shown) {
-			nodes.push({ id: `s:${id}`, name: name || '屋台', type: 'stall' });
+			nodes.push({ id: `s:${id}`, name: name || '屋台', type: 'stall', degree: 0, roles: [] });
 		}
 		for (const l of stallLinks) {
 			if (shown.has(l.stall_id)) {
@@ -70,7 +95,6 @@ export async function GET({ setHeaders }) {
 		}
 	}
 
-	// 公開ネットワークは 60 秒キャッシュ（頻繁に変わらない）
-	setHeaders({ 'cache-control': 'public, max-age=60' });
+	setHeaders({ 'cache-control': 'public, max-age=30' });
 	return json({ nodes, links });
 }
