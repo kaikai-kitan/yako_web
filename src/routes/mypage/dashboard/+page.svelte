@@ -5,6 +5,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { supabase } from '$lib/supabase.js';
+	import { getMyStalls } from '$lib/db.js';
 	import { base } from '$app/paths';
 	import { goto } from '$app/navigation';
 
@@ -44,6 +45,9 @@
 	// 在庫警告バッジ
 	let inventoryAlert = $state(0);
 
+	// 自分の屋台（夜行人ネットワークの接続タグ発行用）
+	let myStalls = $state([]);
+
 	onMount(async () => {
 		const {
 			data: { user }
@@ -54,8 +58,21 @@
 		}
 		userId = user.id;
 		await loadProfile(user.id);
-		await Promise.all([loadRevenue(user.id), loadChart(user.id), loadInventoryAlert(user.id)]);
+		await Promise.all([
+			loadRevenue(user.id),
+			loadChart(user.id),
+			loadInventoryAlert(user.id),
+			loadMyStalls(user.id)
+		]);
 	});
+
+	async function loadMyStalls(uid) {
+		try {
+			myStalls = await getMyStalls(uid);
+		} catch {
+			myStalls = [];
+		}
+	}
 
 	async function loadProfile(uid) {
 		const [profileRes, opRes, ownerRes] = await Promise.all([
@@ -335,6 +352,24 @@
 				</div>
 			</div>
 		{/if}
+
+		<!-- 夜行人ネットワーク接続タグ -->
+		{#if myStalls.length > 0}
+			<div class="network-section">
+				<h2 class="section-title">🕸 夜行人ネットワーク 接続タグ</h2>
+				<p class="network-lead">
+					屋台に QR / NFC タグを設置すると、来場者がスマホをかざすだけで<a href="{base}/directory">夜行人ネットワーク</a>につながります。
+				</p>
+				<div class="stall-tag-list">
+					{#each myStalls as stall}
+						<a href="{base}/yakonin/tag/{stall.id}" class="stall-tag-row">
+							<span class="stall-tag-name">🏮 {stall.stall_name ?? '屋台'}</span>
+							<span class="stall-tag-cta">接続タグを発行 ›</span>
+						</a>
+					{/each}
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -541,5 +576,54 @@
 		width: 100%;
 		min-width: 360px;
 		height: auto;
+	}
+
+	/* 夜行人ネットワーク接続タグ */
+	.network-section {
+		margin-top: 32px;
+	}
+	.network-lead {
+		font-size: 0.85rem;
+		color: #7a6f67;
+		line-height: 1.6;
+		margin: 0 0 14px;
+	}
+	.network-lead a {
+		color: #d56d04;
+		text-decoration: none;
+	}
+	.network-lead a:hover {
+		text-decoration: underline;
+	}
+	.stall-tag-list {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	.stall-tag-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 14px 18px;
+		background: #fff;
+		border: 1.5px solid #e8e0d8;
+		border-radius: 12px;
+		text-decoration: none;
+		transition: border-color 0.15s;
+	}
+	.stall-tag-row:hover {
+		border-color: #d56d04;
+	}
+	.stall-tag-name {
+		font-size: 0.92rem;
+		font-weight: 700;
+		color: #26201a;
+	}
+	.stall-tag-cta {
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: #d56d04;
+		white-space: nowrap;
 	}
 </style>

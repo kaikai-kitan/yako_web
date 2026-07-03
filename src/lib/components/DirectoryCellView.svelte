@@ -17,14 +17,18 @@
 			<span class="information-key">名前</span>
 			<span class="information-value">{directoryItem.name}</span>
 		</div>
-		<div>
-			<span class="information-key">年齢</span>
-			<span class="information-value">{directoryItem.age}</span>
-		</div>
-		<div>
-			<span class="information-key">社会的階級</span>
-			<span class="information-value">{directoryItem.status}</span>
-		</div>
+		{#if directoryItem.age}
+			<div>
+				<span class="information-key">年齢</span>
+				<span class="information-value">{directoryItem.age}</span>
+			</div>
+		{/if}
+		{#if directoryItem.status}
+			<div>
+				<span class="information-key">社会的階級</span>
+				<span class="information-value">{directoryItem.status}</span>
+			</div>
+		{/if}
 		<span class="separator"></span>
 		<div class="information-message">
 			<span class="information-key">一言</span>

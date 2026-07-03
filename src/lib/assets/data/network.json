@@ -1,0 +1,16 @@
+{
+  "nodes": [
+    { "id": "tao",   "name": "タオ",   "age": "20代", "status": "浪漫家科学教徒",   "img": "/images/yatainin/01.png", "message": "「自分の人生は自分で歩め。夜は誰かと行け。」" },
+    { "id": "kaido", "name": "カイドウ", "age": "20代", "status": "猫の世話をする人", "img": "", "message": "「頑張んなくてもいいんじゃね」" },
+    { "id": "yanny", "name": "ヤニー",   "age": "20代", "status": "ハムスター愛好家", "img": "", "message": "「」" },
+    { "id": "askr",  "name": "ASKR",    "age": "20代", "status": "料理人",          "img": "", "message": "「」" },
+    { "id": "damoto","name": "ダー本",   "age": "20代", "status": "何でもする人",     "img": "", "message": "「コーヒーはブラックで。」" }
+  ],
+  "links": [
+    { "source": "tao",   "target": "kaido" },
+    { "source": "tao",   "target": "damoto" },
+    { "source": "kaido", "target": "yanny" },
+    { "source": "damoto","target": "askr" },
+    { "source": "askr",  "target": "tao" }
+  ]
+}
