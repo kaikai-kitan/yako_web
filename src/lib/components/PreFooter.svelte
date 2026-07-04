@@ -55,8 +55,8 @@
 
 <style>
     .pre-footer {
-        background: #26201a;
-        color: #e8e0d8;
+        background: var(--night);
+        color: var(--line);
         padding: 48px 24px 40px;
     }
 
@@ -76,11 +76,12 @@
     }
 
     .pf-heading {
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
+        font-family: "Zen Antique", serif;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: #a09080;
+        color: var(--line-strong);
         margin: 0 0 14px;
     }
 
@@ -95,11 +96,11 @@
 
     .pf-list a {
         font-size: 0.88rem;
-        color: #c8bfb5;
+        color: var(--line);
         text-decoration: none;
         transition: color 0.15s;
     }
-    .pf-list a:hover { color: #fff; }
+    .pf-list a:hover { color: var(--accent); }
 
     /* CTAボタン */
     .cta-btn {

@@ -198,9 +198,9 @@
         position: fixed; top: 0; left: 0; right: 0;
         height: 60px; z-index: 200;
         display: flex; align-items: center;
-        background: rgba(255,255,255,0.97);
+        background: rgba(255, 253, 247, 0.98);
         backdrop-filter: blur(8px);
-        border-bottom: 1px solid #ede8e0;
+        border-bottom: 1px solid var(--line);
         padding: 0 16px; gap: 12px; box-sizing: border-box;
     }
     .header-spacer { height: 60px; flex-shrink: 0; }
@@ -208,7 +208,7 @@
     /* ロゴ */
     .logo-link {
         display: flex; align-items: center; gap: 8px;
-        text-decoration: none; color: #26201a; flex-shrink: 0;
+        text-decoration: none; color: var(--ink); flex-shrink: 0;
     }
     .logo-img { width: 36px; height: 36px; object-fit: contain; }
     .logo-text {
@@ -223,30 +223,30 @@
     }
     .nav-divider {
         display: none;
-        width: 1px; height: 24px; background: #e8e0d8; margin: 0 4px;
+        width: 1px; height: 24px; background: var(--line); margin: 0 4px;
         flex-shrink: 0;
     }
 
     .primary-nav-item {
         display: flex; flex-direction: column; align-items: center; gap: 2px;
-        padding: 6px 10px; text-decoration: none; color: #26201a;
+        padding: 6px 10px; text-decoration: none; color: var(--ink);
         font-size: 0.7rem; border-radius: 8px; transition: background 0.15s;
         white-space: nowrap;
     }
-    .primary-nav-item:hover { background: #f5f0ea; }
-    .primary-nav-item.nav-active { color: #26201a; position: relative; }
+    .primary-nav-item:hover { background: var(--surface-sunk); }
+    .primary-nav-item.nav-active { color: var(--ink); position: relative; }
     .primary-nav-item.nav-active::after {
         content: ''; position: absolute; bottom: -2px; left: 20%; right: 20%;
         height: 3px; background: var(--accent); border-radius: 2px;
     }
 
     /* YATAKARIボタン */
-    .yatakari-btn { border: 1px solid #e8e0d8; }
-    .yatakari-btn:hover { border-color: var(--accent); }
+    .yatakari-btn { border: 1px solid var(--line); }
+    .yatakari-btn:hover { border-color: var(--accent); background: var(--surface-sunk); }
 
     /* ストアボタン */
-    .shop-btn { border: 1px solid #e8e0d8; }
-    .shop-btn:hover { border-color: var(--accent); }
+    .shop-btn { border: 1px solid var(--line); }
+    .shop-btn:hover { border-color: var(--accent); background: var(--surface-sunk); }
 
     .nav-icon { width: 22px; height: 22px; stroke: currentColor; }
     .nav-icon.yatakari-icon { object-fit: contain; stroke: none; }
@@ -254,43 +254,43 @@
     /* デスクトップ専用リンク */
     .desktop-nav-item {
         display: none; padding: 8px 12px; text-decoration: none;
-        color: #26201a; font-size: 0.88rem; border-radius: 6px;
+        color: var(--ink); font-size: 0.88rem; border-radius: 6px;
         white-space: nowrap; background: none; border: none;
         cursor: pointer; font-family: inherit; transition: background 0.15s;
     }
-    .desktop-nav-item:hover { background: #f5f0ea; }
+    .desktop-nav-item:hover { background: var(--surface-sunk); }
     .desktop-auth-link, .desktop-auth-btn {
-        border: 1.5px solid #26201a; border-radius: 6px; padding: 6px 12px;
+        border: 1.5px solid var(--ink); border-radius: 6px; padding: 6px 12px;
     }
 
     /* ユーザーアイコン */
     .user-menu-wrap { position: relative; flex-shrink: 0; }
     .user-icon-btn {
         width: 36px; height: 36px; border-radius: 50%;
-        border: 1.5px solid #e8e0d8; background: white;
+        border: 1.5px solid var(--line); background: var(--surface);
         display: flex; align-items: center; justify-content: center;
         cursor: pointer; padding: 6px; transition: border-color 0.15s;
     }
     .user-icon-btn:hover { border-color: var(--accent); }
-    .user-svg { width: 20px; height: 20px; color: #26201a; }
+    .user-svg { width: 20px; height: 20px; color: var(--ink); }
 
     .user-dropdown {
         position: absolute; top: calc(100% + 8px); right: 0;
-        min-width: 160px; background: white;
-        border: 1px solid #e8e0d8; border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        min-width: 160px; background: var(--surface);
+        border: 1px solid var(--line); border-radius: 12px;
+        box-shadow: var(--shadow-2);
         overflow: hidden; z-index: 300;
     }
     .dropdown-item {
         display: block; width: 100%; padding: 11px 16px;
-        font-size: 0.88rem; color: #26201a;
+        font-size: 0.88rem; color: var(--ink);
         text-decoration: none; background: none; border: none;
         text-align: left; font-family: inherit; cursor: pointer;
         transition: background 0.12s;
     }
-    .dropdown-item:hover { background: #faf8f5; }
-    .dropdown-divider { height: 1px; background: #ede8e0; margin: 2px 0; }
-    .dropdown-signout { color: #c62828; }
+    .dropdown-item:hover { background: var(--surface-sunk); }
+    .dropdown-divider { height: 1px; background: var(--line); margin: 2px 0; }
+    .dropdown-signout { color: var(--accent-deep); }
     .dropdown-backdrop {
         position: fixed; inset: 0; z-index: 299;
     }
@@ -302,10 +302,11 @@
         width: 40px; height: 40px; flex-shrink: 0;
         cursor: pointer; background: none; border: none;
         border-radius: 8px; padding: 8px; margin-left: 4px;
+        transition: background 0.15s;
     }
-    .hamburger:hover { background: #f5f0ea; }
+    .hamburger:hover { background: var(--surface-sunk); }
     .hamburger span {
-        display: block; width: 20px; height: 2px; background: #26201a;
+        display: block; width: 20px; height: 2px; background: var(--ink);
         border-radius: 2px; transition: transform 0.25s ease, opacity 0.25s ease;
         transform-origin: center;
     }
@@ -323,31 +324,31 @@
     .drawer-menu {
         position: fixed; top: 0; right: 0;
         width: min(300px, 85vw); height: 100dvh;
-        background: #fff; z-index: 199;
+        background: var(--surface); z-index: 199;
         display: flex; flex-direction: column;
         overflow-y: auto; box-shadow: -4px 0 20px rgba(0,0,0,0.15);
     }
     .drawer-header {
         display: flex; align-items: center; justify-content: center;
-        padding: 80px 20px 16px; border-bottom: 1px solid #ede8e0;
+        padding: 80px 20px 16px; border-bottom: 1px solid var(--line);
     }
     .drawer-logo { width: 56px; height: 56px; object-fit: contain; }
 
     /* ドロワーリスト */
     .drawer-list { list-style: none; margin: 0; padding: 0; }
-    .drawer-list li { border-bottom: 1px solid #f5f0ea; }
+    .drawer-list li { border-bottom: 1px solid var(--line); }
     .drawer-list a {
         display: block; padding: 13px 20px;
-        text-decoration: none; color: #26201a;
+        text-decoration: none; color: var(--ink);
         font-size: 0.93rem; transition: background 0.15s;
     }
-    .drawer-list a:hover { background: #faf8f5; }
+    .drawer-list a:hover { background: var(--surface-sunk); }
     .drawer-section-label {
         padding: 10px 20px 4px;
         font-size: 0.7rem; font-weight: 700;
-        color: #9e9289; letter-spacing: 0.06em; text-transform: uppercase;
+        color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase;
         margin: 0; border-bottom: none !important;
-        background: #faf8f5;
+        background: var(--surface-sunk);
     }
 
     /* アイテム（アイコン付き） */
@@ -356,7 +357,7 @@
         padding: 12px 20px !important;
     }
     .drawer-nav-icon {
-        width: 22px; height: 22px; flex-shrink: 0; stroke: #26201a;
+        width: 22px; height: 22px; flex-shrink: 0; stroke: var(--ink);
     }
     .drawer-nav-icon.yatakari-icon { object-fit: contain; stroke: none; }
     .ig-icon { stroke: #e1306c; }
@@ -364,8 +365,8 @@
     .drawer-item-text {
         display: flex; flex-direction: column; gap: 1px;
     }
-    .drawer-item-name { font-size: 0.92rem; font-weight: 600; }
-    .drawer-item-desc { font-size: 0.72rem; color: #9e9289; }
+    .drawer-item-name { font-size: 0.92rem; font-weight: 600; color: var(--ink); }
+    .drawer-item-desc { font-size: 0.72rem; color: var(--ink-3); }
 
 
     /* デスクトップ */
