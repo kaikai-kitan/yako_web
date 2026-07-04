@@ -671,6 +671,20 @@
 
 	function startReturn() { currentView = 'return'; }
 
+	// 営業レビュー用QR（顧客に見せる）
+	let reviewQr = $state('');
+	let showReviewQr = $state(false);
+	async function toggleReviewQr() {
+		showReviewQr = !showReviewQr;
+		if (showReviewQr && !reviewQr && currentReservationId) {
+			try {
+				const QRCode = (await import('qrcode')).default;
+				const url = `${window.location.origin}${base}/review?op=${currentReservationId}`;
+				reviewQr = await QRCode.toDataURL(url, { margin: 1, width: 240 });
+			} catch { /* noop */ }
+		}
+	}
+
 	/** 返却確認 → completed に更新 & 支払い履歴を記録 */
 	async function finishReturn() {
 		currentView = 'finish';
@@ -681,6 +695,14 @@
 					Object.entries(salesData).map(([name, v]) => [name, v.count || 0])
 				);
 				await completeRental(currentReservationId, currentUser.id, salesForDB);
+				// 営業を1回完了 → 信用スコア +5（サーバ側で冪等付与）
+				try {
+					await fetch('/api/operation/award-return', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+						body: JSON.stringify({ reservationId: currentReservationId })
+					});
+				} catch { /* 加点失敗は致命的でない */ }
 				myUserReservations = myUserReservations.filter((r) => r.id !== currentReservationId);
 				// 出店中・予約済みを再取得
 				[activeStalls, bookedStallIds] = await Promise.all([
@@ -1333,6 +1355,19 @@
 						</div>
 					{/if}
 				</div>
+				<!-- 営業レビュー（顧客に評価してもらうとポイント加算） -->
+				<div class="review-collect">
+					<button class="action-btn ghost" onclick={toggleReviewQr}>
+						{showReviewQr ? 'レビューQRを閉じる' : 'お客様にレビューをお願いする'}
+					</button>
+					{#if showReviewQr && reviewQr}
+						<div class="review-qr-box">
+							<img src={reviewQr} alt="レビューQRコード" class="review-qr" />
+							<p>このQRをお客様に読み取ってもらうと、5段階で評価できます。<br />良い評価が集まると信用ポイントが最大 +5 されます（1営業5名まで）。</p>
+						</div>
+					{/if}
+				</div>
+
 				<button class="action-btn danger return-btn" onclick={startReturn}>屋台を返却する</button>
 			</div>
 		{/if}
@@ -1830,8 +1865,14 @@
 	.action-btn.primary { background: #facc15; color: #0f172a; }
 	.action-btn.secondary { background: #e2e8f0; color: #0f172a; }
 	.action-btn.danger { background: #ef4444; color: white; }
+	.action-btn.ghost { background: none; border: 1.5px solid #d8ccb5; color: #5c5248; }
 	.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 	.link-btn { display: block; text-decoration: none; text-align: center; }
+
+	.review-collect { margin-top: 8px; }
+	.review-qr-box { text-align: center; margin-top: 10px; padding: 14px; background: #fffdf7; border: 1px solid #e6dcc9; border-radius: 12px; }
+	.review-qr { width: 200px; height: 200px; }
+	.review-qr-box p { font-size: 0.76rem; color: #6b5f54; line-height: 1.6; margin: 8px 0 0; }
 
 	/* 予約フォーム */
 	.reserve-modal {

@@ -126,6 +126,25 @@ export async function POST({ request }) {
 
 		if (updateErr) throw error(500, '返却処理に失敗しました: ' + updateErr.message);
 
-		return json({ action: 'return', name: placeName });
+		// 営業を1回完了 → 信用スコア +5（二重付与防止）
+		let creditBonus = 0;
+		const { data: flagged } = await supabase
+			.from('reservations')
+			.update({ return_credit_awarded: true })
+			.eq('id', reservation.id)
+			.eq('return_credit_awarded', false)
+			.select('id');
+		if (flagged?.length) {
+			const { data: prof } = await supabase
+				.from('user_profiles')
+				.select('credit_score')
+				.eq('user_id', user.id)
+				.single();
+			const newScore = (prof?.credit_score ?? 100) + 5;
+			await supabase.from('user_profiles').update({ credit_score: newScore }).eq('user_id', user.id);
+			creditBonus = 5;
+		}
+
+		return json({ action: 'return', name: placeName, creditBonus });
 	}
 }

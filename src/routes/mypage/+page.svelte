@@ -344,7 +344,8 @@
 					<div class="credit-fill" style="width: {Math.max(0, Math.min(100, (creditScore / 300) * 100))}%"></div>
 				</div>
 				<p class="credit-note">
-					キャンセルやノーショーで減点されます。
+					屋台の営業を1回終える（返却する）と <strong>+5</strong>、お客様のレビューで最大 <strong>+5</strong>。
+					キャンセルやノーショーは減点です。
 					{#if !canOpenStore}<br />公式オンラインストアの開設には <strong>{STORE_MIN_CREDIT}超</strong> が必要です。{/if}
 				</p>
 			</div>
