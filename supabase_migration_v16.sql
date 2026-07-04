@@ -7,7 +7,12 @@
 --     - 加点 = floor( Σ min(5, rating/5) )  … 5★×5件で +5、低評価は比例して少なめ
 --   * 二重付与は予約側のフラグ/カウンタで防止
 
--- 1) 初期スコアを 100 に
+-- 1) 信用スコア関連カラムを用意（v11 が未適用の環境でも動くよう IF NOT EXISTS）
+--    無ければ作成（初期値 100）、既にあれば既定値を 100 に更新する。
+ALTER TABLE public.user_profiles
+  ADD COLUMN IF NOT EXISTS credit_score integer NOT NULL DEFAULT 100,
+  ADD COLUMN IF NOT EXISTS is_suspended boolean NOT NULL DEFAULT false;
+
 ALTER TABLE public.user_profiles ALTER COLUMN credit_score SET DEFAULT 100;
 
 -- 2) 予約に加点管理カラム
