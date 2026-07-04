@@ -94,10 +94,21 @@ em { font-style: italic; }
 a {
   color: var(--accent);
   text-decoration: none;
-  transition: color 0.15s;
+  transition: color 0.15s, text-decoration-color 0.15s;
+  text-underline-offset: 2px;
 }
 
-a:hover { color: var(--accent-deep); text-decoration: underline; }
+a:hover {
+  color: var(--accent-deep);
+  text-decoration: underline;
+  text-decoration-color: var(--accent-deep);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
 
 ul, li {
   margin: 0;
@@ -126,6 +137,7 @@ button, input[type="button"], input[type="submit"] {
   cursor: pointer;
   transition: all 0.15s ease;
   text-decoration: none;
+  box-shadow: var(--shadow-1);
 }
 
 .btn:hover, button.primary-btn:hover, input[type="submit"]:hover {
@@ -280,4 +292,29 @@ a.skip-link {
 
 a.skip-link:focus {
   top: 0;
+}
+
+/* ===== アクセシビリティ ===== */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* フォーム入力の無効状態 */
+input:disabled,
+textarea:disabled,
+select:disabled {
+  background: var(--surface-sunk);
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+
+/* リスト */
+ul, ol {
+  margin: 0;
+  padding-left: 1.5em;
+}
+
+li {
+  margin: 0.5rem 0;
 }
