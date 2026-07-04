@@ -56,11 +56,11 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: #faf8f5;
+		background: var(--surface-sunk);
 	}
 	.card {
 		background: #fff;
-		border: 1px solid #e8e0d8;
+		border: 1px solid var(--line);
 		border-radius: 16px;
 		padding: 40px 32px;
 		width: 100%;
@@ -71,7 +71,7 @@
 		font-weight: 700;
 		margin: 0 0 24px;
 		text-align: center;
-		color: #26201a;
+		color: var(--ink);
 	}
 	form {
 		display: flex;
@@ -87,17 +87,17 @@
 		box-sizing: border-box;
 	}
 	.input:focus {
-		outline: 2px solid #d56d04;
+		outline: 2px solid var(--accent);
 		border-color: transparent;
 	}
 	.error {
 		font-size: 0.85rem;
-		color: #c0392b;
+		color: var(--accent-deep);
 		margin: 0;
 	}
 	.btn {
 		padding: 10px;
-		background: #26201a;
+		background: var(--ink);
 		color: #fff;
 		border: none;
 		border-radius: 8px;

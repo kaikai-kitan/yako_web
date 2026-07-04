@@ -295,7 +295,7 @@
 		text-decoration: none; color: var(--ink); font-size: 0.9rem; letter-spacing: 0.04em;
 		transition: background 0.15s;
 	}
-	.stall-link:hover { background: #e6dcc9; }
+	.stall-link:hover { background: var(--line); }
 	.stall-arrow { color: var(--accent); }
 
 	/* スキャナ */

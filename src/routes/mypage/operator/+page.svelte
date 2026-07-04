@@ -171,7 +171,7 @@
 	}
 
 	const STATUS_LABEL = { pending: '未発送', shipped: '発送済み', delivered: '受取完了' };
-	const STATUS_COLOR = { pending: '#d56d04', shipped: '#0077cc', delivered: '#2d8a4e' };
+	const STATUS_COLOR = { pending: 'var(--accent)', shipped: '#0077cc', delivered: '#2d8a4e' };
 	const SETTLEMENT_LABEL = { unsettled: '未精算', settled: '精算済み' };
 
 	function formatDate(iso) {
@@ -368,13 +368,13 @@
 	.loading {
 		text-align: center;
 		padding: 80px 20px;
-		color: #7a6f67;
+		color: var(--ink-2);
 	}
 	.page {
 		max-width: 760px;
 		margin: 0 auto;
 		padding: 32px 16px 80px;
-		color: #26201a;
+		color: var(--ink);
 	}
 	.quick-links {
 		display: flex; gap: 10px;
@@ -382,29 +382,29 @@
 	}
 	.quick-link {
 		flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
-		background: white; border: 1.5px solid #e8e0d8;
+		background: white; border: 1.5px solid var(--line);
 		border-radius: 12px; padding: 14px 8px;
-		text-decoration: none; color: #26201a;
+		text-decoration: none; color: var(--ink);
 		transition: box-shadow 0.15s, border-color 0.15s;
 	}
-	.quick-link:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); border-color: #d56d04; }
+	.quick-link:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); border-color: var(--accent); }
 	.quick-icon { font-size: 1.4rem; }
 	.quick-label { font-size: 0.8rem; font-weight: 600; }
 
 	.back-link {
 		display: inline-block;
 		font-size: 0.85rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
-	.back-link:hover { color: #26201a; }
+	.back-link:hover { color: var(--ink); }
 	.page-title {
 		font-size: 1.3rem;
 		font-weight: 700;
 		margin: 0 0 24px;
 		padding-bottom: 12px;
-		border-bottom: 2px solid #e8e0d8;
+		border-bottom: 2px solid var(--line);
 	}
 	.month-bar {
 		margin-bottom: 24px;
@@ -429,7 +429,7 @@
 		font-weight: 700;
 		margin: 0 0 16px;
 		padding-bottom: 6px;
-		border-bottom: 1px solid #e8e0d8;
+		border-bottom: 1px solid var(--line);
 	}
 	.stats-grid {
 		display: grid;
@@ -438,8 +438,8 @@
 		margin-bottom: 12px;
 	}
 	.stat-card {
-		background: #faf8f5;
-		border: 1px solid #e8e0d8;
+		background: var(--surface-sunk);
+		border: 1px solid var(--line);
 		border-radius: 12px;
 		padding: 16px;
 		display: flex;
@@ -447,27 +447,27 @@
 		gap: 6px;
 	}
 	.stat-card.highlight {
-		background: #fbf3ea;
-		border-color: #d56d04;
+		background: var(--surface-sunk);
+		border-color: var(--accent);
 	}
 	.stat-label {
 		font-size: 0.78rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 	}
 	.stat-value {
 		font-size: 1.3rem;
 		font-weight: 700;
-		color: #26201a;
+		color: var(--ink);
 	}
 	.stat-value.fee {
-		color: #c0392b;
+		color: var(--accent-deep);
 	}
 	.stat-value.payout {
-		color: #d56d04;
+		color: var(--accent);
 	}
 	.note {
 		font-size: 0.78rem;
-		color: #94a3b8;
+		color: var(--ink-3);
 		margin: 0;
 	}
 	.security-note {
@@ -479,7 +479,7 @@
 		margin-bottom: 16px;
 	}
 	.empty {
-		color: #9e9289;
+		color: var(--ink-3);
 		font-size: 0.9rem;
 	}
 	.orders {
@@ -489,7 +489,7 @@
 	}
 	.order-card {
 		background: #fff;
-		border: 1px solid #e8e0d8;
+		border: 1px solid var(--line);
 		border-radius: 14px;
 		padding: 16px;
 	}
@@ -508,7 +508,7 @@
 	}
 	.order-date {
 		font-size: 0.82rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 	}
 	.order-id {
 		font-size: 0.78rem;
@@ -525,11 +525,11 @@
 		font-weight: 600;
 		padding: 3px 10px;
 		border-radius: 20px;
-		background: #f8f5f0;
-		border: 1px solid #e8e0d8;
+		background: var(--paper);
+		border: 1px solid var(--line);
 	}
 	.badge.settlement {
-		color: #7a6f67;
+		color: var(--ink-2);
 	}
 	.badge.settlement.settled {
 		color: #2d8a4e;
@@ -537,7 +537,7 @@
 		border-color: #a3d9b5;
 	}
 	.order-items {
-		background: #faf8f5;
+		background: var(--surface-sunk);
 		border-radius: 8px;
 		padding: 10px 14px;
 		margin-bottom: 10px;
@@ -548,7 +548,7 @@
 		font-size: 0.88rem;
 		color: #3a3028;
 		padding: 4px 0;
-		border-bottom: 1px solid #f0ede8;
+		border-bottom: 1px solid var(--surface-sunk);
 	}
 	.item-total {
 		display: flex;
@@ -560,7 +560,7 @@
 	.shipping-address {
 		font-size: 0.82rem;
 		color: #4a3f38;
-		background: #f8f5f0;
+		background: var(--paper);
 		border-radius: 8px;
 		padding: 8px 12px;
 		margin-bottom: 10px;
@@ -591,7 +591,7 @@
 	}
 	.btn-ship {
 		padding: 8px 16px;
-		background: #d56d04;
+		background: var(--accent);
 		color: #fff;
 		border: none;
 		border-radius: 8px;
@@ -604,7 +604,7 @@
 	}
 	.btn-cancel-ship {
 		padding: 8px 14px;
-		background: #f0ede8;
+		background: var(--surface-sunk);
 		color: #4a3f38;
 		border: none;
 		border-radius: 8px;
@@ -615,15 +615,15 @@
 		margin-top: 8px;
 		padding: 8px 18px;
 		background: #fff;
-		color: #d56d04;
-		border: 1.5px solid #d56d04;
+		color: var(--accent);
+		border: 1.5px solid var(--accent);
 		border-radius: 8px;
 		font-size: 0.88rem;
 		font-weight: 600;
 		cursor: pointer;
 	}
 	.btn-ship-open:hover {
-		background: #fbf3ea;
+		background: var(--surface-sunk);
 	}
 	.form-row {
 		display: flex;
@@ -663,7 +663,7 @@
 	}
 	.btn-save {
 		padding: 10px 24px;
-		background: #26201a;
+		background: var(--ink);
 		color: #fff;
 		border: none;
 		border-radius: 10px;
@@ -682,7 +682,7 @@
 	}
 	.error {
 		font-size: 0.85rem;
-		color: #c0392b;
+		color: var(--accent-deep);
 		margin: 0;
 	}
 </style>

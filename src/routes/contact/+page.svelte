@@ -151,7 +151,7 @@
 	.page {
 		min-height: 60vh;
 		padding: 48px 16px 80px;
-		background: #faf8f5;
+		background: var(--surface-sunk);
 	}
 	.page-inner {
 		max-width: 560px;
@@ -160,20 +160,20 @@
 	.back-link {
 		display: inline-block;
 		font-size: 0.85rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 		text-decoration: none;
 		margin-bottom: 16px;
 	}
-	.back-link:hover { color: #26201a; }
+	.back-link:hover { color: var(--ink); }
 	.page-title {
 		font-size: 1.6rem;
 		font-weight: 700;
-		color: #26201a;
+		color: var(--ink);
 		margin: 0 0 12px;
 	}
 	.page-desc {
 		font-size: 0.9rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 		line-height: 1.7;
 		margin-bottom: 32px;
 	}
@@ -191,24 +191,24 @@
 	.field-label {
 		font-size: 0.88rem;
 		font-weight: 600;
-		color: #26201a;
+		color: var(--ink);
 	}
-	.req { color: #d56d04; }
+	.req { color: var(--accent); }
 	.field-input {
 		padding: 11px 14px;
-		border: 1.5px solid #e8e0d8;
+		border: 1.5px solid var(--line);
 		border-radius: 10px;
 		font-size: 0.95rem;
 		font-family: inherit;
 		background: #fff;
-		color: #26201a;
+		color: var(--ink);
 		box-sizing: border-box;
 		width: 100%;
 		transition: border-color 0.15s;
 	}
 	.field-input:focus {
 		outline: none;
-		border-color: #d56d04;
+		border-color: var(--accent);
 	}
 	.textarea {
 		resize: vertical;
@@ -216,17 +216,17 @@
 	}
 	.privacy-note {
 		font-size: 0.78rem;
-		color: #9e9289;
+		color: var(--ink-3);
 		line-height: 1.6;
 		margin: 0;
 	}
 	.privacy-note a {
-		color: #d56d04;
+		color: var(--accent);
 		text-decoration: none;
 	}
 	.submit-btn {
 		padding: 14px;
-		background: #26201a;
+		background: var(--ink);
 		color: #fff;
 		border: none;
 		border-radius: 10px;
@@ -239,7 +239,7 @@
 	.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 	.error-msg {
-		background: #fee2e2;
+		background: rgba(184, 92, 43, 0.08);
 		color: #dc2626;
 		border-radius: 8px;
 		padding: 10px 14px;
@@ -257,7 +257,7 @@
 		width: 64px;
 		height: 64px;
 		border-radius: 50%;
-		background: #dcfce7;
+		background: rgba(95, 122, 82, 0.08);
 		color: #15803d;
 		font-size: 2rem;
 		display: flex;
@@ -267,18 +267,18 @@
 	}
 	.success-box h2 {
 		font-size: 1.2rem;
-		color: #26201a;
+		color: var(--ink);
 		margin: 0 0 10px;
 	}
 	.success-box p {
 		font-size: 0.9rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 		margin: 0 0 24px;
 	}
 	.btn-home {
 		display: inline-block;
 		padding: 12px 32px;
-		background: #26201a;
+		background: var(--ink);
 		color: #fff;
 		border-radius: 10px;
 		text-decoration: none;

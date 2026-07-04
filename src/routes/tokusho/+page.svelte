@@ -143,7 +143,7 @@
 		margin: 0 auto;
 		padding: 40px 20px 80px;
 		font-family: sans-serif;
-		color: #26201a;
+		color: var(--ink);
 	}
 
 	.page-title {
@@ -151,7 +151,7 @@
 		font-weight: 700;
 		margin: 0 0 32px;
 		padding-bottom: 12px;
-		border-bottom: 2px solid #e8e0d8;
+		border-bottom: 2px solid var(--line);
 	}
 
 	.section {
@@ -161,11 +161,11 @@
 	.section-title {
 		font-size: 1.05rem;
 		font-weight: 700;
-		color: #26201a;
+		color: var(--ink);
 		margin: 0 0 16px;
 		padding: 8px 14px;
-		background: #f5f0ea;
-		border-left: 4px solid #26201a;
+		background: var(--surface-sunk);
+		border-left: 4px solid var(--ink);
 		border-radius: 0 6px 6px 0;
 	}
 
@@ -179,26 +179,26 @@
 	.info-table th,
 	.info-table td {
 		padding: 12px 14px;
-		border: 1px solid #e8e0d8;
+		border: 1px solid var(--line);
 		vertical-align: top;
 		text-align: left;
 	}
 
 	.info-table th {
 		width: 30%;
-		background: #faf8f5;
+		background: var(--surface-sunk);
 		font-weight: 600;
 		color: #4a3f38;
 		white-space: nowrap;
 	}
 
 	.info-table td {
-		color: #26201a;
+		color: var(--ink);
 	}
 
 	.update-date {
 		font-size: 0.82rem;
-		color: #9e9289;
+		color: var(--ink-3);
 		text-align: right;
 		margin-top: 40px;
 	}

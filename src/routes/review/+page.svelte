@@ -106,35 +106,36 @@
 	.wrap { min-height: 80svh; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--paper); }
 	.card {
 		width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--line);
-		border-radius: var(--r-lg); padding: 32px 26px; text-align: center; box-shadow: var(--shadow-1);
+		border-radius: var(--r-lg); padding: 40px 32px; text-align: center; box-shadow: var(--shadow-2);
 	}
-	.lantern { font-size: 2.6rem; margin: 0 0 8px; }
-	.kicker { font-size: 0.68rem; letter-spacing: 0.4em; color: var(--ink-3); margin: 0 0 12px; }
-	.title { font-family: "Zen Antique", serif; font-size: 1.2rem; letter-spacing: 0.06em; color: var(--ink); margin: 0 0 8px; line-height: 1.5; }
+	.kicker { font-size: 0.68rem; letter-spacing: 0.4em; color: var(--ink-3); margin: 0 0 12px; font-weight: 600; }
+	.title { font-family: "Zen Antique", serif; font-size: 1.3rem; letter-spacing: 0.06em; color: var(--ink); margin: 0 0 16px; line-height: 1.5; font-weight: 600; }
 	.lead { font-size: 0.9rem; color: var(--ink-2); line-height: 1.7; margin: 0; }
 
-	.stars { display: flex; justify-content: center; gap: 6px; margin: 22px 0 18px; }
+	.stars { display: flex; justify-content: center; gap: 8px; margin: 26px 0 22px; }
 	.star {
-		background: none; border: none; cursor: pointer; font-size: 2.4rem; line-height: 1;
-		color: #ddd2bf; transition: color 0.12s, transform 0.12s; padding: 0;
+		background: none; border: none; cursor: pointer; font-size: 2.2rem; line-height: 1;
+		color: var(--line-strong); transition: color 0.12s, transform 0.12s; padding: 4px; border-radius: var(--r-sm);
 	}
-	.star.on { color: #e0a72e; }
-	.star:hover { transform: scale(1.1); }
+	.star.on { color: var(--accent); }
+	.star:hover { transform: scale(1.15); background: rgba(184, 92, 43, 0.05); }
 
 	.comment {
 		width: 100%; box-sizing: border-box; border: 1px solid var(--line-strong); border-radius: var(--r-md);
-		padding: 11px 13px; font-size: 0.92rem; font-family: inherit; color: var(--ink); background: var(--paper);
-		resize: vertical;
+		padding: 11px 13px; font-size: 0.92rem; font-family: inherit; color: var(--ink); background: var(--surface);
+		resize: vertical; transition: border-color 0.15s, box-shadow 0.15s;
 	}
-	.comment:focus { outline: none; border-color: var(--accent); }
+	.comment:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(184, 92, 43, 0.1); }
 
-	.err { color: #b0402c; font-size: 0.84rem; margin: 12px 0 0; }
+	.err { color: var(--accent-deep); font-size: 0.84rem; margin: 12px 0 0; font-weight: 500; }
 	.submit {
-		width: 100%; margin-top: 16px; padding: 13px; border: none; border-radius: var(--r-md);
-		background: var(--accent); color: #fff; font-family: "Zen Antique", serif; font-size: 0.95rem;
-		letter-spacing: 0.08em; cursor: pointer; transition: background 0.15s;
+		width: 100%; margin-top: 16px; padding: 12px; border: none; border-radius: var(--r-md);
+		background: var(--accent); color: white; font-family: inherit; font-size: 0.95rem;
+		letter-spacing: 0.02em; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
 	}
-	.submit:hover:not(:disabled) { background: var(--accent-deep); }
-	.submit:disabled { opacity: 0.5; cursor: default; }
-	.note { font-size: 0.72rem; color: var(--ink-3); margin: 14px 0 0; line-height: 1.6; }
+	.submit:hover:not(:disabled) { background: var(--accent-deep); transform: translateY(-1px); }
+	.submit:active:not(:disabled) { transform: translateY(0); }
+	.submit:disabled { opacity: 0.6; cursor: not-allowed; }
+	.submit:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+	.note { font-size: 0.72rem; color: var(--ink-3); margin: 14px 0 0; line-height: 1.6; font-weight: 500; }
 </style>

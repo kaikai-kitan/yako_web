@@ -275,11 +275,11 @@
     .hero-sub { font-size: 0.9rem; opacity: 0.85; margin: 0; }
 
     /* ステップ */
-    .steps-section { background: #faf8f5; padding: 48px 20px; }
+    .steps-section { background: var(--surface-sunk); padding: 48px 20px; }
     .steps-inner { max-width: 800px; margin: 0 auto; }
     .steps-title {
         text-align: center; font-size: 1.2rem; font-weight: 700;
-        color: #26201a; margin: 0 0 32px;
+        color: var(--ink); margin: 0 0 32px;
     }
     .steps-grid {
         display: grid;
@@ -295,61 +295,61 @@
         display: flex; flex-direction: column; align-items: center; gap: 6px;
     }
     .step-num {
-        font-size: 0.68rem; font-weight: 800; color: #d56d04;
+        font-size: 0.68rem; font-weight: 800; color: var(--accent);
         letter-spacing: 0.08em;
     }
     .step-icon { font-size: 1.8rem; }
-    .step-name { font-size: 0.88rem; font-weight: 700; color: #26201a; margin: 0; }
-    .step-desc { font-size: 0.72rem; color: #7a6f67; margin: 0; line-height: 1.4; }
+    .step-name { font-size: 0.88rem; font-weight: 700; color: var(--ink); margin: 0; }
+    .step-desc { font-size: 0.72rem; color: var(--ink-2); margin: 0; line-height: 1.4; }
 
     /* フォーム */
     .form-section { padding: 48px 20px 64px; background: #fff; }
     .form-inner { max-width: 560px; margin: 0 auto; }
-    .form-title { font-size: 1.1rem; font-weight: 700; color: #26201a; margin: 0 0 28px; }
+    .form-title { font-size: 1.1rem; font-weight: 700; color: var(--ink); margin: 0 0 28px; }
 
-    .loading { text-align: center; color: #9e9289; padding: 40px; }
+    .loading { text-align: center; color: var(--ink-3); padding: 40px; }
 
     .auth-prompt { text-align: center; padding: 40px 0; }
-    .auth-prompt p { color: #7a6f67; margin-bottom: 16px; }
+    .auth-prompt p { color: var(--ink-2); margin-bottom: 16px; }
     .blocked-sub { font-size: 0.85rem; line-height: 1.7; }
     .login-btn {
         display: inline-block; padding: 12px 28px;
-        background: #26201a; color: white; border-radius: 10px;
+        background: var(--ink); color: white; border-radius: 10px;
         text-decoration: none; font-weight: 700; font-size: 0.95rem;
     }
 
     .store-form { display: flex; flex-direction: column; gap: 20px; }
 
     .msg-success {
-        background: #dcfce7; color: #166534;
+        background: rgba(95, 122, 82, 0.08); color: var(--ink-2);
         border-radius: 8px; padding: 10px 14px; font-size: 0.88rem;
     }
     .msg-error {
-        background: #fee2e2; color: #dc2626;
+        background: rgba(184, 92, 43, 0.08); color: #dc2626;
         border-radius: 8px; padding: 10px 14px; font-size: 0.88rem;
     }
 
     .field { display: flex; flex-direction: column; gap: 6px; }
-    .label { font-size: 0.85rem; font-weight: 600; color: #26201a; }
-    .req { color: #d56d04; }
+    .label { font-size: 0.85rem; font-weight: 600; color: var(--ink); }
+    .req { color: var(--accent); }
     .input {
-        padding: 10px 14px; border: 1.5px solid #e8e0d8; border-radius: 8px;
-        font-size: 0.95rem; font-family: inherit; color: #26201a;
-        background: #faf8f5; transition: border-color 0.15s; width: 100%; box-sizing: border-box;
+        padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 8px;
+        font-size: 0.95rem; font-family: inherit; color: var(--ink);
+        background: var(--surface-sunk); transition: border-color 0.15s; width: 100%; box-sizing: border-box;
     }
-    .input:focus { outline: none; border-color: #d56d04; background: #fff; }
+    .input:focus { outline: none; border-color: var(--accent); background: #fff; }
     .textarea { resize: vertical; }
-    .char-count { font-size: 0.72rem; color: #9e9289; text-align: right; }
+    .char-count { font-size: 0.72rem; color: var(--ink-3); text-align: right; }
 
     /* トグル */
     .field-row { flex-direction: row; align-items: flex-start; }
     .toggle-label { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
     .toggle-input { display: none; }
     .toggle-track {
-        width: 44px; height: 26px; background: #e8e0d8; border-radius: 100px;
+        width: 44px; height: 26px; background: var(--line); border-radius: 100px;
         flex-shrink: 0; position: relative; transition: background 0.2s; margin-top: 2px;
     }
-    .toggle-input:checked + .toggle-track { background: #d56d04; }
+    .toggle-input:checked + .toggle-track { background: var(--accent); }
     .toggle-thumb {
         position: absolute; top: 3px; left: 3px;
         width: 20px; height: 20px; background: white; border-radius: 50%;
@@ -357,10 +357,10 @@
     }
     .toggle-input:checked + .toggle-track .toggle-thumb { transform: translateX(18px); }
     .toggle-text { display: flex; flex-direction: column; gap: 2px; }
-    .toggle-sub { font-size: 0.72rem; color: #9e9289; font-weight: 400; }
+    .toggle-sub { font-size: 0.72rem; color: var(--ink-3); font-weight: 400; }
 
     .save-btn {
-        padding: 14px; background: #26201a; color: white;
+        padding: 14px; background: var(--ink); color: white;
         border: none; border-radius: 10px; font-size: 1rem;
         font-weight: 700; font-family: inherit; cursor: pointer;
         transition: background 0.15s;
@@ -369,14 +369,14 @@
     .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .next-steps {
-        border-top: 1px solid #ede8e0; padding-top: 20px;
+        border-top: 1px solid var(--line); padding-top: 20px;
         display: flex; flex-direction: column; gap: 10px;
     }
-    .next-title { font-size: 0.8rem; font-weight: 700; color: #9e9289; margin: 0; }
+    .next-title { font-size: 0.8rem; font-weight: 700; color: var(--ink-3); margin: 0; }
     .next-link {
-        font-size: 0.88rem; color: #26201a; text-decoration: none;
-        padding: 10px 14px; border: 1px solid #e8e0d8; border-radius: 8px;
+        font-size: 0.88rem; color: var(--ink); text-decoration: none;
+        padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px;
         transition: background 0.15s;
     }
-    .next-link:hover { background: #faf8f5; }
+    .next-link:hover { background: var(--surface-sunk); }
 </style>

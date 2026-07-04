@@ -317,7 +317,7 @@
 								y={100 - barH}
 								width="52"
 								height={barH}
-								fill={isCurrentMonth ? '#d56d04' : '#e8c97a'}
+								fill={isCurrentMonth ? 'var(--accent)' : '#e8c97a'}
 								rx="5"
 							/>
 							{#if point.total > 0}
@@ -326,7 +326,7 @@
 									y={94 - barH}
 									text-anchor="middle"
 									font-size="9"
-									fill="#26201a"
+									fill="var(--ink)"
 								>
 									{point.total >= 1000
 										? `¥${Math.round(point.total / 1000)}K`
@@ -338,7 +338,7 @@
 								y="116"
 								text-anchor="middle"
 								font-size="11"
-								fill={isCurrentMonth ? '#d56d04' : '#7a6f67'}
+								fill={isCurrentMonth ? 'var(--accent)' : 'var(--ink-2)'}
 								font-weight={isCurrentMonth ? '700' : '400'}
 							>
 								{point.label}
@@ -374,18 +374,18 @@
 		max-width: 720px;
 		margin: 0 auto;
 		padding: 24px 16px 80px;
-		color: #26201a;
+		color: var(--ink);
 	}
 	.page-header {
 		margin-bottom: 20px;
 	}
 	.back-link {
 		font-size: 0.85rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 		text-decoration: none;
 	}
 	.back-link:hover {
-		color: #d56d04;
+		color: var(--accent);
 	}
 	.page-title {
 		font-size: 1.3rem;
@@ -404,7 +404,7 @@
 		align-items: center;
 		gap: 8px;
 		font-size: 0.88rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 	}
 	.month-input {
 		padding: 6px 10px;
@@ -417,20 +417,20 @@
 		align-items: center;
 		gap: 6px;
 		padding: 7px 14px;
-		background: #faf8f5;
-		border: 1px solid #e8e0d8;
+		background: var(--surface-sunk);
+		border: 1px solid var(--line);
 		border-radius: 10px;
 		font-size: 0.85rem;
-		color: #26201a;
+		color: var(--ink);
 		text-decoration: none;
 		margin-left: auto;
 	}
 	.inventory-link:hover {
-		border-color: #d56d04;
-		color: #d56d04;
+		border-color: var(--accent);
+		color: var(--accent);
 	}
 	.alert-badge {
-		background: #c0392b;
+		background: var(--accent-deep);
 		color: #fff;
 		font-size: 0.72rem;
 		font-weight: 700;
@@ -440,12 +440,12 @@
 	.loading {
 		text-align: center;
 		padding: 60px;
-		color: #7a6f67;
+		color: var(--ink-2);
 	}
 
 	/* 総利益 */
 	.total-card {
-		background: #26201a;
+		background: var(--ink);
 		color: #fff;
 		border-radius: 18px;
 		padding: 28px 24px;
@@ -465,7 +465,7 @@
 	}
 	.total-sub {
 		font-size: 0.75rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 		margin-top: 6px;
 	}
 
@@ -478,7 +478,7 @@
 	}
 	.role-card {
 		background: #fff;
-		border: 1.5px solid #e8e0d8;
+		border: 1.5px solid var(--line);
 		border-radius: 14px;
 		padding: 18px 20px;
 		display: flex;
@@ -499,7 +499,7 @@
 	}
 	.role-desc {
 		font-size: 0.75rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 	}
 	.role-amount {
 		font-size: 1.6rem;
@@ -507,7 +507,7 @@
 	}
 	.role-bar {
 		height: 6px;
-		background: #f0ede8;
+		background: var(--surface-sunk);
 		border-radius: 3px;
 		overflow: hidden;
 	}
@@ -520,7 +520,7 @@
 	.yatai-user-fill { background: #3b82f6; }
 	.yatai-owner-fill { background: #f59e0b; }
 	.land-fill { background: #22c55e; }
-	.shop-fill { background: #d56d04; }
+	.shop-fill { background: var(--accent); }
 
 	.yatai-user { border-color: #bfdbfe; }
 	.yatai-owner { border-color: #fde68a; }
@@ -529,7 +529,7 @@
 
 	.role-link {
 		font-size: 0.78rem;
-		color: #d56d04;
+		color: var(--accent);
 		text-decoration: none;
 		align-self: flex-end;
 	}
@@ -538,13 +538,13 @@
 	.no-role {
 		text-align: center;
 		padding: 40px 20px;
-		color: #7a6f67;
+		color: var(--ink-2);
 		font-size: 0.9rem;
 	}
 	.no-role-link {
 		display: inline-block;
 		margin-top: 12px;
-		color: #d56d04;
+		color: var(--accent);
 		text-decoration: none;
 		font-weight: 600;
 	}
@@ -558,11 +558,11 @@
 		font-weight: 700;
 		margin: 0 0 14px;
 		padding-bottom: 6px;
-		border-bottom: 1px solid #e8e0d8;
+		border-bottom: 1px solid var(--line);
 	}
 	.chart-wrap {
-		background: #faf8f5;
-		border: 1px solid #e8e0d8;
+		background: var(--surface-sunk);
+		border: 1px solid var(--line);
 		border-radius: 14px;
 		padding: 16px 8px 8px;
 		overflow-x: auto;
@@ -580,12 +580,12 @@
 	}
 	.network-lead {
 		font-size: 0.85rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 		line-height: 1.6;
 		margin: 0 0 14px;
 	}
 	.network-lead a {
-		color: #d56d04;
+		color: var(--accent);
 		text-decoration: none;
 	}
 	.network-lead a:hover {
@@ -603,23 +603,23 @@
 		gap: 12px;
 		padding: 14px 18px;
 		background: #fff;
-		border: 1.5px solid #e8e0d8;
+		border: 1.5px solid var(--line);
 		border-radius: 12px;
 		text-decoration: none;
 		transition: border-color 0.15s;
 	}
 	.stall-tag-row:hover {
-		border-color: #d56d04;
+		border-color: var(--accent);
 	}
 	.stall-tag-name {
 		font-size: 0.92rem;
 		font-weight: 700;
-		color: #26201a;
+		color: var(--ink);
 	}
 	.stall-tag-cta {
 		font-size: 0.8rem;
 		font-weight: 700;
-		color: #d56d04;
+		color: var(--accent);
 		white-space: nowrap;
 	}
 </style>

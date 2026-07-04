@@ -463,7 +463,7 @@
 <style>
 	.shop-page {
 		min-height: 100svh;
-		background: #faf8f5;
+		background: var(--surface-sunk);
 		font-family: sans-serif;
 	}
 
@@ -472,22 +472,22 @@
 		position: sticky; top: 60px; z-index: 100;
 		background: rgba(250,248,245,0.97);
 		backdrop-filter: blur(8px);
-		border-bottom: 1px solid #e8e0d8;
+		border-bottom: 1px solid var(--line);
 		display: flex; align-items: center; justify-content: space-between;
 		padding: 12px 16px; gap: 8px;
 	}
-	.back-icon { width: 22px; height: 22px; stroke: #26201a; display: block; }
+	.back-icon { width: 22px; height: 22px; stroke: var(--ink); display: block; }
 	.back-link { flex-shrink: 0; display: flex; align-items: center; }
-	.shop-title { font-size: 0.95rem; font-weight: 700; color: #26201a; margin: 0; flex: 1; text-align: center; }
+	.shop-title { font-size: 0.95rem; font-weight: 700; color: var(--ink); margin: 0; flex: 1; text-align: center; }
 	.cart-btn {
 		position: relative; background: none; border: none;
 		cursor: pointer; padding: 4px; flex-shrink: 0;
 		display: flex; align-items: center;
 	}
-	.cart-svg { width: 24px; height: 24px; stroke: #26201a; }
+	.cart-svg { width: 24px; height: 24px; stroke: var(--ink); }
 	.cart-badge {
 		position: absolute; top: -4px; right: -6px;
-		background: #e53e3e; color: white; font-size: 0.65rem;
+		background: var(--accent-deep); color: white; font-size: 0.65rem;
 		font-weight: 700; border-radius: 50%;
 		min-width: 18px; height: 18px;
 		display: flex; align-items: center; justify-content: center;
@@ -496,28 +496,28 @@
 	/* パンくず */
 	.breadcrumb {
 		display: flex; align-items: center; gap: 6px;
-		padding: 8px 16px; font-size: 0.78rem; color: #9e9289;
-		background: #f5f0ea; border-bottom: 1px solid #ede8e0;
+		padding: 8px 16px; font-size: 0.78rem; color: var(--ink-3);
+		background: var(--surface-sunk); border-bottom: 1px solid var(--line);
 	}
-	.breadcrumb-link { color: #7a6f67; text-decoration: none; }
+	.breadcrumb-link { color: var(--ink-2); text-decoration: none; }
 	.breadcrumb-link:hover { text-decoration: underline; }
-	.breadcrumb-sep { color: #c8bfb5; }
-	.breadcrumb-current { color: #26201a; font-weight: 600; }
+	.breadcrumb-sep { color: var(--line); }
+	.breadcrumb-current { color: var(--ink); font-weight: 600; }
 
 	/* お気に入りフィルター */
 	.fav-filter-btn {
 		display: flex; align-items: center; gap: 6px;
 		margin: 0 16px 10px; padding: 7px 14px;
-		background: white; border: 1.5px solid #e8e0d8;
+		background: white; border: 1.5px solid var(--line);
 		border-radius: 100px; font-size: 0.82rem;
-		color: #7a6f67; font-family: inherit; cursor: pointer;
+		color: var(--ink-2); font-family: inherit; cursor: pointer;
 		transition: all 0.15s;
 	}
 	.fav-filter-btn.active {
-		background: #fff0f0; border-color: #e57373; color: #c62828;
+		background: #fff0f0; border-color: #e57373; color: var(--accent-deep);
 	}
 	.fav-filter-icon { width: 16px; height: 16px; flex-shrink: 0; }
-	.fav-filter-btn.active .fav-filter-icon { color: #e53e3e; }
+	.fav-filter-btn.active .fav-filter-icon { color: var(--accent-deep); }
 
 	/* ハートボタン */
 	.heart-btn {
@@ -526,37 +526,37 @@
 		background: rgba(255,255,255,0.88);
 		border: none; cursor: pointer; padding: 5px;
 		display: flex; align-items: center; justify-content: center;
-		color: #c8bfb5; transition: color 0.15s, background 0.15s;
+		color: var(--line); transition: color 0.15s, background 0.15s;
 		backdrop-filter: blur(4px);
 	}
-	.heart-btn:hover { color: #e53e3e; background: white; }
-	.heart-btn.active { color: #e53e3e; }
+	.heart-btn:hover { color: var(--accent-deep); background: white; }
+	.heart-btn.active { color: var(--accent-deep); }
 	.heart-btn svg { width: 100%; height: 100%; }
 
 	/* 検索バー */
-	.search-bar-wrap { padding: 12px 16px; background: #faf8f5; }
+	.search-bar-wrap { padding: 12px 16px; background: var(--surface-sunk); }
 	.search-bar {
 		display: flex; align-items: center; gap: 8px;
-		background: white; border: 1.5px solid #e8e0d8;
+		background: white; border: 1.5px solid var(--line);
 		border-radius: 10px; padding: 8px 12px;
 	}
-	.search-icon { width: 18px; height: 18px; stroke: #9e9289; flex-shrink: 0; }
+	.search-icon { width: 18px; height: 18px; stroke: var(--ink-3); flex-shrink: 0; }
 	.search-input {
 		flex: 1; border: none; outline: none; background: transparent;
-		font-size: 0.95rem; color: #26201a; font-family: inherit;
+		font-size: 0.95rem; color: var(--ink); font-family: inherit;
 	}
-	.search-input::placeholder { color: #c8bfb5; }
+	.search-input::placeholder { color: var(--line); }
 	.search-clear {
-		background: none; border: none; font-size: 1rem; color: #9e9289;
+		background: none; border: none; font-size: 1rem; color: var(--ink-3);
 		cursor: pointer; padding: 0 2px; line-height: 1;
 	}
 
 	.shop-main { padding: 0 0 80px; max-width: 800px; margin: 0 auto; }
 
 	.loading, .empty, .error-msg {
-		text-align: center; padding: 60px 20px; color: #9e9289; font-size: 0.9rem;
+		text-align: center; padding: 60px 20px; color: var(--ink-3); font-size: 0.9rem;
 	}
-	.error-msg { color: #c62828; }
+	.error-msg { color: var(--accent-deep); }
 
 	/* カテゴリチップ */
 	.category-scroll {
@@ -566,13 +566,13 @@
 	.category-scroll::-webkit-scrollbar { display: none; }
 	.category-chip {
 		flex-shrink: 0; padding: 6px 16px;
-		border: 1.5px solid #e8e0d8; border-radius: 100px;
-		background: white; color: #26201a; font-size: 0.82rem;
+		border: 1.5px solid var(--line); border-radius: 100px;
+		background: white; color: var(--ink); font-size: 0.82rem;
 		font-family: inherit; cursor: pointer; transition: all 0.15s;
 		white-space: nowrap;
 	}
 	.category-chip.active {
-		background: #26201a; color: white; border-color: #26201a;
+		background: var(--ink); color: white; border-color: var(--ink);
 	}
 
 	/* セクション */
@@ -581,11 +581,11 @@
 		display: flex; align-items: center; justify-content: space-between;
 		padding: 0 16px 10px;
 	}
-	.section-title { font-size: 0.95rem; font-weight: 700; color: #26201a; margin: 0; }
+	.section-title { font-size: 0.95rem; font-weight: 700; color: var(--ink); margin: 0; }
 
 	/* ソート */
 	.sort-select {
-		font-size: 0.78rem; color: #26201a; border: 1px solid #e8e0d8;
+		font-size: 0.78rem; color: var(--ink); border: 1px solid var(--line);
 		border-radius: 6px; padding: 4px 8px; background: white;
 		font-family: inherit; cursor: pointer; outline: none;
 	}
@@ -595,7 +595,7 @@
 		display: flex; align-items: center; justify-content: space-between;
 		padding: 12px 16px;
 	}
-	.result-count { font-size: 0.85rem; color: #7a6f67; }
+	.result-count { font-size: 0.85rem; color: var(--ink-2); }
 
 	/* 横スクロールカード（おすすめ） */
 	.horizontal-scroll {
@@ -613,28 +613,28 @@
 	.h-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
 	.h-card-img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
 	.h-card-body { padding: 8px 10px 10px; }
-	.h-card-name { font-size: 0.78rem; font-weight: 600; color: #26201a; margin: 0 0 3px; line-height: 1.3;
+	.h-card-name { font-size: 0.78rem; font-weight: 600; color: var(--ink); margin: 0 0 3px; line-height: 1.3;
 		display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-	.h-card-price { font-size: 0.8rem; font-weight: 700; color: #26201a; margin: 0; }
+	.h-card-price { font-size: 0.8rem; font-weight: 700; color: var(--ink); margin: 0; }
 
 	/* ランキングリスト */
 	.ranking-list { display: flex; flex-direction: column; }
 	.ranking-item {
 		display: flex; align-items: center; gap: 12px;
-		padding: 10px 16px; background: white; border-bottom: 1px solid #f5f0ea;
+		padding: 10px 16px; background: white; border-bottom: 1px solid var(--surface-sunk);
 		text-decoration: none; color: inherit; transition: background 0.15s;
 	}
-	.ranking-item:hover { background: #faf8f5; }
+	.ranking-item:hover { background: var(--surface-sunk); }
 	.rank-num {
-		font-size: 1rem; font-weight: 800; color: #c8bfb5;
+		font-size: 1rem; font-weight: 800; color: var(--line);
 		min-width: 20px; text-align: center; flex-shrink: 0;
 	}
-	.rank-num.rank-top { color: #d56d04; }
+	.rank-num.rank-top { color: var(--accent); }
 	.rank-img { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
 	.rank-info { flex: 1; min-width: 0; }
-	.rank-name { font-size: 0.88rem; font-weight: 600; color: #26201a; margin: 0 0 2px; }
-	.rank-price { font-size: 0.8rem; color: #7a6f67; margin: 0; }
-	.sold-out-sm { font-size: 0.72rem; color: #9e9289; font-weight: 600; flex-shrink: 0; }
+	.rank-name { font-size: 0.88rem; font-weight: 600; color: var(--ink); margin: 0 0 2px; }
+	.rank-price { font-size: 0.8rem; color: var(--ink-2); margin: 0; }
+	.sold-out-sm { font-size: 0.72rem; color: var(--ink-3); font-weight: 600; flex-shrink: 0; }
 
 	/* SOLD OUT オーバーレイ */
 	.img-wrap {
@@ -689,34 +689,34 @@
 	.product-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.12); transform: translateY(-2px); }
 	.product-img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
 	.no-img, .no-img-sm {
-		background: #f5f0ea; display: flex; align-items: center;
+		background: var(--surface-sunk); display: flex; align-items: center;
 		justify-content: center; font-size: 2rem;
 	}
 	.no-img { width: 100%; aspect-ratio: 1; }
 	.no-img-sm { width: 52px; height: 52px; border-radius: 8px; font-size: 1.4rem; flex-shrink: 0; }
 	.product-body { padding: 10px 12px 12px; }
-	.product-name { font-size: 0.85rem; font-weight: 700; color: #26201a; margin: 0 0 4px; }
+	.product-name { font-size: 0.85rem; font-weight: 700; color: var(--ink); margin: 0 0 4px; }
 	.product-desc {
-		font-size: 0.72rem; color: #7a6f67; margin: 0 0 6px;
+		font-size: 0.72rem; color: var(--ink-2); margin: 0 0 6px;
 		line-height: 1.4; display: -webkit-box;
 		-webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 	}
 	.tag-list { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
 	.tag {
 		font-size: 0.65rem; padding: 2px 7px;
-		background: #f0ede8; color: #7a6f67;
+		background: var(--surface-sunk); color: var(--ink-2);
 		border-radius: 100px; white-space: nowrap;
 	}
 	.product-footer { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
-	.product-price { font-size: 0.92rem; font-weight: 700; color: #26201a; }
-	.detail-link { font-size: 0.7rem; color: #9e9289; }
-	.sold-out { font-size: 0.72rem; color: #9e9289; font-weight: 600; }
+	.product-price { font-size: 0.92rem; font-weight: 700; color: var(--ink); }
+	.detail-link { font-size: 0.7rem; color: var(--ink-3); }
+	.sold-out { font-size: 0.72rem; color: var(--ink-3); font-weight: 600; }
 
 	/* カート浮きボタン */
 	.cart-float {
 		position: fixed; bottom: 24px; left: 50%;
 		transform: translateX(-50%);
-		background: #26201a; color: white;
+		background: var(--ink); color: white;
 		border: none; border-radius: 100px;
 		padding: 14px 28px; font-size: 0.95rem; font-weight: 700;
 		font-family: inherit; cursor: pointer;
@@ -736,15 +736,15 @@
 		padding: 20px 20px 32px; overflow-y: auto;
 	}
 	.cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-	.cart-header h2 { margin: 0; font-size: 1.1rem; color: #26201a; }
-	.close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7a6f67; }
-	.cart-empty { text-align: center; color: #9e9289; padding: 24px 0; }
+	.cart-header h2 { margin: 0; font-size: 1.1rem; color: var(--ink); }
+	.close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--ink-2); }
+	.cart-empty { text-align: center; color: var(--ink-3); padding: 24px 0; }
 	.cart-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
 	.cart-item { display: flex; align-items: center; gap: 10px; }
 	.cart-thumb { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
 	.cart-item-info { flex: 1; min-width: 0; }
-	.cart-item-name { display: block; font-size: 0.88rem; font-weight: 600; color: #26201a; }
-	.cart-item-price { font-size: 0.8rem; color: #7a6f67; }
+	.cart-item-name { display: block; font-size: 0.88rem; font-weight: 600; color: var(--ink); }
+	.cart-item-price { font-size: 0.8rem; color: var(--ink-2); }
 	.qty-control { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 	.qty-control button {
 		width: 28px; height: 28px; border-radius: 50%;
@@ -755,13 +755,13 @@
 	.qty-control span { font-size: 0.9rem; font-weight: 600; min-width: 16px; text-align: center; }
 	.cart-total {
 		display: flex; justify-content: space-between; align-items: center;
-		padding: 12px 0; border-top: 1px solid #e8e0d8; margin-bottom: 12px;
+		padding: 12px 0; border-top: 1px solid var(--line); margin-bottom: 12px;
 	}
-	.total-price { font-size: 1.2rem; font-weight: 700; color: #26201a; }
-	.checkout-error { color: #c62828; font-size: 0.85rem; text-align: center; margin: 8px 0; }
+	.total-price { font-size: 1.2rem; font-weight: 700; color: var(--ink); }
+	.checkout-error { color: var(--accent-deep); font-size: 0.85rem; text-align: center; margin: 8px 0; }
 	.checkout-btn {
 		width: 100%; padding: 14px;
-		background: #26201a; color: white;
+		background: var(--ink); color: white;
 		border: none; border-radius: 12px;
 		font-size: 1rem; font-weight: 700; font-family: inherit; cursor: pointer;
 	}

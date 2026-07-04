@@ -74,8 +74,8 @@
 		justify-content: center;
 		gap: 6px;
 		padding: 24px 16px 32px;
-		border-top: 1px solid #ede8e0;
-		background: #faf8f5;
+		border-top: 1px solid var(--line);
+		background: var(--surface-sunk);
 	}
 	.footer-links {
 		display: flex;
@@ -86,11 +86,11 @@
 	}
 	.footer-links a {
 		font-size: 0.8rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 		text-decoration: none;
 	}
 	.footer-links a:hover {
-		color: #26201a;
+		color: var(--ink);
 		text-decoration: underline;
 	}
 	.sep {
@@ -99,6 +99,6 @@
 	}
 	.footer-copy {
 		font-size: 0.75rem;
-		color: #9e9289;
+		color: var(--ink-3);
 	}
 </style>

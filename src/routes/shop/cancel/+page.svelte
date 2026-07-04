@@ -17,7 +17,7 @@
 
 <style>
 	.result-page {
-		min-height: 100svh; background: #faf8f5;
+		min-height: 100svh; background: var(--surface-sunk);
 		display: flex; align-items: center; justify-content: center; padding: 20px;
 	}
 	.result-card {
@@ -31,12 +31,12 @@
 		display: flex; align-items: center; justify-content: center;
 		font-size: 2rem; font-weight: 700;
 	}
-	.cancel { background: #fdecea; color: #c62828; }
-	h1 { font-size: 1.2rem; color: #26201a; margin: 0; }
-	.message { font-size: 0.88rem; color: #7a6f67; line-height: 1.7; margin: 0; }
+	.cancel { background: #fdecea; color: var(--accent-deep); }
+	h1 { font-size: 1.2rem; color: var(--ink); margin: 0; }
+	.message { font-size: 0.88rem; color: var(--ink-2); line-height: 1.7; margin: 0; }
 	.btn {
 		display: block; width: 100%; padding: 13px;
-		background: #26201a; color: white;
+		background: var(--ink); color: white;
 		border-radius: 10px; text-decoration: none;
 		font-size: 0.95rem; font-weight: 700;
 	}

@@ -185,7 +185,7 @@
 <style>
 	.page {
 		min-height: 100svh;
-		background: #faf8f5;
+		background: var(--surface-sunk);
 		font-family: sans-serif;
 		padding-bottom: 60px;
 	}
@@ -194,28 +194,28 @@
 		position: sticky; top: 0; z-index: 10;
 		background: rgba(250,248,245,0.97);
 		backdrop-filter: blur(8px);
-		border-bottom: 1px solid #e8e0d8;
+		border-bottom: 1px solid var(--line);
 		display: flex; align-items: center; gap: 16px;
 		padding: 12px 20px;
 	}
-	.back-link { font-size: 0.82rem; color: #7a6f67; text-decoration: none; }
-	.back-link:hover { color: #26201a; }
-	.page-title { font-size: 1rem; font-weight: 700; color: #26201a; margin: 0; }
+	.back-link { font-size: 0.82rem; color: var(--ink-2); text-decoration: none; }
+	.back-link:hover { color: var(--ink); }
+	.page-title { font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0; }
 
 	.toast {
 		margin: 12px 20px; padding: 10px 16px;
 		border-radius: 10px; font-size: 0.88rem;
 	}
-	.toast.success { background: #ecfdf5; color: #166534; border: 1px solid #bbf7d0; }
-	.toast.error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+	.toast.success { background: #ecfdf5; color: var(--ink-2); border: 1px solid #bbf7d0; }
+	.toast.error   { background: #fef2f2; color: var(--accent-deep); border: 1px solid #fecaca; }
 
 	.content { padding: 16px 20px; max-width: 720px; margin: 0 auto; }
 
-	.count-label { font-size: 0.82rem; color: #7a6f67; margin: 0 0 12px; }
+	.count-label { font-size: 0.82rem; color: var(--ink-2); margin: 0 0 12px; }
 
 	.empty {
 		text-align: center; padding: 60px 20px;
-		color: #9e9289; font-size: 0.9rem;
+		color: var(--ink-3); font-size: 0.9rem;
 	}
 
 	.app-card {
@@ -229,19 +229,19 @@
 		margin-bottom: 14px; flex-wrap: wrap; gap: 6px;
 	}
 	.app-identity { display: flex; flex-direction: column; gap: 2px; }
-	.app-business { font-size: 1rem; font-weight: 700; color: #26201a; }
-	.app-name { font-size: 0.8rem; color: #7a6f67; }
-	.app-date { font-size: 0.78rem; color: #9e9289; }
+	.app-business { font-size: 1rem; font-weight: 700; color: var(--ink); }
+	.app-name { font-size: 0.8rem; color: var(--ink-2); }
+	.app-date { font-size: 0.78rem; color: var(--ink-3); }
 
 	.app-stats {
 		display: flex; gap: 16px; flex-wrap: wrap;
-		background: #faf8f5; border-radius: 10px;
+		background: var(--surface-sunk); border-radius: 10px;
 		padding: 12px; margin-bottom: 14px;
 	}
 	.stat { display: flex; flex-direction: column; gap: 2px; }
-	.stat-label { font-size: 0.72rem; color: #9e9289; font-weight: 600; }
-	.stat-value { font-size: 0.88rem; color: #26201a; font-weight: 700; }
-	.stat-value.ok { color: #166534; }
+	.stat-label { font-size: 0.72rem; color: var(--ink-3); font-weight: 600; }
+	.stat-value { font-size: 0.88rem; color: var(--ink); font-weight: 700; }
+	.stat-value.ok { color: var(--ink-2); }
 
 	.app-actions { display: flex; gap: 8px; }
 
@@ -251,13 +251,13 @@
 		font-family: inherit; cursor: pointer; border: none;
 	}
 	.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-	.action-btn.approve { background: #166534; color: white; }
+	.action-btn.approve { background: var(--ink-2); color: white; }
 	.action-btn.approve:hover:not(:disabled) { background: #14532d; }
-	.action-btn.reject-open { background: white; color: #991b1b; border: 1.5px solid #fecaca; }
+	.action-btn.reject-open { background: white; color: var(--accent-deep); border: 1.5px solid #fecaca; }
 	.action-btn.reject-open:hover:not(:disabled) { background: #fef2f2; }
-	.action-btn.reject-confirm { background: #991b1b; color: white; }
+	.action-btn.reject-confirm { background: var(--accent-deep); color: white; }
 	.action-btn.reject-confirm:hover:not(:disabled) { background: #7f1d1d; }
-	.action-btn.cancel { background: #f5f0ea; color: #7a6f67; }
+	.action-btn.cancel { background: var(--surface-sunk); color: var(--ink-2); }
 
 	.reject-form { margin-top: 4px; }
 	.reject-textarea {
@@ -267,6 +267,6 @@
 		font-family: inherit; resize: vertical; outline: none;
 		margin-bottom: 8px;
 	}
-	.reject-textarea:focus { border-color: #991b1b; }
+	.reject-textarea:focus { border-color: var(--accent-deep); }
 	.reject-actions { display: flex; gap: 8px; }
 </style>

@@ -345,7 +345,7 @@
 	.hero-subtitle { font-size: clamp(0.9rem, 3vw, 1.2rem); letter-spacing: 0.05em; opacity: 0.9; }
 	.hero-cta {
 		display: inline-block; margin-top: 8px; padding: 14px 32px;
-		background: #d56d04; color: #fff; text-decoration: none;
+		background: var(--accent); color: #fff; text-decoration: none;
 		border-radius: 100px; font-size: 1rem; font-weight: 700;
 		letter-spacing: 0.05em; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 		transition: background 0.2s;
@@ -371,7 +371,7 @@
 		top: 60px; /* 固定ヘッダーの高さ分だけ下 */
 		height: calc(100svh - 60px);
 		overflow: hidden; /* 画面外のフレーズをクリップ */
-		background: #fbf3ea;
+		background: var(--surface-sunk);
 	}
 
 	/* 画像: sticky エリアの中央に余白付きで配置 */
@@ -440,10 +440,10 @@
 	/* ===== イベント出店 ===== */
 	.event-appearance-section {
 		padding: 48px 24px 40px;
-		background: #fbf3ea;
+		background: var(--surface-sunk);
 		text-align: center;
 	}
-	.event-sep { background: #d56d04; }
+	.event-sep { background: var(--accent); }
 
 	.event-appearance-list {
 		display: flex;
@@ -460,16 +460,16 @@
 		border: 1.5px solid #e8c97a;
 		border-radius: 14px;
 		padding: 18px 20px;
-		box-shadow: inset 4px 0 0 #d56d04, 0 2px 14px rgba(213, 109, 4, 0.08);
+		box-shadow: inset 4px 0 0 var(--accent), 0 2px 14px rgba(213, 109, 4, 0.08);
 	}
 	.event-appearance-card.event-next {
-		border-color: #d56d04;
-		box-shadow: inset 4px 0 0 #d56d04, 0 4px 20px rgba(213, 109, 4, 0.18);
+		border-color: var(--accent);
+		box-shadow: inset 4px 0 0 var(--accent), 0 4px 20px rgba(213, 109, 4, 0.18);
 	}
 	.event-badge-next {
 		position: absolute;
 		top: -11px; left: 16px;
-		background: linear-gradient(90deg, #d56d04, #f4a94a);
+		background: linear-gradient(90deg, var(--accent), #f4a94a);
 		color: #fff;
 		font-size: 0.65rem;
 		font-weight: 800;
@@ -484,7 +484,7 @@
 	}
 	.event-star-col {
 		font-size: 1.4rem;
-		color: #d56d04;
+		color: var(--accent);
 		flex-shrink: 0;
 		line-height: 1.3;
 	}
@@ -492,7 +492,7 @@
 	.event-appearance-title {
 		font-size: 1rem;
 		font-weight: 700;
-		color: #26201a;
+		color: var(--ink);
 		margin: 0;
 		line-height: 1.4;
 	}
@@ -500,12 +500,12 @@
 	/* ===== 出店スケジュール ===== */
 	.schedule-section {
 		padding: 48px 24px 40px;
-		background: #fbf3ea;
+		background: var(--surface-sunk);
 		text-align: center;
 	}
 	.schedule-empty {
 		font-size: 0.88rem;
-		color: #9e9289;
+		color: var(--ink-3);
 		letter-spacing: 0.03em;
 	}
 	.schedule-list {
@@ -519,7 +519,7 @@
 	.schedule-card {
 		position: relative;
 		background: #fff;
-		border: 1px solid #ede8e0;
+		border: 1px solid var(--line);
 		border-radius: 12px;
 		padding: 18px 20px;
 		display: flex;
@@ -527,14 +527,14 @@
 		gap: 8px;
 	}
 	.schedule-card.schedule-next {
-		border-color: #d56d04;
+		border-color: var(--accent);
 		box-shadow: 0 2px 12px rgba(213, 109, 4, 0.12);
 	}
 	.schedule-badge {
 		position: absolute;
 		top: -10px;
 		left: 16px;
-		background: #d56d04;
+		background: var(--accent);
 		color: #fff;
 		font-size: 0.7rem;
 		font-weight: 700;
@@ -545,7 +545,7 @@
 	.schedule-title {
 		font-size: 1rem;
 		font-weight: 700;
-		color: #26201a;
+		color: var(--ink);
 		margin: 0;
 	}
 	.schedule-row {
@@ -568,7 +568,7 @@
 	/* ===== 夜行人図鑑ネットワーク ===== */
 	.directory-network-section {
 		padding: 48px 24px 40px;
-		background: #fbf3ea;
+		background: var(--surface-sunk);
 		text-align: center;
 	}
 	.section-header {
@@ -577,10 +577,10 @@
 	}
 	.section-sep {
 		display: block; width: 40px; height: 2px;
-		background: #d56d04; border-radius: 2px;
+		background: var(--accent); border-radius: 2px;
 	}
-	.section-title { font-size: 1.3rem; font-weight: 700; color: #26201a; letter-spacing: 0.1em; }
-	.section-desc  { font-size: 0.85rem; color: #7a6f67; letter-spacing: 0.03em; }
+	.section-title { font-size: 1.3rem; font-weight: 700; color: var(--ink); letter-spacing: 0.1em; }
+	.section-desc  { font-size: 0.85rem; color: var(--ink-2); letter-spacing: 0.03em; }
 
 	.network-wrap {
 		position: relative;
@@ -593,7 +593,7 @@
 		position: absolute; inset: 0; width: 100%; height: 100%;
 	}
 	.network-edge {
-		stroke: #d56d04; stroke-width: 1.5; fill: none;
+		stroke: var(--accent); stroke-width: 1.5; fill: none;
 		stroke-dasharray: 600; stroke-dashoffset: 600;
 		transition: stroke-dashoffset 0.9s ease;
 	}
@@ -603,31 +603,31 @@
 		position: absolute;
 		transform: translate(-50%, -50%);
 		display: flex; flex-direction: column; align-items: center;
-		gap: 4px; text-decoration: none; color: #26201a; z-index: 1;
+		gap: 4px; text-decoration: none; color: var(--ink); z-index: 1;
 	}
 	.node-img {
 		width: 56px; height: 56px; border-radius: 50%;
-		object-fit: cover; border: 2px solid #e8e0d8;
-		background: #f5f0ea; transition: border-color 0.2s, transform 0.2s;
+		object-fit: cover; border: 2px solid var(--line);
+		background: var(--surface-sunk); transition: border-color 0.2s, transform 0.2s;
 	}
 	.node-placeholder {
 		width: 56px; height: 56px; border-radius: 50%;
-		background: #f5f0ea; border: 2px solid #e8e0d8;
+		background: var(--surface-sunk); border: 2px solid var(--line);
 		display: flex; align-items: center; justify-content: center;
-		font-size: 1.1rem; font-weight: 700; color: #7a6f67;
+		font-size: 1.1rem; font-weight: 700; color: var(--ink-2);
 		transition: border-color 0.2s, transform 0.2s;
 	}
 	.node:hover .node-img,
-	.node:hover .node-placeholder { border-color: #d56d04; transform: scale(1.1); }
-	.node-label { font-size: 0.7rem; color: #7a6f67; white-space: nowrap; letter-spacing: 0.02em; }
+	.node:hover .node-placeholder { border-color: var(--accent); transform: scale(1.1); }
+	.node-label { font-size: 0.7rem; color: var(--ink-2); white-space: nowrap; letter-spacing: 0.02em; }
 
 	.directory-more {
 		display: inline-block; margin-top: 28px;
-		font-size: 0.9rem; color: #d56d04; text-decoration: none;
+		font-size: 0.9rem; color: var(--accent); text-decoration: none;
 		letter-spacing: 0.05em; border-bottom: 1px solid transparent;
 		transition: border-color 0.2s;
 	}
-	.directory-more:hover { border-bottom-color: #d56d04; }
+	.directory-more:hover { border-bottom-color: var(--accent); }
 
 	@media (max-width: 480px) {
 		.node-img, .node-placeholder { width: 42px; height: 42px; font-size: 0.9rem; }

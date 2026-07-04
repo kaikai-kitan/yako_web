@@ -106,7 +106,7 @@
 <style>
 	.page {
 		min-height: 100svh;
-		background: #faf8f5;
+		background: var(--surface-sunk);
 		font-family: sans-serif;
 		padding-bottom: 60px;
 	}
@@ -115,12 +115,12 @@
 		display: flex; flex-direction: column;
 		align-items: center; justify-content: center;
 		min-height: 40vh; gap: 16px;
-		color: #9e9289; font-size: 0.9rem;
+		color: var(--ink-3); font-size: 0.9rem;
 	}
 
 	.hero-img-wrap {
 		width: 100%; aspect-ratio: 4/3; max-height: 360px;
-		overflow: hidden; background: #f0ede8;
+		overflow: hidden; background: var(--surface-sunk);
 	}
 	.hero-img-wrap.no-img {
 		display: flex; align-items: center; justify-content: center;
@@ -131,14 +131,14 @@
 	.content { padding: 16px 20px; max-width: 640px; margin: 0 auto; }
 
 	.back-link-top {
-		display: inline-block; font-size: 0.8rem; color: #7a6f67;
+		display: inline-block; font-size: 0.8rem; color: var(--ink-2);
 		text-decoration: none; margin-bottom: 14px;
 	}
-	.back-link-top:hover { color: #26201a; }
+	.back-link-top:hover { color: var(--ink); }
 	.back-link { font-size: 0.88rem; color: #5a6e99; text-decoration: none; }
 
 	.stall-name {
-		font-size: 1.4rem; font-weight: 800; color: #26201a;
+		font-size: 1.4rem; font-weight: 800; color: var(--ink);
 		margin: 0 0 16px; line-height: 1.3;
 	}
 
@@ -146,17 +146,17 @@
 		display: flex; flex-direction: column; gap: 10px;
 		background: white; border-radius: 14px;
 		padding: 16px; margin-bottom: 20px;
-		border: 1px solid #f0ede8;
+		border: 1px solid var(--surface-sunk);
 	}
 	.info-item { display: flex; justify-content: space-between; align-items: baseline; }
-	.info-label { font-size: 0.78rem; color: #9e9289; font-weight: 600; }
-	.info-value { font-size: 0.88rem; color: #26201a; font-weight: 600; text-align: right; max-width: 60%; }
+	.info-label { font-size: 0.78rem; color: var(--ink-3); font-weight: 600; }
+	.info-value { font-size: 0.88rem; color: var(--ink); font-weight: 600; text-align: right; max-width: 60%; }
 
 	.operator-row {
 		display: flex; align-items: center; gap: 12px;
 		background: white; border-radius: 14px;
 		padding: 14px; margin-bottom: 4px;
-		border: 1px solid #f0ede8;
+		border: 1px solid var(--surface-sunk);
 	}
 	.op-icon {
 		width: 44px; height: 44px; border-radius: 50%;
@@ -164,9 +164,9 @@
 	}
 	.op-icon.placeholder {
 		display: flex; align-items: center; justify-content: center;
-		background: #f0ede8; font-size: 1.4rem;
+		background: var(--surface-sunk); font-size: 1.4rem;
 	}
 	.op-info { display: flex; flex-direction: column; gap: 2px; }
-	.op-name { font-size: 0.9rem; font-weight: 700; color: #26201a; }
-	.op-bio { font-size: 0.78rem; color: #7a6f67; line-height: 1.5; }
+	.op-name { font-size: 0.9rem; font-weight: 700; color: var(--ink); }
+	.op-bio { font-size: 0.78rem; color: var(--ink-2); line-height: 1.5; }
 </style>

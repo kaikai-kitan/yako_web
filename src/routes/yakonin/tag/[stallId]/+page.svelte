@@ -71,38 +71,38 @@
 
 <style>
 	main { max-width: 15cm; margin: auto; padding: 2rem 16px 3rem; box-sizing: border-box; text-align: center; }
-	.muted { color: #9e8f7a; font-size: 0.85rem; }
-	.title { color: #26201a; margin-bottom: 0.4rem; }
+	.muted { color: var(--ink-3); font-size: 0.85rem; }
+	.title { color: var(--ink); margin-bottom: 0.4rem; }
 	.stall-name { font-size: 1.05rem; color: #4a3f38; margin-bottom: 1.6rem; }
 
 	.qr-card {
 		display: inline-flex; flex-direction: column; align-items: center; gap: 8px;
-		padding: 24px 28px; border: 2px solid #26201a; border-radius: 18px; background: #fff;
+		padding: 24px 28px; border: 2px solid var(--ink); border-radius: 18px; background: #fff;
 	}
 	.qr { width: 240px; height: 240px; }
-	.card-name { font-size: 1.05rem; font-weight: 800; color: #26201a; margin: 8px 0 0; }
-	.card-sub { font-size: 0.72rem; color: #9e8f7a; margin: 0; letter-spacing: 0.04em; }
+	.card-name { font-size: 1.05rem; font-weight: 800; color: var(--ink); margin: 8px 0 0; }
+	.card-sub { font-size: 0.72rem; color: var(--ink-3); margin: 0; letter-spacing: 0.04em; }
 
 	.url-row { display: flex; gap: 8px; margin: 1.6rem auto 0; max-width: 440px; }
 	.url-row input {
 		flex: 1; border: 1px solid #ded3c4; border-radius: 8px; padding: 9px 11px;
-		font-size: 0.78rem; color: #5a4f45; background: #faf8f5;
+		font-size: 0.78rem; color: #5a4f45; background: var(--surface-sunk);
 	}
 	.url-row button {
-		border: none; background: #26201a; color: #fff; border-radius: 8px;
+		border: none; background: var(--ink); color: #fff; border-radius: 8px;
 		padding: 0 16px; font-size: 0.82rem; font-weight: 700; cursor: pointer;
 	}
 
 	.howto { text-align: left; margin: 2rem auto 0; max-width: 460px; }
-	.howto h2 { font-size: 0.95rem; color: #26201a; margin-bottom: 0.6rem; }
+	.howto h2 { font-size: 0.95rem; color: var(--ink); margin-bottom: 0.6rem; }
 	.howto ol { padding-left: 1.2rem; display: flex; flex-direction: column; gap: 10px; }
 	.howto li { font-size: 0.85rem; color: #4a3f38; line-height: 1.6; }
 	.privacy { font-size: 0.78rem; color: #6b5f54; background: #fff7ed; border-radius: 10px; padding: 12px 14px; margin-top: 14px; line-height: 1.6; }
-	.muted { color: #9e8f7a; }
+	.muted { color: var(--ink-3); }
 
 	.print-btn {
 		margin-top: 1.8rem; padding: 12px 28px; border: none; border-radius: 100px;
-		background: #d56d04; color: #fff; font-size: 0.9rem; font-weight: 700; cursor: pointer;
+		background: var(--accent); color: #fff; font-size: 0.9rem; font-weight: 700; cursor: pointer;
 	}
 	.print-btn:hover { background: #b85d03; }
 

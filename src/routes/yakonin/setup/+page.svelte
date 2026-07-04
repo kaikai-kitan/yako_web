@@ -213,21 +213,21 @@
 
 <style>
 	main { max-width: 15cm; margin: auto; padding: 2rem 16px 3rem; box-sizing: border-box; }
-	.title { text-align: center; color: #26201a; margin-bottom: 0.8rem; }
+	.title { text-align: center; color: var(--ink); margin-bottom: 0.8rem; }
 	.lead { text-align: center; color: #4a3f38; line-height: 1.7; font-size: 0.9rem; margin-bottom: 1.8rem; }
 	.edit-note { display: inline-block; margin-top: 8px; font-size: 0.8rem; color: #8a5a12; background: #fff7ed; padding: 6px 12px; border-radius: 8px; }
-	.muted { color: #9e8f7a; font-size: 0.85rem; text-align: center; }
+	.muted { color: var(--ink-3); font-size: 0.85rem; text-align: center; }
 
 	.form { display: flex; flex-direction: column; gap: 16px; }
 	.field { display: flex; flex-direction: column; gap: 6px; }
 	.label { font-size: 0.82rem; font-weight: 600; color: #5a4f45; }
-	.req { color: #d56d04; font-size: 0.72rem; margin-left: 4px; }
+	.req { color: var(--accent); font-size: 0.72rem; margin-left: 4px; }
 	input[type="text"], textarea {
 		border: 1px solid #ded3c4; border-radius: 10px; padding: 11px 13px;
-		font-size: 0.95rem; font-family: inherit; background: #fff; color: #26201a;
+		font-size: 0.95rem; font-family: inherit; background: #fff; color: var(--ink);
 		box-sizing: border-box; width: 100%;
 	}
-	input:focus, textarea:focus { outline: none; border-color: #d56d04; }
+	input:focus, textarea:focus { outline: none; border-color: var(--accent); }
 	textarea { resize: vertical; }
 
 	.hidden-file { display: none; }
@@ -243,12 +243,12 @@
 	.toggle { display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; color: #4a3f38; line-height: 1.5; }
 	.toggle input { margin-top: 2px; flex-shrink: 0; }
 
-	.err { color: #c0392b; font-size: 0.85rem; margin: 0; }
+	.err { color: var(--accent-deep); font-size: 0.85rem; margin: 0; }
 	.ok { color: #2e7d32; font-size: 0.85rem; margin: 0; }
 
 	.save-btn {
 		margin-top: 6px; padding: 13px; border: none; border-radius: 12px;
-		background: #d56d04; color: #fff; font-size: 0.95rem; font-weight: 700;
+		background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 700;
 		cursor: pointer; transition: background 0.15s;
 	}
 	.save-btn:hover:not(:disabled) { background: #b85d03; }
@@ -258,10 +258,10 @@
 		margin-top: 2.4rem; padding: 20px; border: 1px solid #ede4d5;
 		border-radius: 16px; background: #fffdf9; text-align: center;
 	}
-	.qr-title { font-size: 1rem; color: #26201a; margin-bottom: 0.4rem; }
+	.qr-title { font-size: 1rem; color: var(--ink); margin-bottom: 0.4rem; }
 	.qr-img { width: 220px; height: 220px; margin-top: 12px; }
 	.url-row { display: flex; gap: 8px; margin: 14px auto 0; max-width: 320px; }
-	.url-row input { flex: 1; border: 1px solid #ded3c4; border-radius: 8px; padding: 8px 10px; font-size: 0.72rem; color: #5a4f45; background: #faf8f5; }
-	.url-row button { border: none; background: #26201a; color: #fff; border-radius: 8px; padding: 0 14px; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+	.url-row input { flex: 1; border: 1px solid #ded3c4; border-radius: 8px; padding: 8px 10px; font-size: 0.72rem; color: #5a4f45; background: var(--surface-sunk); }
+	.url-row button { border: none; background: var(--ink); color: #fff; border-radius: 8px; padding: 0 14px; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
 	.nfc-hint { font-size: 0.76rem; color: #6b5f54; line-height: 1.6; margin: 12px 0 0; }
 </style>

@@ -177,7 +177,7 @@
 		margin: 0 auto;
 		padding: 40px 20px 80px;
 		font-family: sans-serif;
-		color: #26201a;
+		color: var(--ink);
 		line-height: 1.8;
 	}
 
@@ -186,7 +186,7 @@
 		font-weight: 700;
 		margin: 0 0 16px;
 		padding-bottom: 12px;
-		border-bottom: 2px solid #e8e0d8;
+		border-bottom: 2px solid var(--line);
 	}
 
 	.intro {
@@ -194,7 +194,7 @@
 		color: #4a3f38;
 		margin-bottom: 36px;
 		padding: 16px;
-		background: #faf8f5;
+		background: var(--surface-sunk);
 		border-radius: 8px;
 	}
 
@@ -205,10 +205,10 @@
 	.section-title {
 		font-size: 1rem;
 		font-weight: 700;
-		color: #26201a;
+		color: var(--ink);
 		margin: 0 0 12px;
 		padding-bottom: 6px;
-		border-bottom: 1px solid #e8e0d8;
+		border-bottom: 1px solid var(--line);
 	}
 
 	.section p,
@@ -249,7 +249,7 @@
 
 	.update-date {
 		font-size: 0.82rem;
-		color: #9e9289;
+		color: var(--ink-3);
 		text-align: right;
 		margin-top: 40px;
 		line-height: 1.6;

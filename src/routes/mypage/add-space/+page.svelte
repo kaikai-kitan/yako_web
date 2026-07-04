@@ -213,35 +213,35 @@
 	.back-link {
 		display: inline-block;
 		font-size: 0.85rem;
-		color: #64748b;
+		color: var(--ink-2);
 		text-decoration: none;
 		margin-bottom: 8px;
 	}
 
 	.page-header h2 {
 		font-size: 1.3rem;
-		color: #0f172a;
+		color: var(--ink);
 		margin: 0;
 	}
 
-	.loading { color: #64748b; text-align: center; padding: 40px; }
+	.loading { color: var(--ink-2); text-align: center; padding: 40px; }
 
 	/* 地図 */
 	.map-section { margin-bottom: 24px; }
 
 	.map-instruction {
 		font-size: 0.85rem;
-		color: #475569;
+		color: var(--ink-2);
 		margin-bottom: 8px;
 	}
 
 	.coords {
 		font-family: monospace;
-		background: #f1f5f9;
+		background: var(--surface-sunk);
 		padding: 2px 6px;
 		border-radius: 4px;
 		font-size: 0.8rem;
-		color: #166534;
+		color: var(--ink-2);
 	}
 
 	.map-container {
@@ -249,47 +249,47 @@
 		height: 260px;
 		border-radius: 12px;
 		overflow: hidden;
-		border: 2px solid #e2e8f0;
+		border: 2px solid var(--line-strong);
 	}
 
 	/* フォーム */
 	.form { display: flex; flex-direction: column; gap: 4px; }
 
 	.error-msg {
-		background: #fee2e2; color: #dc2626;
+		background: rgba(184, 92, 43, 0.08); color: #dc2626;
 		border-radius: 8px; padding: 10px 14px; font-size: 0.85rem;
 	}
 
 	.success-msg {
-		background: #dcfce7; color: #166534;
+		background: rgba(95, 122, 82, 0.08); color: var(--ink-2);
 		border-radius: 8px; padding: 10px 14px; font-size: 0.85rem;
 	}
 
 	.field-label {
-		display: block; font-size: 0.85rem; color: #475569; margin-bottom: 12px;
+		display: block; font-size: 0.85rem; color: var(--ink-2); margin-bottom: 12px;
 	}
 
-	.req { color: #ef4444; }
+	.req { color: var(--accent-deep); }
 
 	.field-input {
 		display: block; width: 100%; margin-top: 5px;
-		padding: 10px 12px; border: 1.5px solid #e2e8f0;
+		padding: 10px 12px; border: 1.5px solid var(--line-strong);
 		border-radius: 8px; font-size: 0.95rem; box-sizing: border-box;
 	}
 
-	.field-input:focus { outline: none; border-color: #facc15; }
+	.field-input:focus { outline: none; border-color: var(--accent); }
 
 	.checkbox-label {
 		display: flex; align-items: center; gap: 10px;
-		font-size: 0.9rem; color: #334155; margin-bottom: 16px;
+		font-size: 0.9rem; color: var(--ink-2); margin-bottom: 16px;
 		cursor: pointer;
 	}
 
-	.checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: #facc15; }
+	.checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
 
 	.submit-btn {
 		width: 100%; padding: 14px;
-		background: #facc15; color: #0f172a;
+		background: var(--accent); color: var(--ink);
 		border: none; border-radius: 10px;
 		font-size: 1rem; font-weight: bold;
 		cursor: pointer; margin-top: 8px;
@@ -298,15 +298,15 @@
 	.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 	.photo-section { margin-bottom: 16px; }
-	.field-label-text { font-size: 0.85rem; color: #475569; margin-bottom: 8px; }
-	.photo-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 10px; border: 1.5px solid #e2e8f0; display: block; }
+	.field-label-text { font-size: 0.85rem; color: var(--ink-2); margin-bottom: 8px; }
+	.photo-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 10px; border: 1.5px solid var(--line-strong); display: block; }
 	.photo-upload-label { cursor: pointer; display: block; }
 	.photo-placeholder {
 		width: 100%; height: 120px;
-		background: #f1f5f9; border: 2px dashed #cbd5e1;
+		background: var(--surface-sunk); border: 2px dashed var(--line-strong);
 		border-radius: 10px; display: flex;
 		align-items: center; justify-content: center;
-		font-size: 0.9rem; color: #94a3b8;
+		font-size: 0.9rem; color: var(--ink-3);
 	}
 	.hidden-file { display: none; }
 </style>

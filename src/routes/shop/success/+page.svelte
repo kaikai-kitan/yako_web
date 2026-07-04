@@ -21,7 +21,7 @@
 
 <style>
 	.result-page {
-		min-height: 100svh; background: #faf8f5;
+		min-height: 100svh; background: var(--surface-sunk);
 		display: flex; align-items: center; justify-content: center; padding: 20px;
 	}
 	.result-card {
@@ -36,15 +36,15 @@
 		font-size: 2rem; font-weight: 700;
 	}
 	.success { background: #e8f5e9; color: #2e7d32; }
-	h1 { font-size: 1.2rem; color: #26201a; margin: 0; }
-	.message { font-size: 0.88rem; color: #7a6f67; line-height: 1.7; margin: 0; }
+	h1 { font-size: 1.2rem; color: var(--ink); margin: 0; }
+	.message { font-size: 0.88rem; color: var(--ink-2); line-height: 1.7; margin: 0; }
 	.btn {
 		display: block; width: 100%; padding: 13px;
-		background: #26201a; color: white;
+		background: var(--ink); color: white;
 		border-radius: 10px; text-decoration: none;
 		font-size: 0.95rem; font-weight: 700;
 	}
 	.btn.ghost {
-		background: none; border: 1.5px solid #26201a; color: #26201a;
+		background: none; border: 1.5px solid var(--ink); color: var(--ink);
 	}
 </style>

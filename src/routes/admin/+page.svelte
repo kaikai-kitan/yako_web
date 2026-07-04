@@ -218,30 +218,30 @@
 	}
 	.admin-nav-link {
 		display: inline-block; padding: 8px 16px;
-		background: white; border: 1px solid #e8e0d8;
+		background: white; border: 1px solid var(--line);
 		border-radius: 8px; font-size: 0.85rem;
-		font-weight: 600; color: #26201a;
+		font-weight: 600; color: var(--ink);
 		text-decoration: none;
 	}
-	.admin-nav-link:hover { background: #faf8f5; border-color: #d56d04; color: #d56d04; }
+	.admin-nav-link:hover { background: var(--surface-sunk); border-color: var(--accent); color: var(--accent); }
 
 	.loading {
 		text-align: center;
 		padding: 80px 20px;
-		color: #7a6f67;
+		color: var(--ink-2);
 	}
 	.page {
 		max-width: 900px;
 		margin: 0 auto;
 		padding: 32px 16px 80px;
-		color: #26201a;
+		color: var(--ink);
 	}
 	.page-title {
 		font-size: 1.3rem;
 		font-weight: 700;
 		margin: 0 0 24px;
 		padding-bottom: 12px;
-		border-bottom: 2px solid #e8e0d8;
+		border-bottom: 2px solid var(--line);
 	}
 	.filter-bar {
 		display: flex;
@@ -270,7 +270,7 @@
 		font-weight: 700;
 		margin: 0 0 16px;
 		padding-bottom: 6px;
-		border-bottom: 1px solid #e8e0d8;
+		border-bottom: 1px solid var(--line);
 	}
 	.stats-grid {
 		display: grid;
@@ -279,8 +279,8 @@
 		margin-bottom: 16px;
 	}
 	.stat-card {
-		background: #faf8f5;
-		border: 1px solid #e8e0d8;
+		background: var(--surface-sunk);
+		border: 1px solid var(--line);
 		border-radius: 12px;
 		padding: 14px 16px;
 		display: flex;
@@ -288,19 +288,19 @@
 		gap: 6px;
 	}
 	.stat-card.highlight {
-		background: #fbf3ea;
-		border-color: #d56d04;
+		background: var(--surface-sunk);
+		border-color: var(--accent);
 	}
 	.stat-label {
 		font-size: 0.78rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 	}
 	.stat-value {
 		font-size: 1.25rem;
 		font-weight: 700;
 	}
 	.empty {
-		color: #9e9289;
+		color: var(--ink-3);
 		font-size: 0.9rem;
 	}
 	.operator-list {
@@ -310,7 +310,7 @@
 	}
 	.op-card {
 		background: #fff;
-		border: 1px solid #e8e0d8;
+		border: 1px solid var(--line);
 		border-radius: 14px;
 		overflow: hidden;
 	}
@@ -324,7 +324,7 @@
 		flex-wrap: wrap;
 	}
 	.op-header:hover {
-		background: #faf8f5;
+		background: var(--surface-sunk);
 	}
 	.op-info {
 		display: flex;
@@ -337,7 +337,7 @@
 	}
 	.op-email {
 		font-size: 0.8rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 	}
 	.op-amounts {
 		display: flex;
@@ -353,7 +353,7 @@
 	}
 	.amount-label {
 		font-size: 0.78rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 	}
 	.amount-value {
 		font-size: 0.9rem;
@@ -362,34 +362,34 @@
 		text-align: right;
 	}
 	.amount-value.fee {
-		color: #c0392b;
+		color: var(--accent-deep);
 	}
 	.payout-row {
 		padding-top: 4px;
-		border-top: 1px solid #e8e0d8;
+		border-top: 1px solid var(--line);
 	}
 	.amount-value.payout {
 		font-size: 1.05rem;
-		color: #d56d04;
+		color: var(--accent);
 	}
 	.op-actions {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		padding: 10px 16px;
-		background: #faf8f5;
-		border-top: 1px solid #f0ede8;
+		background: var(--surface-sunk);
+		border-top: 1px solid var(--surface-sunk);
 		flex-wrap: wrap;
 		gap: 8px;
 	}
 	.order-count {
 		font-size: 0.82rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 		cursor: pointer;
 	}
 	.btn-settle {
 		padding: 8px 18px;
-		background: #26201a;
+		background: var(--ink);
 		color: #fff;
 		border: none;
 		border-radius: 8px;
@@ -402,7 +402,7 @@
 		cursor: default;
 	}
 	.order-detail {
-		border-top: 1px solid #f0ede8;
+		border-top: 1px solid var(--surface-sunk);
 		padding: 12px 16px;
 		display: flex;
 		flex-direction: column;
@@ -416,7 +416,7 @@
 		flex-wrap: wrap;
 	}
 	.detail-date {
-		color: #9e9289;
+		color: var(--ink-3);
 		min-width: 60px;
 	}
 	.detail-items {
@@ -425,10 +425,10 @@
 	}
 	.detail-amount {
 		font-weight: 600;
-		color: #26201a;
+		color: var(--ink);
 	}
 	.detail-status {
-		color: #7a6f67;
+		color: var(--ink-2);
 		min-width: 60px;
 		text-align: right;
 	}
@@ -439,7 +439,7 @@
 	}
 	.error {
 		font-size: 0.88rem;
-		color: #c0392b;
+		color: var(--accent-deep);
 		margin: 0;
 	}
 </style>

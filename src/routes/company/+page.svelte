@@ -147,7 +147,7 @@
 
 	.separator {
 		display: block;
-		background-color: #d56d04;
+		background-color: var(--accent);
 		width: 60px;
 		height: 1px;
 		margin: 16px 0;
@@ -235,7 +235,7 @@
 
 	.service-desc {
 		font-size: 0.68rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 		line-height: 1.4;
 	}
 
@@ -250,7 +250,7 @@
 		align-items: center;
 		gap: 8px;
 		padding: 13px 32px;
-		background: #d56d04;
+		background: var(--accent);
 		color: #fff;
 		border-radius: 12px;
 		font-size: 0.95rem;
@@ -308,7 +308,7 @@
 	.gallery-hint {
 		text-align: center;
 		font-size: 0.75rem;
-		color: #9e9289;
+		color: var(--ink-3);
 		margin: 4px 0 0;
 	}
 </style>

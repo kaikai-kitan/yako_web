@@ -154,7 +154,7 @@
 <style>
 	.wrap {
 		min-height: 80svh; display: flex; align-items: center; justify-content: center;
-		padding: 24px; background: #faf8f5;
+		padding: 24px; background: var(--surface-sunk);
 	}
 	.card {
 		width: 100%; max-width: 360px; background: #fff; border: 1px solid #ede4d5;
@@ -163,19 +163,19 @@
 		box-shadow: 0 6px 24px rgba(0,0,0,0.06);
 	}
 	.emoji { font-size: 3rem; }
-	.q { font-size: 1.15rem; color: #26201a; margin: 0; line-height: 1.4; }
+	.q { font-size: 1.15rem; color: var(--ink); margin: 0; line-height: 1.4; }
 	.note { font-size: 0.85rem; color: #6b5f54; line-height: 1.65; margin: 0; }
 
 	.primary, .ghost {
 		width: 100%; padding: 13px; border-radius: 12px; font-size: 0.95rem;
 		font-weight: 700; font-family: inherit; cursor: pointer; border: none;
 	}
-	.primary { background: #d56d04; color: #fff; }
+	.primary { background: var(--accent); color: #fff; }
 	.primary:hover { background: #b85d03; }
 	.ghost { background: none; border: 1.5px solid #ded3c4; color: #5a4f45; }
 
 	.spinner {
-		width: 44px; height: 44px; border: 4px solid #ece3d6; border-top-color: #d56d04;
+		width: 44px; height: 44px; border: 4px solid #ece3d6; border-top-color: var(--accent);
 		border-radius: 50%; animation: spin 0.8s linear infinite;
 	}
 	@keyframes spin { to { transform: rotate(360deg); } }

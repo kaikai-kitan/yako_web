@@ -96,7 +96,7 @@
 	}
 	.loading-fill {
 		height: 100%;
-		background: linear-gradient(90deg, #f5c842, #d56d04);
+		background: linear-gradient(90deg, #f5c842, var(--accent));
 		border-radius: 2px;
 		animation: fill 2s ease forwards;
 	}
@@ -115,7 +115,7 @@
 	.dots span {
 		display: inline-block;
 		animation: blink 1.2s infinite;
-		color: #d56d04;
+		color: var(--accent);
 	}
 	.dots span:nth-child(2) { animation-delay: 0.2s; }
 	.dots span:nth-child(3) { animation-delay: 0.4s; }

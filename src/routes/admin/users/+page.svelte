@@ -152,7 +152,7 @@
 <style>
 	.page {
 		min-height: 100svh;
-		background: #faf8f5;
+		background: var(--surface-sunk);
 		font-family: sans-serif;
 		padding-bottom: 60px;
 	}
@@ -161,30 +161,30 @@
 		position: sticky; top: 0; z-index: 10;
 		background: rgba(250,248,245,0.97);
 		backdrop-filter: blur(8px);
-		border-bottom: 1px solid #e8e0d8;
+		border-bottom: 1px solid var(--line);
 		display: flex; align-items: center; gap: 16px;
 		padding: 12px 20px;
 	}
-	.back-link { font-size: 0.82rem; color: #7a6f67; text-decoration: none; }
-	.back-link:hover { color: #26201a; }
-	.page-title { font-size: 1rem; font-weight: 700; color: #26201a; margin: 0; }
+	.back-link { font-size: 0.82rem; color: var(--ink-2); text-decoration: none; }
+	.back-link:hover { color: var(--ink); }
+	.page-title { font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0; }
 
 	.toast {
 		margin: 12px 20px; padding: 10px 16px;
 		border-radius: 10px; font-size: 0.88rem;
 	}
-	.toast.success { background: #ecfdf5; color: #166534; border: 1px solid #bbf7d0; }
-	.toast.error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+	.toast.success { background: #ecfdf5; color: var(--ink-2); border: 1px solid #bbf7d0; }
+	.toast.error   { background: #fef2f2; color: var(--accent-deep); border: 1px solid #fecaca; }
 
 	.content { padding: 16px 20px; max-width: 720px; margin: 0 auto; }
-	.count-label { font-size: 0.82rem; color: #7a6f67; margin: 0 0 12px; }
-	.empty { text-align: center; padding: 60px 20px; color: #9e9289; font-size: 0.9rem; }
+	.count-label { font-size: 0.82rem; color: var(--ink-2); margin: 0 0 12px; }
+	.empty { text-align: center; padding: 60px 20px; color: var(--ink-3); font-size: 0.9rem; }
 
 	.user-card {
 		background: white; border-radius: 14px;
 		box-shadow: 0 2px 10px rgba(0,0,0,0.06);
 		padding: 16px; margin-bottom: 12px;
-		border: 1px solid #f0ede8;
+		border: 1px solid var(--surface-sunk);
 	}
 	.user-card.suspended { border-color: #fecaca; background: #fff8f8; }
 
@@ -193,30 +193,30 @@
 		margin-bottom: 12px; flex-wrap: wrap; gap: 4px;
 	}
 	.user-identity { display: flex; align-items: center; gap: 8px; }
-	.user-name { font-size: 0.95rem; font-weight: 700; color: #26201a; }
+	.user-name { font-size: 0.95rem; font-weight: 700; color: var(--ink); }
 	.suspended-badge {
-		font-size: 0.68rem; background: #fecaca; color: #991b1b;
+		font-size: 0.68rem; background: #fecaca; color: var(--accent-deep);
 		border-radius: 4px; padding: 2px 6px; font-weight: 700;
 	}
-	.user-joined { font-size: 0.75rem; color: #9e9289; }
+	.user-joined { font-size: 0.75rem; color: var(--ink-3); }
 
 	.score-row {
 		display: flex; align-items: center; gap: 10px;
 		margin-bottom: 12px;
 	}
-	.score-label { font-size: 0.75rem; color: #9e9289; font-weight: 600; white-space: nowrap; }
+	.score-label { font-size: 0.75rem; color: var(--ink-3); font-weight: 600; white-space: nowrap; }
 	.score-value { font-size: 1rem; font-weight: 800; min-width: 36px; text-align: right; }
-	.score-value.score-good { color: #166534; }
-	.score-value.score-warn { color: #92400e; }
-	.score-value.score-danger { color: #991b1b; }
+	.score-value.score-good { color: var(--ink-2); }
+	.score-value.score-warn { color: var(--accent-deep); }
+	.score-value.score-danger { color: var(--accent-deep); }
 	.score-bar-wrap {
-		flex: 1; height: 8px; background: #f0ede8;
+		flex: 1; height: 8px; background: var(--surface-sunk);
 		border-radius: 4px; overflow: hidden;
 	}
 	.score-bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
 	.score-bar.score-good { background: #22c55e; }
 	.score-bar.score-warn { background: #f59e0b; }
-	.score-bar.score-danger { background: #ef4444; }
+	.score-bar.score-danger { background: var(--accent-deep); }
 
 	.user-actions { display: flex; gap: 8px; }
 
@@ -226,8 +226,8 @@
 		font-family: inherit; cursor: pointer; border: none;
 	}
 	.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-	.action-btn.unsuspend { background: #166534; color: white; }
+	.action-btn.unsuspend { background: var(--ink-2); color: white; }
 	.action-btn.unsuspend:hover:not(:disabled) { background: #14532d; }
-	.action-btn.reset { background: #f5f0ea; color: #26201a; border: 1px solid #e8e0d8; }
+	.action-btn.reset { background: var(--surface-sunk); color: var(--ink); border: 1px solid var(--line); }
 	.action-btn.reset:hover:not(:disabled) { background: #ede8e2; }
 </style>

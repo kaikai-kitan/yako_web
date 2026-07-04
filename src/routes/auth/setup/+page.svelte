@@ -71,7 +71,7 @@
 		align-items: center;
 		justify-content: center;
 		padding: 20px;
-		background: #f8f5f0;
+		background: var(--paper);
 	}
 	.setup-card {
 		background: white;
@@ -83,10 +83,10 @@
 		text-align: center;
 	}
 	.logo { font-size: 3rem; margin-bottom: 8px; }
-	.title { font-size: 1.3rem; color: #26201a; margin: 0 0 6px; }
-	.subtitle { font-size: 0.9rem; color: #64748b; margin: 0 0 28px; }
+	.title { font-size: 1.3rem; color: var(--ink); margin: 0 0 6px; }
+	.subtitle { font-size: 0.9rem; color: var(--ink-2); margin: 0 0 28px; }
 	.error-msg {
-		background: #fee2e2;
+		background: rgba(184, 92, 43, 0.08);
 		color: #dc2626;
 		border-radius: 8px;
 		padding: 10px 14px;
@@ -98,7 +98,7 @@
 		display: block;
 		text-align: left;
 		font-size: 0.85rem;
-		color: #475569;
+		color: var(--ink-2);
 		margin-bottom: 8px;
 	}
 	.field-input {
@@ -106,7 +106,7 @@
 		width: 100%;
 		margin-top: 6px;
 		padding: 12px 14px;
-		border: 1.5px solid #e2e8f0;
+		border: 1.5px solid var(--line-strong);
 		border-radius: 10px;
 		font-size: 1rem;
 		box-sizing: border-box;
@@ -114,18 +114,18 @@
 	}
 	.field-input:focus {
 		outline: none;
-		border-color: #d56d04;
+		border-color: var(--accent);
 	}
 	.hint {
 		font-size: 0.75rem;
-		color: #94a3b8;
+		color: var(--ink-3);
 		text-align: left;
 		margin: 4px 0 20px;
 	}
 	.submit-btn {
 		width: 100%;
 		padding: 13px;
-		background: #d56d04;
+		background: var(--accent);
 		color: #fff;
 		border: none;
 		border-radius: 10px;

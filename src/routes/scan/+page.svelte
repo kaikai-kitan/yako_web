@@ -197,7 +197,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: #faf8f5;
+		background: var(--surface-sunk);
 		padding: 20px;
 	}
 
@@ -217,7 +217,7 @@
 
 	.hint {
 		font-size: 0.8rem;
-		color: #9e9289;
+		color: var(--ink-3);
 		line-height: 1.5;
 		margin: 0;
 	}
@@ -225,8 +225,8 @@
 	.spinner {
 		width: 48px;
 		height: 48px;
-		border: 4px solid #e8e0d8;
-		border-top-color: #26201a;
+		border: 4px solid var(--line);
+		border-top-color: var(--ink);
 		border-radius: 50%;
 		animation: spin 0.8s linear infinite;
 	}
@@ -247,13 +247,13 @@
 	.scan-title {
 		font-size: 1.2rem;
 		font-weight: 700;
-		color: #26201a;
+		color: var(--ink);
 		margin: 0;
 	}
 
 	.scan-hint {
 		font-size: 0.85rem;
-		color: #7a6f67;
+		color: var(--ink-2);
 		text-align: center;
 		line-height: 1.6;
 		margin: 0;
@@ -273,7 +273,7 @@
 		margin-top: 8px;
 		background: none;
 		border: none;
-		color: #7a6f67;
+		color: var(--ink-2);
 		font-size: 0.9rem;
 		cursor: pointer;
 		padding: 8px 16px;
@@ -291,31 +291,31 @@
 	}
 
 	.success-icon { background: #e8f5e9; color: #2e7d32; }
-	.error-icon { background: #fdecea; color: #c62828; }
+	.error-icon { background: #fdecea; color: var(--accent-deep); }
 
 	.result-title {
 		font-size: 1.3rem;
 		font-weight: 700;
-		color: #26201a;
+		color: var(--ink);
 		margin: 0;
 	}
 
 	.place-name {
 		font-size: 1.05rem;
 		font-weight: 600;
-		color: #26201a;
+		color: var(--ink);
 		margin: 0;
 	}
 
 	.result-note {
 		font-size: 0.8rem;
-		color: #9e9289;
+		color: var(--ink-3);
 		margin: 0;
 	}
 
 	.error-msg {
 		font-size: 0.9rem;
-		color: #c62828;
+		color: var(--accent-deep);
 		text-align: center;
 		margin: 0;
 		line-height: 1.5;
@@ -326,17 +326,17 @@
 		padding: 12px;
 		border-radius: 10px;
 		border: none;
-		background: #26201a;
+		background: var(--ink);
 		color: #fff;
 		font-size: 0.95rem;
 		font-family: inherit;
 		cursor: pointer;
 	}
 
-	.action-btn.retry { background: #c62828; }
+	.action-btn.retry { background: var(--accent-deep); }
 	.action-btn.ghost {
 		background: none;
-		border: 1.5px solid #26201a;
-		color: #26201a;
+		border: 1.5px solid var(--ink);
+		color: var(--ink);
 	}
 </style>
