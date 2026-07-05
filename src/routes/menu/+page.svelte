@@ -12,7 +12,8 @@
 
 <style>
 	main {
-		max-width: 15cm;
+		max-width: 560px;
+		width: 100%;
 		margin: auto;
 		padding: 0 20px;
 		box-sizing: border-box;

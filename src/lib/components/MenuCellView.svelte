@@ -21,10 +21,14 @@
 				onclick={() => (isOpen = true)}
 				aria-label="{menuItem.name}の写真を拡大"
 			>
-				<img class="menu-image" src={base + menuItem.image} alt={menuItem.name} />
+				<img class="menu-image" src={base + menuItem.image} alt={menuItem.name}
+					loading="lazy" decoding="async" />
 			</button>
 		{:else}
-			<div class="no-image">NO IMAGE</div>
+			<div class="no-image">
+				<img class="no-image-icon" src="{base}/images/menu/in_progress.png"
+					alt="準備中" loading="lazy" decoding="async" />
+			</div>
 		{/if}
 	</div>
 	<div class="menu-information">
@@ -63,18 +67,22 @@
 	.menu-cell-container {
 		width: 100%;
 		box-sizing: border-box;
-		background: #fff;
-		border-radius: 10px;
+		background: var(--surface);
+		border-radius: var(--r-md);
 		overflow: hidden;
-		border: 1px solid #f0e8de;
+		border: 1px solid var(--line);
 	}
 
 	.menu-image-container {
 		width: 100%;
 		aspect-ratio: 1 / 1;
+		position: relative;
+		overflow: hidden;
 	}
 
 	.menu-image-btn {
+		position: absolute;
+		inset: 0;
 		width: 100%;
 		height: 100%;
 		padding: 0;
@@ -92,15 +100,20 @@
 	}
 
 	.no-image {
-		width: 100%;
-		height: 100%;
+		position: absolute;
+		inset: 0;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background: rgb(238, 217, 192);
-		font-size: 0.7rem;
-		color: #9e9289;
-		letter-spacing: 0.04em;
+		background: var(--surface-sunk);
+		box-sizing: border-box;
+		padding: 14%;
+	}
+	.no-image-icon {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		opacity: 0.7;
 	}
 
 	.menu-information {
@@ -115,7 +128,7 @@
 
 	.menu-title {
 		font-size: 0.8rem;
-		color: #26201a;
+		color: var(--ink);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -131,7 +144,7 @@
 	.menu-price {
 		font-size: 0.78rem;
 		white-space: nowrap;
-		color: #d56d04;
+		color: var(--accent);
 		font-weight: 700;
 	}
 

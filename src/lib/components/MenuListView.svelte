@@ -30,14 +30,14 @@
 
 	.menu-category-name {
 		text-align: center;
-		color: #26201a;
+		color: var(--ink);
 		margin-top: 2rem;
 		margin-bottom: 1rem;
 	}
 
 	.menu-section-name {
 		text-align: center;
-		border-bottom: 2px solid #d56d04;
+		border-bottom: 2px solid var(--accent);
 		display: inline-block;
 		margin-bottom: 2rem;
 	}
@@ -45,18 +45,19 @@
 	.menu-section-container {
 		width: 100%;
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 14px;
 	}
 
 	@media (max-width: 480px) {
 		.menu-section-container {
-			grid-template-columns: repeat(2, 1fr);
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 			gap: 10px;
 		}
 	}
 
 	.menu-cell-container {
 		width: 100%;
+		min-width: 0;
 	}
 </style>

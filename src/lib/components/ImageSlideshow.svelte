@@ -68,9 +68,11 @@
 <div class="slideshow-outer">
 	<!-- 画像フレーム（手紙カット） -->
 	<div class="slideshow-frame" ontouchstart={onTouchStart} ontouchend={onTouchEnd}>
-		<img class="slideshow-image" src={base + previous_image.src} alt={previous_image.alt} />
+		<img class="slideshow-image" src={base + previous_image.src} alt={previous_image.alt}
+			decoding="async" fetchpriority="low" />
 		<img bind:this={overlayEl} class="slideshow-image overlay"
-			src={base + current_image.src} alt={current_image.alt} />
+			src={base + current_image.src} alt={current_image.alt}
+			decoding="async" fetchpriority="high" />
 	</div>
 
 	<!-- ドット（写真枚数インジケーター） -->

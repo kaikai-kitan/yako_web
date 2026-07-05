@@ -296,7 +296,7 @@
 				style="left: {(NODE_SVG[i].x / 400) * 100}%; top: {(NODE_SVG[i].y / 280) * 100}%"
 			>
 				{#if person.image}
-					<img src="{base + person.image}" alt={person.name} class="node-img" />
+					<img src="{base + person.image}" alt={person.name} class="node-img" loading="lazy" decoding="async" />
 				{:else}
 					<div class="node-placeholder">{person.name[0]}</div>
 				{/if}
