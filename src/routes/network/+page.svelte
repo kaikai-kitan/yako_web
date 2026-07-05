@@ -232,6 +232,7 @@
 		font-family: "Zen Antique", serif; font-size: 0.8rem; letter-spacing: 0.08em;
 		padding: 8px 15px; border-radius: 100px; border: 1px solid var(--line);
 		box-shadow: var(--shadow-1);
+		white-space: nowrap; flex-shrink: 0;
 	}
 	.legend { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; pointer-events: auto; }
 	.lg {

@@ -340,7 +340,8 @@
 	.hero-title {
 		font-size: clamp(2rem, 8vw, 3.5rem);
 		font-weight: 700; letter-spacing: 0.1em; line-height: 1.2;
-		text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+		color: #fff;
+		text-shadow: 0 1px 3px rgba(0,0,0,0.55);
 	}
 	.hero-subtitle { font-size: clamp(0.9rem, 3vw, 1.2rem); letter-spacing: 0.05em; opacity: 0.9; }
 	.hero-cta {
