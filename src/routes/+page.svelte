@@ -313,7 +313,7 @@
 	<div class="hero-content">
 		<h1 class="hero-title">YATAKARI</h1>
 		<p class="hero-subtitle">京都・鴨川の屋台シェアリングサービス</p>
-		<a href="{base}/map" class="hero-cta">マップで予約する →</a>
+		<a href="{base}/map" class="hero-cta" target="_blank" rel="noopener">マップで予約する →</a>
 	</div>
 </section>
 

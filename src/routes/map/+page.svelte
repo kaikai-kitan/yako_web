@@ -938,7 +938,7 @@
 		<header class="app-header">
 			<div class="toggle-switch" onclick={toggleMode} role="button" tabindex="0"
 				onkeydown={(e) => e.key === 'Enter' && toggleMode()}>
-				<div class="toggle-bg" style="left: {mapMode === 'active' ? '3px' : 'calc(50% + 1px)'};"></div>
+				<div class="toggle-bg" style="left: {mapMode === 'active' ? '4px' : '50%'};"></div>
 				<span class:active={mapMode === 'active'}>出店中</span>
 				<span class:active={mapMode === 'available'}>予約可能</span>
 			</div>
@@ -1117,7 +1117,6 @@
 			<div class="full-screen-modal reserve-modal" transition:fly={{ y: '100%', duration: 300 }}>
 				<div class="reserve-header">
 					<button class="back-text-btn" onclick={() => { currentView = 'map'; }}>← 戻る</button>
-					<h2>{reservationMode === 'stall-first' ? '屋台を予約する' : 'スペースを予約する'}</h2>
 				</div>
 
 				{#if reservationSuccess}
@@ -1282,7 +1281,7 @@
 						</label>
 
 						<button class="reserve-submit-btn" onclick={submitReservation} disabled={isReserving || !agreedToNoshow}>
-							{isReserving ? '処理中…' : '予約を確定する'}
+							{isReserving ? '処理中…' : (reservationMode === 'stall-first' ? '屋台を予約する' : 'スペースを予約する')}
 						</button>
 					</div>
 				{/if}
@@ -1740,7 +1739,7 @@
 		cursor: pointer; width: 210px; height: 42px; align-items: center;
 	}
 	.toggle-bg {
-		position: absolute; width: 50%; height: 80%;
+		position: absolute; top: 4px; bottom: 4px; width: calc(50% - 4px);
 		background: var(--ink); border-radius: 25px; transition: left 0.3s ease;
 	}
 	.toggle-switch span {
@@ -1874,22 +1873,23 @@
 	.review-qr { width: 200px; height: 200px; }
 	.review-qr-box p { font-size: 0.76rem; color: #6b5f54; line-height: 1.6; margin: 8px 0 0; }
 
-	/* 予約フォーム */
-	.reserve-modal {
-		background: white; overflow-y: auto;
+	/* 予約フォーム（.full-screen-modal より後勝ちさせるため2クラス指定） */
+	.full-screen-modal.reserve-modal {
+		background: var(--paper); color: var(--ink); overflow-y: auto;
 		flex-direction: column; align-items: stretch;
 		padding: 0; justify-content: flex-start;
 	}
 	.reserve-header {
 		display: flex; align-items: center; gap: 12px;
-		padding: 16px 20px; border-bottom: 1px solid var(--line-strong);
-		background: white; position: sticky; top: 0; z-index: 1;
+		padding: 14px 20px; border-bottom: 1px solid var(--line);
+		background: var(--surface); position: sticky; top: 0; z-index: 1;
 	}
-	.reserve-header h2 { margin: 0; font-size: 1.1rem; color: var(--ink); }
 	.back-text-btn {
 		background: none; border: none; color: var(--ink-2);
-		font-size: 0.9rem; cursor: pointer; padding: 0;
+		font-size: 0.92rem; cursor: pointer; padding: 6px 4px;
+		border-radius: var(--r-sm); transition: color 0.15s, background 0.15s;
 	}
+	.back-text-btn:hover { color: var(--ink); background: var(--surface-sunk); }
 	.reserve-form { padding: 20px; }
 	.form-section { margin-bottom: 18px; }
 	.form-label {
@@ -2010,10 +2010,17 @@
 	.noshow-agree-text strong { color: var(--accent-deep); }
 
 	.reserve-submit-btn {
-		width: 100%; padding: 14px; background: var(--accent); color: var(--ink);
-		border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer;
+		width: 100%; padding: 15px; margin-top: 4px;
+		background: var(--accent); color: #fff;
+		border: none; border-radius: var(--r-md);
+		font-size: 1.05rem; font-weight: 700; cursor: pointer;
+		font-family: inherit; letter-spacing: 0.04em;
+		box-shadow: 0 4px 16px rgba(184, 92, 43, 0.28);
+		transition: background 0.15s, transform 0.1s;
 	}
-	.reserve-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+	.reserve-submit-btn:hover:not(:disabled) { background: var(--accent-deep); }
+	.reserve-submit-btn:active:not(:disabled) { transform: translateY(1px); }
+	.reserve-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
 	.reserve-success {
 		flex: 1; display: flex; flex-direction: column;
 		align-items: center; justify-content: center; padding: 40px;
