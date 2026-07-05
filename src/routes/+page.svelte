@@ -51,27 +51,27 @@
 	// ── ニュース（掲載・受賞） ──
 	const newsList = [
 		{
-			theme: 'news',
 			source: '京都新聞 夕刊',
 			year: '2025',
 			date: '6月16日',
 			title: '京都産業大学の学生2人、お手製屋台で走り出す ―「交流を楽しむ場に」',
+			image: '/images/news/kyoto_newspaper.jpg',
 			url: 'https://www.kyoto-np.co.jp/articles/-/1494513'
 		},
 		{
-			theme: 'letter',
 			source: 'KSU Letter 2025',
 			year: '2025',
 			date: '',
 			title: '大学広報誌「KSU Letter」に掲載されました',
+			image: '/images/news/ksu_letter.jpg',
 			url: 'https://www.kyoto-su.ac.jp/mt_uploads/ksuletter_2025.pdf'
 		},
 		{
-			theme: 'award',
 			source: '京都産業大学',
 			year: '2025',
 			date: '2月21日',
 			title: 'ビジネスプランコンテストで受賞しました',
+			image: '/images/news/ksu_business.jpg',
 			url: 'https://www.kyoto-su.ac.jp/news/news-000598.html'
 		}
 	];
@@ -347,23 +347,8 @@
 	<div class="news-grid">
 		{#each newsList as item}
 			<a class="news-card" href={item.url} target="_blank" rel="noopener noreferrer">
-				<div class="news-thumb news-thumb-{item.theme}">
-					{#if item.theme === 'news'}
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<path d="M4 5h13v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" />
-							<path d="M17 8h2a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1" />
-							<line x1="7" y1="8" x2="14" y2="8" /><line x1="7" y1="11" x2="14" y2="11" /><line x1="7" y1="14" x2="11" y2="14" />
-						</svg>
-					{:else if item.theme === 'letter'}
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<rect x="3" y="5" width="18" height="14" rx="1.5" /><path d="M3.5 6l8.5 7 8.5-7" />
-						</svg>
-					{:else}
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<path d="M8 4h8v4a4 4 0 0 1-8 0z" /><path d="M8 5H5v2a3 3 0 0 0 3 3" /><path d="M16 5h3v2a3 3 0 0 1-3 3" />
-							<line x1="12" y1="12" x2="12" y2="16" /><path d="M9 20h6l-1-4h-4z" />
-						</svg>
-					{/if}
+				<div class="news-thumb">
+					<img src="{base + item.image}" alt={item.title} loading="lazy" decoding="async" />
 					<span class="news-thumb-label">{item.source}</span>
 				</div>
 				<div class="news-body">
@@ -734,24 +719,25 @@
 	.news-thumb {
 		position: relative;
 		aspect-ratio: 16 / 9;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: #fff;
+		overflow: hidden;
+		background: var(--surface-sunk);
 	}
-	.news-thumb svg { width: 40px; height: 40px; opacity: 0.95; }
+	.news-thumb img {
+		width: 100%; height: 100%;
+		object-fit: cover; display: block;
+		transition: transform 0.3s ease;
+	}
+	.news-card:hover .news-thumb img { transform: scale(1.05); }
 	.news-thumb-label {
 		position: absolute;
 		left: 12px; bottom: 10px;
+		color: #fff;
 		font-size: 0.72rem; font-weight: 600;
 		letter-spacing: 0.06em;
-		background: rgba(0,0,0,0.28);
+		background: rgba(0,0,0,0.42);
 		padding: 3px 9px; border-radius: 100px;
 		backdrop-filter: blur(2px);
 	}
-	.news-thumb-news   { background: linear-gradient(135deg, #6b7688, #4a5568); }
-	.news-thumb-letter { background: linear-gradient(135deg, #3a4d7a, #26386a); }
-	.news-thumb-award  { background: linear-gradient(135deg, var(--accent), var(--accent-deep)); }
 
 	.news-body {
 		padding: 16px 16px 18px;
