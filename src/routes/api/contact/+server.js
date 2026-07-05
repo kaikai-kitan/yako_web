@@ -45,11 +45,11 @@ export async function POST({ request }) {
 			await resend.emails.send({
 				from: FROM_EMAIL,
 				to: NOTIFY_EMAIL,
-				subject: `【お問合せ】${category} — ${name}様より`,
+				subject: `【お問い合わせ】${category} — ${name}様より`,
 				html: `
 					<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#26201a">
 						<h2 style="background:#fbf3ea;padding:16px 20px;margin:0;font-size:1rem;border-left:4px solid #d56d04">
-							新しいお問合せが届きました
+							新しいお問い合わせが届きました
 						</h2>
 						<div style="padding:20px;border:1px solid #e8e0d8;border-top:none">
 							<table style="width:100%;border-collapse:collapse;font-size:0.9rem">
@@ -72,7 +72,7 @@ export async function POST({ request }) {
 							</table>
 						</div>
 						<p style="font-size:0.78rem;color:#9e9289;margin-top:16px">
-							このメールは微小夜行電灯お問合せフォームから自動送信されました。
+							このメールは微小夜行電灯お問い合わせフォームから自動送信されました。
 						</p>
 					</div>
 				`
@@ -82,15 +82,15 @@ export async function POST({ request }) {
 			await resend.emails.send({
 				from: FROM_EMAIL,
 				to: email,
-				subject: '【微小夜行電灯】お問合せを受け付けました',
+				subject: '【微小夜行電灯】お問い合わせを受け付けました',
 				html: `
 					<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#26201a">
 						<h2 style="background:#fbf3ea;padding:16px 20px;margin:0;font-size:1rem;border-left:4px solid #d56d04">
-							お問合せありがとうございます
+							お問い合わせありがとうございます
 						</h2>
 						<div style="padding:20px">
 							<p>${name} 様</p>
-							<p>以下の内容でお問合せを受け付けました。<br />
+							<p>以下の内容でお問い合わせを受け付けました。<br />
 							通常3営業日以内にご返信いたします。</p>
 							<div style="background:#faf8f5;border-radius:8px;padding:16px;font-size:0.88rem;color:#4a3f38">
 								<p style="margin:0 0 6px"><strong>種類:</strong> ${category}</p>

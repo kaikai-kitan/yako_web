@@ -1,6 +1,6 @@
 <svelte:head>
-	<title>お問合せ | 微小夜行電灯</title>
-	<meta name="description" content="微小夜行電灯へのお問合せはこちらから。ご質問・ご要望・不具合報告など、お気軽にお寄せください。" />
+	<title>お問い合わせ | 微小夜行電灯</title>
+	<meta name="description" content="微小夜行電灯へのお問い合わせはこちらから。ご質問・ご要望・不具合報告など、お気軽にお寄せください。" />
 </svelte:head>
 
 <script>
@@ -60,7 +60,7 @@
 <div class="page">
 	<div class="page-inner">
 		<a href="{base}/" class="back-link">← ホームに戻る</a>
-		<h1 class="page-title">お問合せ</h1>
+		<h1 class="page-title">お問い合わせ</h1>
 		<p class="page-desc">
 			ご質問・ご要望・不具合報告など、お気軽にお寄せください。<br />
 			通常3営業日以内にご返信いたします。
@@ -70,7 +70,7 @@
 			<div class="success-box">
 				<div class="success-icon">✓</div>
 				<h2>送信が完了しました</h2>
-				<p>お問合せありがとうございます。内容を確認の上、ご連絡いたします。</p>
+				<p>お問い合わせありがとうございます。内容を確認の上、ご連絡いたします。</p>
 				<a href="{base}/" class="btn-home">ホームへ戻る</a>
 			</div>
 		{:else}
@@ -109,7 +109,7 @@
 
 				<div class="field-group">
 					<label class="field-label" for="contact-category">
-						お問合せ種類 <span class="req">*</span>
+						お問い合わせ種類 <span class="req">*</span>
 					</label>
 					<select id="contact-category" bind:value={category} class="field-input" required>
 						<option value="">選択してください</option>
@@ -121,20 +121,20 @@
 
 				<div class="field-group">
 					<label class="field-label" for="contact-message">
-						お問合せ内容 <span class="req">*</span>
+						お問い合わせ内容 <span class="req">*</span>
 					</label>
 					<textarea
 						id="contact-message"
 						bind:value={message}
 						class="field-input textarea"
 						rows="6"
-						placeholder="お問合せ内容を詳しくご記入ください"
+						placeholder="お問い合わせ内容を詳しくご記入ください"
 						required
 					></textarea>
 				</div>
 
 				<p class="privacy-note">
-					送信いただいた情報は、お問合せ対応のみに使用し、第三者に提供することはありません。
+					送信いただいた情報は、お問い合わせ対応のみに使用し、第三者に提供することはありません。
 					詳しくは<a href="{base}/terms">利用規約</a>をご確認ください。
 				</p>
 

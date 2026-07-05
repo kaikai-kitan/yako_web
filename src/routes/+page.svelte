@@ -48,6 +48,34 @@
 	];
 	const EDGES = [[0,1],[0,2],[1,3],[2,3],[3,4],[1,4]];
 
+	// ── ニュース（掲載・受賞） ──
+	const newsList = [
+		{
+			theme: 'news',
+			source: '京都新聞 夕刊',
+			year: '2025',
+			date: '6月16日',
+			title: '京都産業大学の学生2人、お手製屋台で走り出す ―「交流を楽しむ場に」',
+			url: 'https://www.kyoto-np.co.jp/articles/-/1494513'
+		},
+		{
+			theme: 'letter',
+			source: 'KSU Letter 2025',
+			year: '2025',
+			date: '',
+			title: '大学広報誌「KSU Letter」に掲載されました',
+			url: 'https://www.kyoto-su.ac.jp/mt_uploads/ksuletter_2025.pdf'
+		},
+		{
+			theme: 'award',
+			source: '京都産業大学',
+			year: '2025',
+			date: '2月21日',
+			title: 'ビジネスプランコンテストで受賞しました',
+			url: 'https://www.kyoto-su.ac.jp/news/news-000598.html'
+		}
+	];
+
 	// ── スプラッシュ ──
 	function showSplashInNecessary() {
 		const KEY = 'no_splash_expiration_key';
@@ -306,6 +334,48 @@
 	</div>
 
 	<a href="{base}/directory" class="directory-more">夜行人図鑑を見る →</a>
+</section>
+
+<!-- ニュース（掲載・受賞） -->
+<section class="news-section">
+	<div class="section-header">
+		<span class="section-sep"></span>
+		<h2 class="section-title">ニュース</h2>
+		<p class="section-desc">メディア掲載・受賞のお知らせ</p>
+	</div>
+
+	<div class="news-grid">
+		{#each newsList as item}
+			<a class="news-card" href={item.url} target="_blank" rel="noopener noreferrer">
+				<div class="news-thumb news-thumb-{item.theme}">
+					{#if item.theme === 'news'}
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M4 5h13v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" />
+							<path d="M17 8h2a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1" />
+							<line x1="7" y1="8" x2="14" y2="8" /><line x1="7" y1="11" x2="14" y2="11" /><line x1="7" y1="14" x2="11" y2="14" />
+						</svg>
+					{:else if item.theme === 'letter'}
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<rect x="3" y="5" width="18" height="14" rx="1.5" /><path d="M3.5 6l8.5 7 8.5-7" />
+						</svg>
+					{:else}
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M8 4h8v4a4 4 0 0 1-8 0z" /><path d="M8 5H5v2a3 3 0 0 0 3 3" /><path d="M16 5h3v2a3 3 0 0 1-3 3" />
+							<line x1="12" y1="12" x2="12" y2="16" /><path d="M9 20h6l-1-4h-4z" />
+						</svg>
+					{/if}
+					<span class="news-thumb-label">{item.source}</span>
+				</div>
+				<div class="news-body">
+					<span class="news-date">
+						<span class="news-year">{item.year}年</span>{#if item.date}<span class="news-md">{item.date}</span>{/if}
+					</span>
+					<p class="news-title">{item.title}</p>
+					<span class="news-more">記事を読む →</span>
+				</div>
+			</a>
+		{/each}
+	</div>
 </section>
 
 <section class="hero">
@@ -629,6 +699,87 @@
 		transition: border-color 0.2s;
 	}
 	.directory-more:hover { border-bottom-color: var(--accent); }
+
+	/* ===== ニュース ===== */
+	.news-section {
+		padding: 48px 24px 52px;
+		background: var(--paper);
+		text-align: center;
+	}
+	.news-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 20px;
+		max-width: 920px;
+		margin: 0 auto;
+	}
+	.news-card {
+		display: flex;
+		flex-direction: column;
+		background: var(--surface);
+		border: 1px solid var(--line);
+		border-radius: var(--r-lg);
+		overflow: hidden;
+		text-decoration: none;
+		text-align: left;
+		box-shadow: var(--shadow-1);
+		transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+	}
+	.news-card:hover {
+		transform: translateY(-3px);
+		box-shadow: var(--shadow-2);
+		border-color: var(--line-strong);
+	}
+	/* サムネイル */
+	.news-thumb {
+		position: relative;
+		aspect-ratio: 16 / 9;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #fff;
+	}
+	.news-thumb svg { width: 40px; height: 40px; opacity: 0.95; }
+	.news-thumb-label {
+		position: absolute;
+		left: 12px; bottom: 10px;
+		font-size: 0.72rem; font-weight: 600;
+		letter-spacing: 0.06em;
+		background: rgba(0,0,0,0.28);
+		padding: 3px 9px; border-radius: 100px;
+		backdrop-filter: blur(2px);
+	}
+	.news-thumb-news   { background: linear-gradient(135deg, #6b7688, #4a5568); }
+	.news-thumb-letter { background: linear-gradient(135deg, #3a4d7a, #26386a); }
+	.news-thumb-award  { background: linear-gradient(135deg, var(--accent), var(--accent-deep)); }
+
+	.news-body {
+		padding: 16px 16px 18px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		flex: 1;
+	}
+	.news-date {
+		display: inline-flex; align-items: baseline; gap: 6px;
+		font-size: 0.78rem; color: var(--ink-3); letter-spacing: 0.04em;
+	}
+	.news-year { font-weight: 700; color: var(--accent); }
+	.news-title {
+		font-size: 0.95rem; line-height: 1.55; color: var(--ink);
+		font-weight: 600; font-family: "Zen Antique", serif;
+		flex: 1;
+	}
+	.news-more {
+		font-size: 0.8rem; color: var(--ink-2); letter-spacing: 0.04em;
+		transition: color 0.15s;
+	}
+	.news-card:hover .news-more { color: var(--accent); }
+
+	@media (max-width: 720px) {
+		.news-grid { grid-template-columns: 1fr; max-width: 420px; gap: 16px; }
+		.news-thumb { aspect-ratio: 21 / 9; }
+	}
 
 	@media (max-width: 480px) {
 		.node-img, .node-placeholder { width: 42px; height: 42px; font-size: 0.9rem; }
