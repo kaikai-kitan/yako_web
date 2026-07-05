@@ -21,13 +21,17 @@
 
 <div class="splash" class:fade-out={phase === 'ready'}>
 	<div class="inner">
-		<div class="lantern">🏮</div>
+		<div class="stage">
+			<img class="cart" src="{base}/images/yatakari_cart_gold.png" alt="屋台" />
+			<div class="shadow"></div>
+			<div class="road"></div>
+		</div>
 		<h1 class="title">YATAKARI</h1>
 		<p class="subtitle">屋台シェアリングプラットフォーム</p>
 		<div class="loading-bar">
 			<div class="loading-fill"></div>
 		</div>
-		<p class="loading-text">YATAI 読み込み中<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>
+		<p class="loading-text">屋台を運んでいます<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>
 	</div>
 </div>
 
@@ -60,15 +64,78 @@
 		to   { opacity: 1; transform: translateY(0); }
 	}
 
-	.lantern {
-		font-size: 4rem;
-		animation: swing 1.8s ease-in-out infinite;
-		transform-origin: top center;
+	/* ── 屋台を運ぶステージ ── */
+	.stage {
+		position: relative;
+		width: 140px;
+		height: 128px;
+		margin-bottom: 8px;
 	}
 
-	@keyframes swing {
-		0%,100% { transform: rotate(-8deg); }
-		50%      { transform: rotate(8deg); }
+	/* 屋台本体：4コマの「運んでいる」ホップ（各コマを保持してパラパラ漫画風に） */
+	.cart {
+		position: absolute;
+		left: 50%;
+		bottom: 14px;
+		width: 108px;
+		height: auto;
+		margin-left: -54px;
+		transform-origin: 50% 90%;
+		animation: cart-hop 1.1s steps(1, end) infinite;
+		filter: drop-shadow(0 0 10px rgba(245, 200, 66, 0.28));
+	}
+
+	@keyframes cart-hop {
+		0%,   24% { transform: translateY(0)     rotate(-3deg); }  /* コマ1：着地・左傾き */
+		25%,  49% { transform: translateY(-12px) rotate(0deg); }   /* コマ2：持ち上げ */
+		50%,  74% { transform: translateY(0)     rotate(3deg); }   /* コマ3：着地・右傾き */
+		75%,  99% { transform: translateY(-12px) rotate(0deg); }   /* コマ4：持ち上げ */
+	}
+
+	/* 接地影：ホップと同期して伸縮 */
+	.shadow {
+		position: absolute;
+		left: 50%;
+		bottom: 8px;
+		width: 78px;
+		height: 12px;
+		margin-left: -39px;
+		background: radial-gradient(ellipse at center, rgba(0,0,0,0.5), rgba(0,0,0,0) 70%);
+		border-radius: 50%;
+		animation: shadow-pulse 1.1s steps(1, end) infinite;
+	}
+
+	@keyframes shadow-pulse {
+		0%,   24% { transform: scaleX(1);    opacity: 0.55; }
+		25%,  49% { transform: scaleX(0.72); opacity: 0.3;  }
+		50%,  74% { transform: scaleX(1);    opacity: 0.55; }
+		75%,  99% { transform: scaleX(0.72); opacity: 0.3;  }
+	}
+
+	/* 夜道：破線が右へ流れて「前進している」感を出す */
+	.road {
+		position: absolute;
+		left: -20px;
+		right: -20px;
+		bottom: 6px;
+		height: 2px;
+		background-image: linear-gradient(90deg, var(--accent) 0 14px, transparent 14px 30px);
+		background-size: 30px 2px;
+		background-repeat: repeat-x;
+		opacity: 0.35;
+		-webkit-mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent);
+		mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent);
+		animation: road-flow 0.55s linear infinite;
+	}
+
+	@keyframes road-flow {
+		from { background-position: 0 0; }
+		to   { background-position: -30px 0; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.cart, .shadow, .road { animation: none; }
+		.cart { transform: translateY(-4px); }
 	}
 
 	.title {
