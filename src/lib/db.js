@@ -172,8 +172,10 @@ export async function signIn(email, password) {
 	return supabase.auth.signInWithPassword({ email, password });
 }
 
-export async function signUp(email, password) {
-	return supabase.auth.signUp({ email, password });
+export async function signUp(email, password, emailRedirectTo) {
+	// 確認メールのリンク先を明示（未指定時は Supabase の Site URL が使われる）
+	const options = emailRedirectTo ? { emailRedirectTo } : undefined;
+	return supabase.auth.signUp({ email, password, options });
 }
 
 export async function signOut() {

@@ -14,6 +14,8 @@
 
 	// フォーム（個人情報は入れない。ニックネーム・肩書き・一言のみ）
 	let handle = $state('');
+	let originalHandle = '';        // 読み込み時のニックネーム（変更検知用）
+	let handleLocked = $state(false); // 一度変更したら以降ロック
 	let status = $state('');
 	let oneLiner = $state('');
 	let avatarPath = $state('');
@@ -56,6 +58,8 @@
 
 		if (data) {
 			handle      = data.handle ?? '';
+			originalHandle = handle;
+			handleLocked = data.handle_locked ?? false;
 			status      = data.status ?? '';
 			oneLiner    = data.one_liner ?? '';
 			avatarPath  = data.avatar_path ?? '';
@@ -84,9 +88,15 @@
 
 	async function handleSave() {
 		if (!handle.trim()) { saveError = 'ニックネームを入力してください'; return; }
+		// 既にロック済みなら名前は元に戻す（変更させない）
+		if (handleLocked) handle = originalHandle;
 		isSaving = true;
 		saveError = '';
 		saved = false;
+
+		// 既存の名前を変更した場合、この1回で以降ロックする
+		const isHandleChange = originalHandle !== '' && handle.trim() !== originalHandle;
+		const nextLocked = handleLocked || isHandleChange;
 
 		// 新しい写真が選ばれていればアップロード
 		if (avatarFile) {
@@ -107,18 +117,31 @@
 			one_liner:   oneLiner.trim(),
 			avatar_path: avatarPath.trim(),
 			is_public:   isPublic,
+			handle_locked: nextLocked,
 			updated_at:  new Date().toISOString()
 		};
 
-		const { error } = await supabase
+		let { error } = await supabase
 			.from('yakonin_profiles')
 			.upsert(payload, { onConflict: 'user_id' });
+
+		// handle_locked カラム未追加（migration 未適用）の環境でも動くようフォールバック
+		if (error && (error.code === '42703' || /handle_locked/.test(error.message ?? ''))) {
+			delete payload.handle_locked;
+			({ error } = await supabase
+				.from('yakonin_profiles')
+				.upsert(payload, { onConflict: 'user_id' }));
+		}
 
 		if (error) {
 			saveError = '保存に失敗しました: ' + error.message;
 			isSaving = false;
 			return;
 		}
+
+		// 保存成功: ロック状態と基準名を更新
+		originalHandle = handle.trim();
+		handleLocked = nextLocked;
 
 		// connect_code は DB 側で自動生成されるので再取得
 		const { data } = await supabase
@@ -143,9 +166,7 @@
 <main>
 	<h1 class="title">夜行人プロフィール</h1>
 	<p class="lead">
-		夜行人ネットワークに載せる<strong>公開ペルソナ</strong>です。<br />
-		実名やメールは使いません。ニックネームと一言だけでOK。<br />
-		<span class="edit-note">一言・アイコンは<strong>いつでもこの画面から変更</strong>できます（マイページ →「夜行人プロフィール」）。</span>
+		3Dネットワーク用アカウント設定　<span class="edit-note">※名前の変更は1度までです。</span>
 	</p>
 
 	{#if isLoading}
@@ -154,7 +175,13 @@
 		<div class="form">
 			<label class="field">
 				<span class="label">ニックネーム <span class="req">必須</span></span>
-				<input type="text" bind:value={handle} maxlength="20" placeholder="例：タオ" />
+				<input type="text" bind:value={handle} maxlength="20" placeholder="例：タオ"
+					disabled={handleLocked} />
+				{#if handleLocked}
+					<span class="field-note">名前は変更済みのため、これ以上変更できません。</span>
+				{:else if originalHandle}
+					<span class="field-note">名前の変更はあと1回できます。</span>
+				{/if}
 			</label>
 
 			<label class="field">
@@ -222,12 +249,14 @@
 	.field { display: flex; flex-direction: column; gap: 6px; }
 	.label { font-size: 0.82rem; font-weight: 600; color: #5a4f45; }
 	.req { color: var(--accent); font-size: 0.72rem; margin-left: 4px; }
+	.field-note { font-size: 0.74rem; color: var(--ink-3); }
 	input[type="text"], textarea {
 		border: 1px solid #ded3c4; border-radius: 10px; padding: 11px 13px;
 		font-size: 0.95rem; font-family: inherit; background: #fff; color: var(--ink);
 		box-sizing: border-box; width: 100%;
 	}
 	input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+	input:disabled { background: var(--surface-sunk); color: var(--ink-2); cursor: not-allowed; }
 	textarea { resize: vertical; }
 
 	.hidden-file { display: none; }

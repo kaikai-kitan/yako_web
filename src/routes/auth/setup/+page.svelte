@@ -17,7 +17,7 @@
 		userId = data.session.user.id;
 
 		const profile = await getMyProfile(userId);
-		if (profile) goto(`${base}/shop`);
+		if (profile) goto(`${base}/mypage`);
 	});
 
 	async function handleSubmit() {
@@ -26,7 +26,7 @@
 		isLoading = true;
 		try {
 			await createUserProfile(userId, '購入者', name.trim());
-			goto(`${base}/shop`);
+			goto(`${base}/mypage`);
 		} catch (e) {
 			errorMessage = `登録に失敗しました: ${e.message}`;
 		} finally {
@@ -37,7 +37,7 @@
 
 <div class="setup-page">
 	<div class="setup-card">
-		<div class="logo">🏮</div>
+		<img src="{base}/images/icon.png" alt="微小夜行電灯" class="logo-img" />
 		<h1 class="title">微小夜行電灯</h1>
 		<p class="subtitle">最後にお名前を教えてください</p>
 
@@ -82,7 +82,7 @@
 		box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
 		text-align: center;
 	}
-	.logo { font-size: 3rem; margin-bottom: 8px; }
+	.logo-img { width: 64px; height: 64px; object-fit: contain; margin: 0 auto 10px; display: block; }
 	.title { font-size: 1.3rem; color: var(--ink); margin: 0 0 6px; }
 	.subtitle { font-size: 0.9rem; color: var(--ink-2); margin: 0 0 28px; }
 	.error-msg {

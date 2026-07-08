@@ -15,10 +15,10 @@
 	let isLoading = $state(false);
 
 	// ?redirectTo= はクライアント側でのみ読む（プリレンダリング対策）
-	let redirectTo = $state(`${base}/map`);
+	let redirectTo = $state(`${base}/mypage`);
 
 	onMount(async () => {
-		redirectTo = new URLSearchParams(window.location.search).get('redirectTo') ?? `${base}/map`;
+		redirectTo = new URLSearchParams(window.location.search).get('redirectTo') ?? `${base}/mypage`;
 		const { data } = await supabase.auth.getSession();
 		if (data.session) {
 			goto(redirectTo);
@@ -43,7 +43,9 @@
 
 		try {
 			if (mode === 'signup') {
-				const { data, error } = await signUp(email, password);
+				// 確認メールのリンク先を本番URLに固定（localhost へ飛ぶ事故を防ぐ）
+				const emailRedirectTo = `${window.location.origin}${base}/mypage`;
+				const { data, error } = await signUp(email, password, emailRedirectTo);
 				if (error) throw error;
 				if (data.user && !data.user.email_confirmed_at) {
 					successMessage =
@@ -71,7 +73,7 @@
 
 <div class="auth-page">
 	<div class="auth-card">
-		<div class="logo">🏮</div>
+		<img src="{base}/images/icon.png" alt="微小夜行電灯" class="logo-img" />
 		<h1 class="title">微小夜行電灯</h1>
 
 		<!-- タブ切り替え -->
@@ -163,6 +165,14 @@
 		max-width: 400px;
 		box-shadow: var(--shadow-2);
 		text-align: center;
+	}
+
+	.logo-img {
+		width: 64px;
+		height: 64px;
+		object-fit: contain;
+		margin: 0 auto 10px;
+		display: block;
 	}
 
 	.title {
