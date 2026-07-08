@@ -442,7 +442,7 @@
 		<!-- ===== マイメニュー ===== -->
 		<section class="section">
 			<div class="section-header">
-				<h3 class="section-title">マイメニュー</h3>
+				<h3 class="section-title"><Icon name="utensils-crossed" size={18} /> マイメニュー</h3>
 				<button class="add-btn" onclick={openAddMenu}>＋ 追加</button>
 			</div>
 			<p class="section-hint">普段の営業で提供する商品を登録すると、予約時に呼び出せます</p>
@@ -570,7 +570,7 @@
 		<!-- ===== オンラインストア申請 ===== -->
 		{#if profile.operators && shopStatus}
 			<section class="section shop-apply-section">
-				<h3 class="section-title"><Icon name="store" size={18} /> オンラインストア開設</h3>
+				<h3 class="section-title"><Icon name="shopping-bag" size={18} /> オンラインストア開設</h3>
 
 				{#if shopStatus.shop_application_status === 'approved'}
 					<div class="shop-status-box approved">

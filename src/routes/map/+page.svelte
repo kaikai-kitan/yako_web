@@ -22,6 +22,7 @@
 		getMyMenuItems,
 		signOut
 	} from '$lib/db.js';
+	import Icon from '$lib/components/Icon.svelte';
 
 	// --- ステート管理 ---
 	let mapContainer = $state();
@@ -269,16 +270,18 @@
 			interactive: false
 		}).addTo(map);
 
-		// 実験エリア境界（点線オレンジ）
-		L.circle(KSU_CENTER, {
+		// 出店可能エリア（青 = 利用可能・クリックで予約）
+		const areaCircle = L.circle(KSU_CENTER, {
 			radius: ACTIVE_RADIUS_M,
-			color: 'var(--accent)',
+			color: '#3b82f6',
 			weight: 2.5,
-			dashArray: '10, 6',
-			fillColor: 'var(--accent)',
-			fillOpacity: 0.04,
-			interactive: false
+			fillColor: '#3b82f6',
+			fillOpacity: 0.14,
+			interactive: true
 		}).addTo(map);
+		areaCircle.on('click', () => goReserveFromArea('京都産業大学（実証実験エリア）'));
+		areaCircle.on('mouseover', () => areaCircle.setStyle({ fillOpacity: 0.22 }));
+		areaCircle.on('mouseout', () => areaCircle.setStyle({ fillOpacity: 0.14 }));
 
 		// 実証実験エリアバッジ
 		L.marker([lat + 0.0056, lng], {
@@ -310,6 +313,9 @@
 		});
 	}
 
+	// 屋台アイコン（提灯絵文字の代わり。店舗＝屋台のラインアイコン）
+	const STALL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#b85c2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>';
+
 	function makeMarkerEl(type, opts = {}) {
 		const el = document.createElement('div');
 		el.className = 'lmap-marker';
@@ -324,7 +330,7 @@
 			const booked = opts.booked;
 			el.innerHTML = `
 				<div class="lmap-bubble lmap-stall${booked ? ' lmap-booked' : ''}">
-					<span>🏮</span>
+					${STALL_SVG}
 				</div>
 				<div class="lmap-tip lmap-tip-stall${booked ? ' lmap-tip-booked' : ''}"></div>`;
 		} else if (type === 'active') {
@@ -332,8 +338,8 @@
 			el.innerHTML = `
 				<div class="lmap-active-avatar">
 					${imgSrc
-						? `<img src="${imgSrc}" alt="" onerror="this.style.display='none';this.nextSibling.style.display='flex'" /><span style="display:none;align-items:center;justify-content:center;width:100%;height:100%;font-size:20px">🏮</span>`
-						: `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:20px">🏮</span>`
+						? `<img src="${imgSrc}" alt="" onerror="this.style.display='none';this.nextSibling.style.display='flex'" /><span style="display:none;align-items:center;justify-content:center;width:100%;height:100%">${STALL_SVG}</span>`
+						: `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%">${STALL_SVG}</span>`
 					}
 				</div>
 				<div class="lmap-active-caret"></div>`;
@@ -423,6 +429,25 @@
 		reservationForm = {
 			spaceId: selectedStall?.id ?? null,
 			spaceName: selectedStall?.name ?? '',
+			stallId: '', stallName: '',
+			startDate: '', startTime: '10:00',
+			endDate: '', endTime: '22:00'
+		};
+		reservationItems = [{ name: '', price: '' }];
+		reservationError = '';
+		reservationSuccess = false;
+		agreedToNoshow = false;
+		currentView = 'reserve';
+	}
+
+	/** Flow C: 出店可能エリア（青い土地）から予約。屋台を選んで営業場所に配置する */
+	function goReserveFromArea(areaName) {
+		closeDetail?.();
+		reservationMode = 'stall-first';
+		needsStall = false;
+		stallOperatingLocation = areaName;
+		reservationForm = {
+			spaceId: null, spaceName: '',
 			stallId: '', stallName: '',
 			startDate: '', startTime: '10:00',
 			endDate: '', endTime: '22:00'
@@ -995,7 +1020,7 @@
 						<img src={selectedStall.image} alt={selectedStall.name} class="stall-thumb" />
 					{:else}
 						<div class="stall-thumb no-image">
-							{selectedStall.status === 'stall' ? '🏮' : '📍'}
+							{#if selectedStall.status === 'stall'}<Icon name="store" size={30} />{:else}<Icon name="map-pin" size={30} />{/if}
 						</div>
 					{/if}
 					<div class="stall-info">
@@ -1035,10 +1060,10 @@
 							<!-- スペースピン -->
 							<p class="specs">{selectedStall.specs}</p>
 							{#if selectedStall.address}
-								<p class="specs">📍 {selectedStall.address}</p>
+								<p class="specs specs-icon"><Icon name="map-pin" size={14} /> {selectedStall.address}</p>
 							{/if}
 							<div class="space-meta">
-								<span>🏮 最大 {selectedStall.maxStalls ?? 1} 台</span>
+								<span class="meta-icon"><Icon name="store" size={14} /> 最大 {selectedStall.maxStalls ?? 1} 台</span>
 								<span>👥 {selectedStall.capacity ?? 10} 名まで</span>
 							</div>
 							<p class="price">¥{(selectedStall.price ?? 0).toLocaleString()} / 泊</p>
@@ -1175,8 +1200,26 @@
 						{:else}
 							<!-- ===== Flow B: 屋台優先 ===== -->
 							<div class="form-section">
-								<span class="form-label">予約屋台</span>
-								<div class="form-value">{reservationForm.stallName}</div>
+								{#if reservationForm.stallName}
+									<span class="form-label">予約屋台</span>
+									<div class="form-value">{reservationForm.stallName}</div>
+								{:else}
+									<!-- エリアからの予約: 配置する屋台を選択 -->
+									<label class="form-label" for="area-stall-select">
+										配置する屋台 <span class="req">*</span>
+									</label>
+									<select id="area-stall-select" bind:value={reservationForm.stallId} class="form-select">
+										<option value="">屋台を選択してください</option>
+										{#each availableStallsList as stall}
+											{@const isBooked = bookedStallIds.has(stall.id) && !myUserReservations.some(r => r.stall_id === stall.id)}
+											<option value={stall.id} disabled={isBooked}>
+												{stall.stall_name}（{stall.operators?.business_name ?? ''}）
+												— ¥{(stall.rental_fee ?? 0).toLocaleString()}/日
+												{#if isBooked}（予約済み）{/if}
+											</option>
+										{/each}
+									</select>
+								{/if}
 							</div>
 							<div class="form-section">
 								<label class="form-label" for="operating-location">
@@ -1191,7 +1234,7 @@
 								/>
 							</div>
 							<div class="flow-info-box">
-								スペース予約が必要な場合はマップからスペースピンを選択してください。
+								青いエリアは屋台を出店できる土地です。配置する屋台を選んで予約してください。
 							</div>
 						{/if}
 
@@ -1682,11 +1725,11 @@
 		border-left: 7px solid transparent; border-right: 7px solid transparent;
 		border-top: 10px solid var(--accent-deep); margin-top: -1px;
 	}
-	/* ── 実証実験エリアバッジ ── */
+	/* ── 出店可能エリアバッジ（青 = 利用可能） ── */
 	:global(.ksu-badge-active) {
-		background: #fff7e6;
-		border: 2px solid var(--accent);
-		color: #b85c03;
+		background: #e0f0ff;
+		border: 2px solid #3b82f6;
+		color: #1d4ed8;
 		border-radius: 20px;
 		padding: 6px 16px;
 		font-size: 0.78rem;
@@ -1694,7 +1737,7 @@
 		white-space: nowrap;
 		text-align: center;
 		line-height: 1.5;
-		box-shadow: 0 3px 14px rgba(213, 109, 4, 0.28);
+		box-shadow: 0 3px 14px rgba(59, 130, 246, 0.28);
 		pointer-events: none;
 		letter-spacing: 0.03em;
 	}
@@ -1705,9 +1748,9 @@
 		display: block;
 	}
 	:global(.ksu-badge-prep) {
-		background: rgba(241, 245, 249, 0.92);
-		border: 1.5px solid var(--ink-3);
-		color: var(--ink-2);
+		background: rgba(254, 242, 242, 0.94);
+		border: 1.5px solid #ef9a9a;
+		color: #c0392b;
 		border-radius: 20px;
 		padding: 5px 14px;
 		font-size: 0.72rem;
@@ -1799,8 +1842,10 @@
 	.stall-thumb { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
 	.stall-thumb.no-image {
 		background: rgba(184, 92, 43, 0.1); display: flex; align-items: center;
-		justify-content: center; font-size: 2rem;
+		justify-content: center; color: var(--accent);
 	}
+	.specs-icon :global(.icon) { vertical-align: -2px; color: var(--ink-3); }
+	.meta-icon :global(.icon) { vertical-align: -2px; color: var(--accent); }
 	.stall-info { flex: 1; }
 	.stall-info h3 { margin: 0 0 5px 0; font-size: 1.1rem; }
 	.specs { font-size: 0.8rem; color: var(--ink-2); margin: 2px 0; }
@@ -1858,11 +1903,16 @@
 	}
 
 	.action-btn {
-		width: 100%; padding: 10px; border: none; border-radius: 8px;
-		font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 0.9rem;
+		width: 100%; padding: 12px; border: none; border-radius: var(--r-md);
+		font-weight: 600; cursor: pointer; margin-top: 10px; font-size: 0.95rem;
+		font-family: inherit; letter-spacing: 0.02em;
+		transition: background 0.15s, transform 0.1s;
 	}
-	.action-btn.primary { background: var(--accent); color: var(--ink); }
-	.action-btn.secondary { background: var(--line-strong); color: var(--ink); }
+	.action-btn.primary { background: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(184, 92, 43, 0.25); }
+	.action-btn.primary:hover:not(:disabled) { background: var(--accent-deep); }
+	.action-btn.primary:active:not(:disabled) { transform: translateY(1px); }
+	.action-btn.secondary { background: var(--surface-sunk); color: var(--ink); }
+	.action-btn.secondary:hover { background: var(--line-strong); }
 	.action-btn.danger { background: var(--accent-deep); color: white; }
 	.action-btn.ghost { background: none; border: 1.5px solid var(--line-strong); color: var(--ink-2); }
 	.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
