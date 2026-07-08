@@ -816,19 +816,22 @@
 
 	/* ===== プロフィール編集 ===== */
 	.profile-edit-section {
-		background: var(--ink);
-		color: white;
+		background: var(--surface);
+		color: var(--ink);
+		border: 1px solid var(--line);
 		border-radius: 16px;
-		padding: 20px 16px 24px;
+		padding: 22px 20px 24px;
 		margin-bottom: 28px;
+		box-shadow: var(--shadow-1);
 	}
 
 	.profile-edit-section .section-title {
 		color: var(--ink-3);
-		font-size: 0.8rem;
+		font-size: 0.72rem;
+		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		margin: 0 0 16px;
+		letter-spacing: 0.08em;
+		margin: 0 0 18px;
 	}
 
 	.avatar-edit-row {
@@ -857,7 +860,7 @@
 		width: 72px;
 		height: 72px;
 		background: var(--accent);
-		color: var(--ink);
+		color: #fff;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
@@ -866,9 +869,14 @@
 		font-weight: bold;
 	}
 
+	.avatar-label:hover .avatar-img,
+	.avatar-label:hover .avatar-placeholder {
+		filter: brightness(0.96);
+	}
+
 	.avatar-edit-hint {
 		font-size: 0.72rem;
-		color: var(--ink-3);
+		color: var(--ink-2);
 	}
 
 	.badge-row-small {
@@ -881,53 +889,52 @@
 
 	.badge {
 		font-size: 0.72rem;
-		font-weight: bold;
-		padding: 3px 10px;
+		font-weight: 600;
+		padding: 4px 11px;
 		border-radius: 20px;
+		border: 1px solid transparent;
 	}
 
-	.badge.user { background: var(--ink-2); color: var(--ink-3); }
-	.badge.owner { background: var(--ink-2); color: #bbf7d0; }
-	.badge.operator { background: var(--accent-deep); color: rgba(184, 92, 43, 0.1); }
+	.badge.user { background: var(--surface-sunk); color: var(--ink-2); border-color: var(--line-strong); }
+	.badge.owner { background: rgba(95, 122, 82, 0.12); color: #4a6a3a; border-color: rgba(95, 122, 82, 0.28); }
+	.badge.operator { background: rgba(184, 92, 43, 0.1); color: var(--accent-deep); border-color: rgba(184, 92, 43, 0.28); }
 
 	.profile-edit-section .field-label {
-		color: var(--ink-3);
-	}
-
-	.profile-edit-section .field-input {
-		border-color: var(--ink-2);
-		background: #1e293b;
-		color: white;
-	}
-
-	.profile-edit-section .field-input:focus {
-		border-color: var(--accent);
+		color: var(--ink-2);
 	}
 
 	.save-msg {
 		font-size: 0.82rem;
-		color: #4ade80;
+		color: #4a6a3a;
+		font-weight: 500;
 		margin: 6px 0;
 	}
 
 	.save-msg.error-msg {
-		color: #f87171;
+		color: var(--accent-deep);
 	}
 
 	.save-btn {
 		width: 100%;
-		padding: 12px;
+		padding: 13px;
 		background: var(--accent);
-		color: var(--ink);
+		color: #fff;
 		border: none;
-		border-radius: 10px;
+		border-radius: var(--r-md);
 		font-size: 0.95rem;
-		font-weight: bold;
+		font-weight: 600;
+		letter-spacing: 0.02em;
 		cursor: pointer;
-		margin-top: 4px;
+		margin-top: 8px;
+		font-family: inherit;
+		box-shadow: 0 2px 8px rgba(184, 92, 43, 0.22);
+		transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
 	}
 
-	.save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+	.save-btn:hover:not(:disabled) { background: var(--accent-deep); box-shadow: 0 4px 14px rgba(184, 92, 43, 0.28); }
+	.save-btn:active:not(:disabled) { transform: translateY(1px); }
+	.save-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+	.save-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
 	/* ===== セクション共通 ===== */
 	.section { margin-bottom: 28px; }
@@ -956,15 +963,20 @@
 
 	.add-btn {
 		background: var(--accent);
-		color: var(--ink);
+		color: #fff;
 		font-size: 0.85rem;
-		font-weight: bold;
-		padding: 6px 14px;
+		font-weight: 600;
+		padding: 7px 16px;
 		border-radius: 20px;
 		text-decoration: none;
 		border: none;
 		cursor: pointer;
+		font-family: inherit;
+		transition: background 0.15s, transform 0.1s;
 	}
+	.add-btn:hover { background: var(--accent-deep); }
+	.add-btn:active { transform: translateY(1px); }
+	.add-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 	/* ===== マイメニュー ===== */
 	.menu-list {
@@ -1053,29 +1065,31 @@
 		display: flex;
 		align-items: center;
 		gap: 14px;
-		padding: 16px 20px;
-		background: #fff;
-		border: 1.5px solid var(--line);
+		padding: 16px 18px;
+		background: var(--surface);
+		border: 1px solid var(--line);
 		border-radius: 14px;
 		text-decoration: none;
 		color: var(--ink);
-		transition: background 0.15s;
+		box-shadow: var(--shadow-1);
+		transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 	}
-	.dashboard-link:hover { background: var(--surface-sunk); border-color: var(--accent); }
-	.revenue-link { border-color: #e8c97a; }
-	.inventory-link { border-color: #bbf7d0; }
-	.inventory-link:hover { background: #f0fdf4; border-color: #22c55e; }
-	.dl-icon { font-size: 1.6rem; }
-	.dl-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-	.dl-text strong { font-size: 0.95rem; }
-	.dl-text span { font-size: 0.78rem; color: var(--ink-2); }
-	.dl-arrow { font-size: 1.4rem; color: #bbb; }
+	.dashboard-link:hover {
+		border-color: var(--line-strong);
+		box-shadow: var(--shadow-2);
+		transform: translateY(-1px);
+	}
+	.dashboard-link:active { transform: translateY(0); box-shadow: var(--shadow-1); }
+	.dl-text { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+	.dl-text strong { font-size: 0.95rem; font-weight: 600; }
+	.dl-text span { font-size: 0.78rem; color: var(--ink-2); line-height: 1.4; }
+	.dl-arrow { font-size: 1.4rem; color: var(--ink-3); flex-shrink: 0; }
 
 	.operator-cta {
-		background: var(--surface-sunk);
-		border: 1.5px solid #e8c97a;
+		background: var(--accent-tint);
+		border: 1px solid rgba(184, 92, 43, 0.28);
 		border-radius: 14px;
-		padding: 16px 20px;
+		padding: 18px 20px;
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
@@ -1085,21 +1099,25 @@
 		gap: 12px;
 		align-items: flex-start;
 	}
-	.cta-icon { font-size: 1.6rem; flex-shrink: 0; }
 	.cta-text strong { font-size: 0.92rem; display: block; margin-bottom: 4px; }
 	.cta-text p { font-size: 0.78rem; color: var(--ink-2); margin: 0; line-height: 1.5; }
 	.cta-btn {
-		padding: 10px 18px;
+		padding: 11px 20px;
 		background: var(--accent);
 		color: #fff;
 		border: none;
-		border-radius: 10px;
+		border-radius: var(--r-md);
 		font-size: 0.88rem;
-		font-weight: 700;
+		font-weight: 600;
 		cursor: pointer;
 		align-self: flex-start;
+		font-family: inherit;
+		box-shadow: 0 2px 8px rgba(184, 92, 43, 0.22);
+		transition: background 0.15s, transform 0.1s;
 	}
-	.cta-btn:hover { opacity: 0.9; }
+	.cta-btn:hover { background: var(--accent-deep); }
+	.cta-btn:active { transform: translateY(1px); }
+	.cta-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 	/* ===== 役割追加 ===== */
 	.role-add-row { display: flex; flex-direction: column; gap: 10px; }
@@ -1243,13 +1261,16 @@
 
 	.logout-btn {
 		background: none;
-		border: 1.5px solid var(--line-strong);
+		border: 1px solid var(--line-strong);
 		color: var(--ink-2);
 		padding: 10px 28px;
-		border-radius: 8px;
+		border-radius: var(--r-md);
 		cursor: pointer;
 		font-size: 0.9rem;
+		font-family: inherit;
+		transition: background 0.15s, border-color 0.15s;
 	}
+	.logout-btn:hover { background: var(--surface-sunk); border-color: var(--ink-3); }
 
 	/* ===== オンラインショップ申請 ===== */
 	.shop-apply-section { }
@@ -1372,18 +1393,24 @@
 	.field-input {
 		display: block;
 		width: 100%;
-		margin-top: 5px;
-		padding: 10px 12px;
-		border: 1.5px solid var(--line-strong);
-		border-radius: 8px;
+		margin-top: 6px;
+		padding: 11px 13px;
+		border: 1px solid var(--line-strong);
+		border-radius: var(--r-md);
 		font-size: 0.95rem;
 		font-family: inherit;
 		box-sizing: border-box;
-		background: white;
+		background: var(--surface);
 		color: var(--ink);
+		transition: border-color 0.15s, box-shadow 0.15s;
 	}
 
-	.field-input:focus { outline: none; border-color: var(--accent); }
+	.field-input::placeholder { color: var(--ink-3); }
+	.field-input:focus {
+		outline: none;
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px rgba(184, 92, 43, 0.1);
+	}
 	.textarea { resize: vertical; min-height: 70px; }
 
 	.error-msg {
@@ -1403,22 +1430,31 @@
 		background: var(--surface-sunk);
 		color: var(--ink-2);
 		border: none;
-		border-radius: 10px;
+		border-radius: var(--r-md);
 		cursor: pointer;
 		font-size: 0.95rem;
+		font-weight: 500;
+		font-family: inherit;
+		transition: background 0.15s;
 	}
+	.cancel-btn:hover { background: var(--line-strong); }
 
 	.submit-btn {
 		flex: 2;
 		padding: 12px;
 		background: var(--accent);
-		color: var(--ink);
+		color: #fff;
 		border: none;
-		border-radius: 10px;
-		font-weight: bold;
+		border-radius: var(--r-md);
+		font-weight: 600;
 		cursor: pointer;
 		font-size: 0.95rem;
+		font-family: inherit;
+		box-shadow: 0 2px 8px rgba(184, 92, 43, 0.22);
+		transition: background 0.15s, transform 0.1s;
 	}
-
-	.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+	.submit-btn:hover:not(:disabled) { background: var(--accent-deep); }
+	.submit-btn:active:not(:disabled) { transform: translateY(1px); }
+	.submit-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+	.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
 </style>
