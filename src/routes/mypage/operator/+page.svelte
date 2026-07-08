@@ -7,6 +7,7 @@
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase.js';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let user = $state(null);
 	let isLoading = $state(true);
@@ -197,11 +198,11 @@
 	<!-- クイックリンク -->
 	<div class="quick-links">
 		<a href="{base}/mypage/operator/products" class="quick-link">
-			<span class="quick-icon">🛍</span>
+			<span class="quick-icon"><Icon name="shopping-bag" size={24} /></span>
 			<span class="quick-label">商品管理</span>
 		</a>
 		<a href="{base}/mypage/inventory" class="quick-link">
-			<span class="quick-icon">📦</span>
+			<span class="quick-icon"><Icon name="package" size={24} /></span>
 			<span class="quick-label">在庫管理</span>
 		</a>
 	</div>
@@ -216,7 +217,7 @@
 
 	<!-- 売上サマリー -->
 	<section class="section">
-		<h2 class="section-title">📊 {selectedMonth} の売上</h2>
+		<h2 class="section-title"><Icon name="bar-chart" size={18} /> {selectedMonth} の売上</h2>
 		<div class="stats-grid">
 			<div class="stat-card">
 				<span class="stat-label">総売上</span>
@@ -236,7 +237,7 @@
 
 	<!-- 受注一覧 -->
 	<section class="section">
-		<h2 class="section-title">📦 受注一覧</h2>
+		<h2 class="section-title"><Icon name="clipboard-list" size={18} /> 受注一覧</h2>
 		{#if filteredOrders.length === 0}
 			<p class="empty">この月の受注はありません。</p>
 		{:else}
@@ -314,7 +315,7 @@
 
 	<!-- 通知メールアドレス -->
 	<section class="section">
-		<h2 class="section-title">📧 受注通知メール</h2>
+		<h2 class="section-title"><Icon name="mail" size={18} /> 受注通知メール</h2>
 		<div class="form-row">
 			<input type="email" placeholder="通知を受け取るメールアドレス" bind:value={operatorEmail} />
 			<button class="btn-save" onclick={saveEmail} disabled={isSavingEmail}>
@@ -326,7 +327,7 @@
 
 	<!-- 銀行口座情報 -->
 	<section class="section">
-		<h2 class="section-title">🏦 振込先口座</h2>
+		<h2 class="section-title"><Icon name="landmark" size={18} /> 振込先口座</h2>
 		<p class="note security-note">
 			銀行口座情報はあなた自身のみ閲覧できます。プラットフォームへの月次振込確認に使用します。
 		</p>
@@ -388,7 +389,7 @@
 		transition: box-shadow 0.15s, border-color 0.15s;
 	}
 	.quick-link:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); border-color: var(--accent); }
-	.quick-icon { font-size: 1.4rem; }
+	.quick-icon { display: inline-flex; color: var(--accent); }
 	.quick-label { font-size: 0.8rem; font-weight: 600; }
 
 	.back-link {
@@ -425,12 +426,16 @@
 		margin-bottom: 40px;
 	}
 	.section-title {
+		display: flex;
+		align-items: center;
+		gap: 8px;
 		font-size: 1rem;
 		font-weight: 700;
 		margin: 0 0 16px;
 		padding-bottom: 6px;
 		border-bottom: 1px solid var(--line);
 	}
+	.section-title :global(.icon) { color: var(--accent); }
 	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

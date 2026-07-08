@@ -7,6 +7,7 @@
 	import { supabase } from '$lib/supabase.js';
 	import { base } from '$app/paths';
 	import { goto } from '$app/navigation';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let userId = $state(null);
 	let tab = $state('menu'); // 'menu' | 'stock'
@@ -250,16 +251,16 @@
 <div class="page">
 	<div class="page-header">
 		<a href="{base}/mypage" class="back-link">‹ マイページ</a>
-		<h1 class="page-title">📦 在庫管理</h1>
+		<h1 class="page-title"><Icon name="package" size={22} /> 在庫管理</h1>
 	</div>
 
 	<!-- タブ -->
 	<div class="tabs">
 		<button class="tab-btn" class:active={tab === 'menu'} onclick={() => (tab = 'menu')}>
-			🍽️ メニュー別食材・消耗品
+			<Icon name="utensils-crossed" size={16} /> メニュー別食材・消耗品
 		</button>
 		<button class="tab-btn" class:active={tab === 'stock'} onclick={() => (tab = 'stock')}>
-			📋 在庫一覧
+			<Icon name="clipboard-list" size={16} /> 在庫一覧
 			{#if shortageItems > 0}
 				<span class="tab-badge">{shortageItems}</span>
 			{/if}
@@ -305,7 +306,7 @@
 		{:else}
 			{#if invItems.length === 0}
 				<div class="notice">
-					⚠️ 在庫アイテムが未登録です。先に「在庫一覧」タブで食材・消耗品を登録してください。
+					<Icon name="alert-triangle" size={16} /> 在庫アイテムが未登録です。先に「在庫一覧」タブで食材・消耗品を登録してください。
 				</div>
 			{/if}
 
@@ -326,7 +327,7 @@
 							{#if menu.photo_path}
 								<img src={menu.photo_path} alt={menu.name} class="menu-thumb" />
 							{:else}
-								<div class="menu-thumb-placeholder">🍽️</div>
+								<div class="menu-thumb-placeholder"><Icon name="utensils-crossed" size={22} /></div>
 							{/if}
 							<div class="menu-info">
 								<span class="menu-name">{menu.name}</span>
@@ -350,7 +351,7 @@
 								<!-- 食材セクション -->
 								<div class="ing-section">
 									<div class="ing-section-header">
-										<h3 class="ing-section-title">🥬 食材</h3>
+										<h3 class="ing-section-title"><Icon name="carrot" size={15} /> 食材</h3>
 										<button
 											class="btn-add-ing"
 											onclick={() => openAddIng(menu.id, 'ingredient')}
@@ -412,7 +413,7 @@
 								<!-- 消耗品セクション -->
 								<div class="ing-section">
 									<div class="ing-section-header">
-										<h3 class="ing-section-title">🗂️ 消耗品</h3>
+										<h3 class="ing-section-title"><Icon name="package" size={15} /> 消耗品</h3>
 										<button
 											class="btn-add-ing"
 											onclick={() => openAddIng(menu.id, 'consumable')}
@@ -583,7 +584,9 @@
 	.page-header { margin-bottom: 20px; }
 	.back-link { font-size: 0.85rem; color: var(--ink-2); text-decoration: none; }
 	.back-link:hover { color: var(--accent); }
-	.page-title { font-size: 1.3rem; font-weight: 700; margin: 6px 0 0; }
+	.page-title { display: flex; align-items: center; gap: 8px; font-size: 1.3rem; font-weight: 700; margin: 6px 0 0; }
+	.page-title :global(.icon) { color: var(--accent); }
+	.tab-btn :global(.icon) { color: currentColor; }
 
 	/* タブ */
 	.tabs {
@@ -666,7 +669,7 @@
 		background: var(--surface-sunk);
 		border-radius: 8px;
 		display: flex; align-items: center; justify-content: center;
-		font-size: 1.6rem;
+		color: var(--ink-3);
 		flex-shrink: 0;
 	}
 	.menu-info {
@@ -708,11 +711,15 @@
 		margin-bottom: 10px;
 	}
 	.ing-section-title {
+		display: flex;
+		align-items: center;
+		gap: 6px;
 		font-size: 0.85rem;
 		font-weight: 700;
 		margin: 0;
 		color: var(--ink);
 	}
+	.ing-section-title :global(.icon) { color: var(--accent); }
 	.btn-add-ing {
 		padding: 4px 12px;
 		background: var(--surface-sunk);

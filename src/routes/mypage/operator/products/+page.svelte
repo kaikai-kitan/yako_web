@@ -7,6 +7,7 @@
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase.js';
+	import Icon from '$lib/components/Icon.svelte';
 
 	const MAX_PHOTOS = 5;
 	const CATEGORIES = ['', 'フード', 'ドリンク', '屋台（Stall）', '雑貨（Goods）', 'アート', 'その他'];
@@ -306,7 +307,7 @@
 						{/if}
 					</div>
 				{:else}
-					<div class="preview-no-img">📷 写真なし</div>
+					<div class="preview-no-img"><Icon name="image" size={20} /> 写真なし</div>
 				{/if}
 
 				<div class="preview-info">
@@ -540,7 +541,7 @@
 								{#if getProductThumb(product)}
 									<img src={getProductThumb(product)} alt={product.name} class="product-thumb" />
 								{:else}
-									<div class="product-thumb no-img">🛍</div>
+									<div class="product-thumb no-img"><Icon name="shopping-bag" size={24} /></div>
 								{/if}
 								{#if product.stock !== null && product.stock <= 0}
 									<span class="soldout-badge">SOLD OUT</span>
@@ -774,7 +775,7 @@
 		width: 64px; height: 64px; border-radius: 10px;
 		background: var(--surface-sunk); display: flex;
 		align-items: center; justify-content: center;
-		font-size: 1.6rem;
+		color: var(--ink-3);
 	}
 	.soldout-badge {
 		position: absolute; bottom: 2px; left: 0; right: 0;
@@ -865,8 +866,8 @@
 	.preview-no-img {
 		width: 100%; aspect-ratio: 4/3;
 		background: var(--surface-sunk);
-		display: flex; align-items: center; justify-content: center;
-		font-size: 1.2rem; color: var(--ink-3);
+		display: flex; align-items: center; justify-content: center; gap: 6px;
+		font-size: 0.9rem; color: var(--ink-3);
 	}
 	.preview-thumbs {
 		display: flex; gap: 4px; padding: 6px 12px;
