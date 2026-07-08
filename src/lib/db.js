@@ -466,6 +466,71 @@ export async function activateReservationBySpace(userId, spaceId) {
 }
 
 /**
+ * 売れた数に応じて在庫を自動で減算する。
+ * 流れ: 売上（メニュー名: 個数）→ my_menu_items で名前→ID を解決
+ *   → menu_ingredients で「1食あたりの使用量(qty_per_serving)」と対象在庫を取得
+ *   → inventory.current_qty から (個数 × 使用量) を差し引く（0未満にはしない）
+ * メニューに材料が未登録の商品は減算対象外（何もしない）。
+ * @param {string} userId
+ * @param {Object<string, number>} salesItems - { "メニュー名": 個数 }
+ */
+async function decrementInventoryFromSales(userId, salesItems) {
+	const soldNames = Object.keys(salesItems).filter((n) => (salesItems[n] || 0) > 0);
+	if (soldNames.length === 0) return;
+
+	// 1) メニュー名 → menu_item_id（自分のメニュー内で解決）
+	const { data: menuRows } = await supabase
+		.from('my_menu_items')
+		.select('id, name')
+		.eq('user_id', userId)
+		.in('name', soldNames);
+	if (!menuRows || menuRows.length === 0) return;
+
+	const soldByMenuId = new Map(); // menu_item_id -> 売れた個数
+	for (const m of menuRows) {
+		const cnt = salesItems[m.name] || 0;
+		if (cnt > 0) soldByMenuId.set(m.id, (soldByMenuId.get(m.id) || 0) + cnt);
+	}
+
+	// 2) 対象メニューの材料構成
+	const { data: ings } = await supabase
+		.from('menu_ingredients')
+		.select('menu_item_id, inventory_item_id, qty_per_serving')
+		.eq('user_id', userId)
+		.in('menu_item_id', [...soldByMenuId.keys()]);
+	if (!ings || ings.length === 0) return;
+
+	// 3) 在庫ごとに減算量を集計
+	const decByInv = new Map(); // inventory_item_id -> 減らす量
+	for (const ing of ings) {
+		if (!ing.inventory_item_id) continue;
+		const sold = soldByMenuId.get(ing.menu_item_id) || 0;
+		const dec = sold * (Number(ing.qty_per_serving) || 0);
+		if (dec > 0) decByInv.set(ing.inventory_item_id, (decByInv.get(ing.inventory_item_id) || 0) + dec);
+	}
+	if (decByInv.size === 0) return;
+
+	// 4) 現在庫を取得して減算（0未満にはしない）
+	const invIds = [...decByInv.keys()];
+	const { data: invRows } = await supabase
+		.from('inventory')
+		.select('id, current_qty')
+		.in('id', invIds);
+	if (!invRows) return;
+
+	await Promise.all(
+		invRows.map((row) => {
+			const next = Math.max(0, (Number(row.current_qty) || 0) - (decByInv.get(row.id) || 0));
+			return supabase
+				.from('inventory')
+				.update({ current_qty: next })
+				.eq('id', row.id)
+				.eq('user_id', userId);
+		})
+	);
+}
+
+/**
  * 返却完了（active → completed）＋ 売上・支払い履歴記録
  * @param {string} reservationId
  * @param {string} userId - 借主のユーザーID（payer）
@@ -513,6 +578,14 @@ export async function completeRental(reservationId, userId, salesItems) {
 			.from('sales')
 			.insert({ reservation_id: reservationId, item_sales: salesItems });
 		if (salesError) console.error('Sales insert error:', salesError);
+
+		// 売れた数に応じて在庫（材料・消耗品）を自動で減らす。
+		// 失敗しても返却処理自体は止めない。
+		try {
+			await decrementInventoryFromSales(userId, salesItems);
+		} catch (e) {
+			console.error('Inventory decrement error:', e);
+		}
 	}
 
 	// 支払い履歴を登録（屋台提供者・場所提供者それぞれ）

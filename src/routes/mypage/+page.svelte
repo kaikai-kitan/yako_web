@@ -18,6 +18,7 @@
 		uploadImage,
 		signOut
 	} from '$lib/db.js';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let profile = $state(null);
 	let mySpaces = $state([]);
@@ -27,7 +28,7 @@
 	let userId = $state('');
 	let accessToken = $state('');
 
-	// オンラインショップ申請
+	// オンラインストア申請
 	let completedRentals = $state(0);
 	let shopStatus = $state(null); // operators row の shop_application_status など
 	let isApplying = $state(false);
@@ -304,7 +305,12 @@
 </script>
 
 <div class="page">
-	<button class="back-to-map" onclick={goBack}>← 前の画面に戻る</button>
+	<div class="page-nav">
+		<button class="back-to-map" onclick={goBack}>← 前の画面に戻る</button>
+		<a class="map-return-btn" href="{base}/map">
+			<Icon name="map" size={16} /> マップに戻る
+		</a>
+	</div>
 
 	{#if isLoading}
 		<div class="loading">読み込み中…</div>
@@ -450,7 +456,7 @@
 							{#if item.photo_path}
 								<img src={item.photo_path} alt={item.name} class="menu-thumb" />
 							{:else}
-								<div class="menu-thumb no-photo">🍽</div>
+								<div class="menu-thumb no-photo"><Icon name="utensils-crossed" size={20} /></div>
 							{/if}
 							<div class="menu-info">
 								<span class="menu-name">{item.name}</span>
@@ -475,12 +481,12 @@
 				<h3 class="section-title">役割を追加する</h3>
 				<div class="role-add-row">
 					<button class="role-add-btn" onclick={() => openRoleModal('場所提供者')}>
-						<span class="role-icon">📍</span>
+						<span class="role-icon"><Icon name="map-pin" size={20} /></span>
 						<span class="role-text"><strong>土地貸し出し人</strong>として登録</span>
 						<span class="arrow">›</span>
 					</button>
 					<button class="role-add-btn" onclick={() => openRoleModal('屋台提供者')}>
-						<span class="role-icon">🏮</span>
+						<span class="role-icon"><Icon name="store" size={20} /></span>
 						<span class="role-text"><strong>屋台主</strong>として登録</span>
 						<span class="arrow">›</span>
 					</button>
@@ -492,7 +498,7 @@
 		{#if profile.owners}
 			<section class="section">
 				<div class="section-header">
-					<h3 class="section-title">📍 マイスペース</h3>
+					<h3 class="section-title"><Icon name="map-pin" size={18} /> マイスペース</h3>
 					<a href="{base}/mypage/add-space" class="add-btn">＋ 追加</a>
 				</div>
 				{#if mySpaces.length === 0}
@@ -508,10 +514,10 @@
 									<span class="item-name">{space.name}</span>
 									<span class="status-badge available">公開中</span>
 								</div>
-								<div class="item-detail">📍 {space.address ?? '住所未設定'}</div>
-								<div class="item-detail">
+								<div class="item-detail detail-with-icon"><Icon name="map-pin" size={14} /> {space.address ?? '住所未設定'}</div>
+								<div class="item-detail detail-with-icon">
 									¥{(space.space_fee ?? 0).toLocaleString()} / 泊　{space.ground_type ?? ''}
-									{space.fire_use_allowed ? '🔥 火気可' : '🚫 火気不可'}
+									{#if space.fire_use_allowed}<Icon name="flame" size={14} /> 火気可{:else}<Icon name="ban" size={14} /> 火気不可{/if}
 								</div>
 								<div class="item-actions">
 									<a href="{base}/mypage/edit-space/{space.id}" class="edit-btn">編集</a>
@@ -530,7 +536,7 @@
 		{#if profile.operators}
 			<section class="section">
 				<div class="section-header">
-					<h3 class="section-title">🏮 マイ屋台</h3>
+					<h3 class="section-title"><Icon name="store" size={18} /> マイ屋台</h3>
 					<a href="{base}/mypage/add-stall" class="add-btn">＋ 追加</a>
 				</div>
 				{#if myStalls.length === 0}
@@ -561,27 +567,27 @@
 			</section>
 		{/if}
 
-		<!-- ===== オンラインショップ申請 ===== -->
+		<!-- ===== オンラインストア申請 ===== -->
 		{#if profile.operators && shopStatus}
 			<section class="section shop-apply-section">
-				<h3 class="section-title">🛍 オンラインショップ開設</h3>
+				<h3 class="section-title"><Icon name="store" size={18} /> オンラインストア開設</h3>
 
 				{#if shopStatus.shop_application_status === 'approved'}
 					<div class="shop-status-box approved">
-						<span class="shop-badge approved">✓ 承認済み</span>
-						<p class="shop-status-msg">オンラインショップが開設されています。</p>
+						<span class="shop-badge approved"><Icon name="check" size={13} /> 承認済み</span>
+						<p class="shop-status-msg">オンラインストアが開設されています。</p>
 						<a href="{base}/mypage/operator" class="shop-goto-btn">出品者ダッシュボードへ →</a>
 					</div>
 
 				{:else if shopStatus.shop_application_status === 'pending'}
 					<div class="shop-status-box pending">
-						<span class="shop-badge pending">⏳ 審査中</span>
+						<span class="shop-badge pending"><Icon name="clock" size={13} /> 審査中</span>
 						<p class="shop-status-msg">申請を受け付けました。運営からの連絡をお待ちください。</p>
 					</div>
 
 				{:else if shopStatus.shop_application_status === 'rejected'}
 					<div class="shop-status-box rejected">
-						<span class="shop-badge rejected">✕ 却下</span>
+						<span class="shop-badge rejected"><Icon name="x" size={13} /> 却下</span>
 						{#if shopStatus.rejection_reason}
 							<p class="rejection-reason">却下理由: {shopStatus.rejection_reason}</p>
 						{/if}
@@ -601,7 +607,7 @@
 				{:else}
 					<!-- none: 申請前 -->
 					{#if completedRentals >= 1}
-						<p class="section-hint">屋台出店の実績が確認されました。オンラインショップを申請できます。</p>
+						<p class="section-hint">屋台出店の実績が確認されました。オンラインストアを申請できます。</p>
 						{#if applyMsg}
 							<p class="apply-success">{applyMsg}</p>
 						{/if}
@@ -609,10 +615,10 @@
 							<p class="apply-error">{applyError}</p>
 						{/if}
 						<button class="apply-btn" onclick={applyForShop} disabled={isApplying}>
-							{isApplying ? '申請中…' : 'オンラインショップを申請する'}
+							{isApplying ? '申請中…' : 'オンラインストアを申請する'}
 						</button>
 					{:else}
-						<p class="empty-msg">オンラインショップ開設には屋台での出店実績（1回以上）が必要です。</p>
+						<p class="empty-msg">オンラインストア開設には屋台での出店実績（1回以上）が必要です。</p>
 						<a href="{base}/map" class="cta-link">屋台を予約する →</a>
 					{/if}
 				{/if}
@@ -638,7 +644,7 @@
 	>
 		<div class="modal-card qr-modal">
 			<h3 class="modal-title">QRコード</h3>
-			<p class="qr-space-name">📍 {qrModalSpace.name}</p>
+			<p class="qr-space-name"><Icon name="map-pin" size={16} /> {qrModalSpace.name}</p>
 			{#if qrDataUrl}
 				<img src={qrDataUrl} alt="QRコード" class="qr-image" />
 				<p class="qr-note">このQRコードを印刷してスペースに貼ってください。<br />利用者がスキャンすると借り出しが開始されます。</p>
@@ -676,7 +682,7 @@
 					{#if menuPhotoPreview}
 						<img src={menuPhotoPreview} alt="商品写真" class="photo-preview" />
 					{:else}
-						<div class="photo-placeholder">📷 写真を追加</div>
+						<div class="photo-placeholder"><Icon name="camera" size={20} /> 写真を追加</div>
 					{/if}
 				</label>
 				<input
@@ -730,7 +736,7 @@
 	>
 		<div class="modal-card">
 			<h3 class="modal-title">
-				{addingRole === '場所提供者' ? '📍' : '🏮'}
+				{#if addingRole === '場所提供者'}<Icon name="map-pin" size={18} />{:else}<Icon name="store" size={18} />{/if}
 				{addingRole}として登録
 			</h3>
 
@@ -779,11 +785,18 @@
 		padding: 20px 16px 80px;
 	}
 
+	.page-nav {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 20px;
+	}
+
 	.back-to-map {
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
-		margin-bottom: 20px;
 		font-size: 0.88rem;
 		color: var(--ink-2);
 		text-decoration: none;
@@ -793,6 +806,25 @@
 		cursor: pointer;
 		font-family: inherit;
 	}
+
+	.map-return-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		flex-shrink: 0;
+		padding: 8px 16px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: #fff;
+		background: var(--accent);
+		border-radius: 100px;
+		text-decoration: none;
+		box-shadow: 0 2px 8px rgba(184, 92, 43, 0.22);
+		transition: background 0.15s, transform 0.1s;
+	}
+	.map-return-btn:hover { background: var(--accent-deep); }
+	.map-return-btn:active { transform: translateY(1px); }
+	.map-return-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 	.back-to-map:hover { color: var(--ink); }
 
 	/* 信頼ポイント */
@@ -952,6 +984,7 @@
 		color: var(--ink);
 		margin: 0 0 12px 0;
 	}
+	.section-title :global(.icon) { color: var(--accent); vertical-align: -3px; }
 
 	.section-header .section-title { margin-bottom: 0; }
 
@@ -1008,7 +1041,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 1.4rem;
+		color: var(--ink-3);
 	}
 
 	.menu-info {
@@ -1136,7 +1169,7 @@
 	}
 
 	.role-add-btn:hover { border-color: var(--accent); }
-	.role-icon { font-size: 1.4rem; }
+	.role-icon { display: inline-flex; color: var(--accent); }
 	.role-text { flex: 1; font-size: 0.9rem; color: var(--ink-2); }
 	.arrow { color: var(--ink-3); font-size: 1.2rem; }
 
@@ -1173,6 +1206,7 @@
 
 	.item-name { font-weight: bold; font-size: 0.95rem; color: var(--ink); }
 	.item-detail { font-size: 0.82rem; color: var(--ink-2); margin-top: 3px; }
+	.detail-with-icon :global(.icon) { vertical-align: -2px; color: var(--ink-3); }
 
 	.status-badge {
 		font-size: 0.7rem;
@@ -1272,7 +1306,7 @@
 	}
 	.logout-btn:hover { background: var(--surface-sunk); border-color: var(--ink-3); }
 
-	/* ===== オンラインショップ申請 ===== */
+	/* ===== オンラインストア申請 ===== */
 	.shop-apply-section { }
 	.shop-status-box {
 		border-radius: 12px; padding: 16px;
@@ -1283,10 +1317,11 @@
 	.shop-status-box.rejected { background: #fef2f2; border: 1px solid #fecaca; }
 
 	.shop-badge {
-		display: inline-block; font-size: 0.75rem; font-weight: 700;
-		border-radius: 20px; padding: 3px 10px; margin-bottom: 8px;
+		display: inline-flex; align-items: center; gap: 4px;
+		font-size: 0.75rem; font-weight: 700;
+		border-radius: 20px; padding: 4px 11px; margin-bottom: 8px;
 	}
-	.shop-badge.approved { background: rgba(95, 122, 82, 0.08); color: var(--ink-2); }
+	.shop-badge.approved { background: rgba(95, 122, 82, 0.12); color: #4a6a3a; }
 	.shop-badge.pending  { background: rgba(184, 92, 43, 0.1); color: var(--accent-deep); }
 	.shop-badge.rejected { background: rgba(184, 92, 43, 0.08); color: var(--accent-deep); }
 
@@ -1338,11 +1373,15 @@
 	}
 
 	.modal-title {
+		display: flex;
+		align-items: center;
+		gap: 8px;
 		font-size: 1.1rem;
 		font-weight: bold;
 		margin: 0 0 20px 0;
 		color: var(--ink);
 	}
+	.modal-title :global(.icon) { color: var(--accent); }
 
 	/* ===== 写真アップロード ===== */
 	.photo-upload-row {
@@ -1374,6 +1413,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		gap: 6px;
 		font-size: 0.9rem;
 		color: var(--ink-3);
 	}
