@@ -43,8 +43,8 @@
 
 		try {
 			if (mode === 'signup') {
-				// 確認メールのリンク先を本番URLに固定（localhost へ飛ぶ事故を防ぐ）
-				const emailRedirectTo = `${window.location.origin}${base}/mypage`;
+				// 確認メールのリンク先＝認証後オンボーディング（localhost へ飛ぶ事故も防ぐ）
+				const emailRedirectTo = `${window.location.origin}${base}/auth/setup`;
 				const { data, error } = await signUp(email, password, emailRedirectTo);
 				if (error) throw error;
 				if (data.user && !data.user.email_confirmed_at) {
