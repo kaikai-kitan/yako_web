@@ -13,7 +13,6 @@
 
 	// 基本情報（必須）
 	let name = $state('');
-	let phone = $state('');
 
 	// 任意: 屋台営業アカウント
 	let wantOperator = $state(false);
@@ -34,16 +33,9 @@
 		isLoading = false;
 	});
 
-	function validPhone(v) {
-		// 日本の電話番号を緩めに判定（数字10〜11桁、ハイフン許容）
-		const digits = v.replace(/[-\s]/g, '');
-		return /^0\d{9,10}$/.test(digits);
-	}
-
 	async function finish(skipOptional) {
 		errorMessage = '';
 		if (!name.trim()) { errorMessage = 'お名前（表示名）を入力してください'; return; }
-		if (!phone.trim() || !validPhone(phone)) { errorMessage = '正しい電話番号を入力してください（例: 090-1234-5678）'; return; }
 
 		const doOperator = !skipOptional && wantOperator;
 		const doYakonin  = !skipOptional && wantYakonin;
@@ -52,12 +44,12 @@
 
 		isSaving = true;
 		try {
-			// 1) 基本プロフィール（お名前＋電話番号）
-			await createUserProfile(userId, '購入者', name.trim(), phone.trim());
+			// 1) 基本プロフィール（お名前）
+			await createUserProfile(userId, '購入者', name.trim());
 
-			// 2) 任意: 屋台営業アカウント
+			// 2) 任意: 屋台営業アカウント（電話番号は後でマイページから設定）
 			if (doOperator) {
-				await createOperatorProfile(userId, { businessName: businessName.trim(), phoneNumber: phone.trim() });
+				await createOperatorProfile(userId, { businessName: businessName.trim(), phoneNumber: '' });
 			}
 
 			// 3) 任意: 夜行人図鑑プロフィール
@@ -83,7 +75,7 @@
 		<img src="{base}/images/icon.png" alt="微小夜行電灯" class="logo-img" />
 		<div class="verified"><span class="check">✓</span> メール認証が完了しました</div>
 		<h1 class="title">続けて、各種設定を行いましょう</h1>
-		<p class="subtitle">お名前と電話番号を登録すれば準備完了です。<br />屋台営業・夜行人ネットワークはあとからでも設定できます。</p>
+		<p class="subtitle">お名前を登録すれば準備完了です。<br />屋台営業・夜行人ネットワークはあとからでも設定できます。</p>
 
 		{#if isLoading}
 			<p class="muted">読み込み中…</p>
@@ -96,11 +88,7 @@
 				<label class="field-label">
 					お名前 / 表示名
 					<input type="text" bind:value={name} class="field-input" placeholder="山田 太郎" />
-				</label>
-				<label class="field-label">
-					電話番号
-					<input type="tel" bind:value={phone} class="field-input" placeholder="090-1234-5678" inputmode="tel" />
-					<span class="field-note">ご本人確認・緊急連絡に使用します。公開されません。</span>
+					<span class="field-note">後からマイページで変更できます。</span>
 				</label>
 			</div>
 

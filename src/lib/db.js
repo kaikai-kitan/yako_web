@@ -192,15 +192,10 @@ export async function getSession() {
 // =====================================================
 
 /** ユーザープロフィールを作成（全タイプ共通） */
-export async function createUserProfile(userId, userType, name, phoneNumber) {
-	const row = { user_id: userId, user_type: userType, name };
-	if (phoneNumber) row.phone_number = phoneNumber;
-	let { error } = await supabase.from('user_profiles').insert(row);
-	// phone_number カラム未追加（migration 未適用）の環境でも動くようフォールバック
-	if (error && (error.code === '42703' || /phone_number/.test(error.message ?? ''))) {
-		delete row.phone_number;
-		({ error } = await supabase.from('user_profiles').insert(row));
-	}
+export async function createUserProfile(userId, userType, name) {
+	const { error } = await supabase
+		.from('user_profiles')
+		.insert({ user_id: userId, user_type: userType, name });
 	if (error) throw error;
 }
 
