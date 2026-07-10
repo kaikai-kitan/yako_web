@@ -6,7 +6,7 @@
 	import { supabase } from '$lib/supabase.js';
 	import Icon from '$lib/components/Icon.svelte';
 
-	/** @type {'loading'|'confirm'|'connecting'|'done'|'error'} */
+	/** @type {'loading'|'confirm'|'connecting'|'done'|'error'|'already'} */
 	let phase = $state('loading');
 	let errorMsg = $state('');
 
@@ -63,6 +63,15 @@
 				.from('yakonin_profiles').select('handle').eq('connect_code', connectCode).maybeSingle();
 			if (!person) { phase = 'error'; errorMsg = '相手のプロフィールが見つかりません。'; return; }
 			targetName = person.handle ?? '夜行人';
+
+			// 既に繋がっている相手なら「既に繋がっています」を表示（接続は作らない）
+			const chk = await fetch('/api/network/connect', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+				body: JSON.stringify({ connectCode, checkOnly: true })
+			});
+			const chkData = await chk.json().catch(() => ({}));
+			if (chk.ok && chkData.connected) { phase = 'already'; return; }
 		}
 
 		// 4) 人との接続は毎回かならず確認する。屋台は初回のみ確認（以降は自動）。
@@ -134,6 +143,16 @@
 			</p>
 			<button class="primary" onclick={doConnect}>つながる</button>
 			<button class="ghost" onclick={() => goto(`${base}/directory`)}>やめておく</button>
+		</div>
+
+	{:else if phase === 'already'}
+		<div class="card">
+			<div class="icon-badge success">
+				<Icon name="circle-check" size={30} />
+			</div>
+			<h1 class="q">すでに「{targetName}」と繋がっています</h1>
+			<p class="note">この夜行人はあなたのネットワークに登録済みです。</p>
+			<button class="primary" onclick={() => goto(`${base}/directory`)}>ネットワークを見る</button>
 		</div>
 
 	{:else if phase === 'done'}

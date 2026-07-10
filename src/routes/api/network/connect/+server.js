@@ -49,6 +49,21 @@ export async function POST({ request }) {
 		if (!target) throw error(404, '相手の夜行人プロフィールが見つかりません');
 		if (target.user_id === user.id) throw error(400, '自分自身とはつながれません');
 
+		// 既に繋がっているか判定（user_a < user_b で正規化）
+		const [ua, ub] = user.id < target.user_id ? [user.id, target.user_id] : [target.user_id, user.id];
+		const { data: existing } = await supabase
+			.from('yakonin_edges')
+			.select('user_a')
+			.eq('user_a', ua)
+			.eq('user_b', ub)
+			.maybeSingle();
+		const alreadyConnected = !!existing;
+
+		// 判定のみ（接続は作らない）
+		if (body.checkOnly) {
+			return json({ ok: true, connected: alreadyConnected, handle: target.handle });
+		}
+
 		const { error: edgeErr } = await supabase
 			.from('yakonin_edges')
 			.upsert([orderedEdge(user.id, target.user_id, { weight: 3, origin: 'qr_person' })], {
@@ -57,7 +72,7 @@ export async function POST({ request }) {
 			});
 		if (edgeErr) throw error(500, edgeErr.message);
 
-		return json({ ok: true, action: 'person', handle: target.handle });
+		return json({ ok: true, action: 'person', handle: target.handle, already: alreadyConnected });
 	}
 
 	// ---- 人 ↔ 屋台ハブ（＋同じ屋台の来場者と相席弱エッジ）----
