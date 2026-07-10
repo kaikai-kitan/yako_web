@@ -23,6 +23,31 @@
 	let scanError = $state('');
 	let html5QrCode = null;
 
+	// マイQR（自分の接続QR）
+	let showMyQr = $state(false);
+	let myQrDataUrl = $state('');
+	let myHandle = $state('');
+	let hasYakonin = $state(false);
+
+	async function loadMyQr() {
+		try {
+			const { data: { session } } = await supabase.auth.getSession();
+			if (!session) return;
+			const { data } = await supabase
+				.from('yakonin_profiles')
+				.select('connect_code, handle')
+				.eq('user_id', session.user.id)
+				.maybeSingle();
+			if (data?.connect_code) {
+				hasYakonin = true;
+				myHandle = data.handle ?? '';
+				const url = `${window.location.origin}${base}/connect?u=${data.connect_code}`;
+				const QRCode = (await import('qrcode')).default;
+				myQrDataUrl = await QRCode.toDataURL(url, { margin: 1, width: 240 });
+			}
+		} catch { /* noop */ }
+	}
+
 	const ROLE_COLOR = {
 		'屋台営業者': '#b85c2b',
 		'屋台オーナー': '#b5892e',
@@ -46,6 +71,7 @@
 			graphData = seedNetwork;
 			usingSeed = true;
 		}
+		loadMyQr();
 	});
 
 	onDestroy(() => stopScan());
@@ -75,6 +101,11 @@
 	async function startScan() {
 		scanning = true;
 		scanError = '';
+		showMyQr = false;
+		startScanCamera();
+	}
+
+	function startScanCamera() {
 		setTimeout(async () => {
 			try {
 				const { Html5Qrcode } = await import('html5-qrcode');
@@ -94,13 +125,22 @@
 		}, 80);
 	}
 
-	function stopScan() {
+	function stopCamera() {
 		if (html5QrCode?.isScanning) {
 			html5QrCode.stop().catch(() => {});
 			html5QrCode = null;
 		}
-		scanning = false;
 	}
+
+	function stopScan() {
+		stopCamera();
+		scanning = false;
+		showMyQr = false;
+	}
+
+	// カメラ ⇄ マイQR の切り替え
+	function showMine() { stopCamera(); showMyQr = true; }
+	function backToScan() { showMyQr = false; startScanCamera(); }
 
 	// スキャン結果から /connect へ誘導
 	function routeFromScan(text) {
@@ -154,7 +194,7 @@
 	{/if}
 
 	<!-- 繋がるボタン -->
-	<button class="connect-fab" onclick={startScan}>📷 QRで繋がる</button>
+	<button class="connect-fab" onclick={startScan}>QRで繋がる</button>
 
 	<!-- 詳細パネル -->
 	{#if selected}
@@ -199,11 +239,27 @@
 	{#if scanning}
 		<div class="scan-modal">
 			<div class="scan-card">
-				<h2>接続QRを読み取る</h2>
-				<p class="scan-hint">相手のプロフィールQR、または屋台のQRをかざしてください</p>
-				<div id="net-qr-reader"></div>
-				{#if scanError}<p class="scan-err">{scanError}</p>{/if}
-				<button class="scan-cancel" onclick={stopScan}>キャンセル</button>
+				{#if showMyQr}
+					<!-- 自分のQRを表示 -->
+					<h2>あなたの接続QR</h2>
+					<p class="scan-hint">相手にこのQRを読み取ってもらうと繋がれます</p>
+					{#if myQrDataUrl}
+						<img class="my-qr-img" src={myQrDataUrl} alt="あなたの接続QR" />
+						{#if myHandle}<p class="my-qr-name">{myHandle}</p>{/if}
+					{:else}
+						<p class="scan-hint">まだ夜行人プロフィールがありません。<br />作成すると接続QRが発行されます。</p>
+						<a href="{base}/yakonin/setup" class="my-qr-cta">夜行人プロフィールを作る →</a>
+					{/if}
+					<button class="scan-toggle" onclick={backToScan}>← カメラに戻る</button>
+				{:else}
+					<!-- カメラでスキャン -->
+					<h2>接続QRを読み取る</h2>
+					<p class="scan-hint">相手のプロフィールQR、または屋台のQRをかざしてください</p>
+					<div id="net-qr-reader"></div>
+					{#if scanError}<p class="scan-err">{scanError}</p>{/if}
+					<button class="scan-toggle" onclick={showMine}>マイQRを表示</button>
+					<button class="scan-cancel" onclick={stopScan}>キャンセル</button>
+				{/if}
 			</div>
 		</div>
 	{/if}
@@ -263,8 +319,33 @@
 		background: var(--night); color: #f3ece0; border: none; border-radius: 100px;
 		padding: 13px 28px; font-family: "Zen Antique", serif; font-size: 0.9rem;
 		letter-spacing: 0.1em; cursor: pointer; box-shadow: var(--shadow-2);
+		white-space: nowrap;
 	}
 	.connect-fab:hover { background: var(--night-2); }
+
+	/* マイQR / 切り替え */
+	.my-qr-img {
+		width: 100%; max-width: 240px; aspect-ratio: 1 / 1;
+		display: block; margin: 4px auto 8px; border-radius: 12px;
+		border: 1px solid var(--line);
+	}
+	.my-qr-name {
+		font-family: "Zen Antique", serif; font-size: 0.95rem;
+		color: var(--ink); letter-spacing: 0.06em; margin: 0 0 6px; text-align: center;
+	}
+	.my-qr-cta {
+		display: inline-block; margin: 8px 0; color: var(--accent);
+		font-size: 0.86rem; text-decoration: none; font-weight: 600;
+	}
+	.my-qr-cta:hover { text-decoration: underline; }
+	.scan-toggle {
+		margin-top: 12px; width: 100%;
+		background: var(--accent); color: #fff; border: none;
+		border-radius: var(--r-md); padding: 11px 20px; font-size: 0.86rem;
+		letter-spacing: 0.06em; cursor: pointer; font-family: "Zen Antique", serif;
+		transition: background 0.15s;
+	}
+	.scan-toggle:hover { background: var(--accent-deep); }
 
 	/* 詳細パネル */
 	.detail {

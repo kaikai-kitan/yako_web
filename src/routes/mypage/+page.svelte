@@ -407,6 +407,14 @@
 				</div>
 				<span class="dl-arrow">›</span>
 			</a>
+			<!-- 夜行人図鑑・ネットワーク（全員） -->
+			<a href="{base}/directory" class="dashboard-link">
+				<div class="dl-text">
+					<strong>夜行人図鑑</strong>
+					<span>3Dネットワークの閲覧・QRで繋がる</span>
+				</div>
+				<span class="dl-arrow">›</span>
+			</a>
 			{#if profile.operators}
 				<a href="{base}/mypage/operator" class="dashboard-link operator-link">
 					<div class="dl-text">
