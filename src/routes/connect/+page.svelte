@@ -65,9 +65,9 @@
 			targetName = person.handle ?? '夜行人';
 		}
 
-		// 4) 初回のみ確認画面。2回目以降は自動接続。
-		const confirmedBefore = localStorage.getItem(CONFIRM_KEY) === '1';
-		if (confirmedBefore) {
+		// 4) 人との接続は毎回かならず確認する。屋台は初回のみ確認（以降は自動）。
+		const autoOk = targetKind === 'stall' && localStorage.getItem(CONFIRM_KEY) === '1';
+		if (autoOk) {
 			await doConnect();
 		} else {
 			phase = 'confirm';

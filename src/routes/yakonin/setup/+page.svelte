@@ -215,6 +215,8 @@
 			<button class="save-btn" onclick={handleSave} disabled={isSaving}>
 				{isSaving ? '保存中…' : 'プロフィールを保存'}
 			</button>
+
+			<a href="{base}/directory" class="to-directory">夜行人図鑑を見る →</a>
 		</div>
 
 		{#if connectQr}
@@ -280,6 +282,12 @@
 		border-radius: 16px; background: #fffdf9; text-align: center;
 	}
 	.qr-title { font-size: 1rem; color: var(--ink); margin-bottom: 0.4rem; }
+	.to-directory {
+		display: block; text-align: center; margin-top: 14px;
+		font-size: 0.9rem; color: var(--accent); text-decoration: none;
+		letter-spacing: 0.04em;
+	}
+	.to-directory:hover { text-decoration: underline; }
 	.qr-img { width: 220px; height: 220px; margin-top: 12px; }
 	.nfc-hint { font-size: 0.76rem; color: #6b5f54; line-height: 1.6; margin: 12px 0 0; }
 </style>
