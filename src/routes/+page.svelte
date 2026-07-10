@@ -7,6 +7,7 @@
 	import { onMount } from 'svelte';
 
 	import homeData from '$lib/assets/data/home.json';
+	import networkSeed from '$lib/assets/data/network.json';
 
 	let splash = $state();
 	let phrase1, phrase2, phrase3;
@@ -38,26 +39,15 @@
 		return html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
 	}
 
-	// ── 夜行人ネットワーク（夜の星図：小さな灯りが縁でつながる）──
-	const STAR_NODES = [
-		{ x: 70,  y: 90,  r: 6,   hub: true },
-		{ x: 155, y: 52,  r: 3.5 },
-		{ x: 220, y: 120, r: 8,   hub: true },
-		{ x: 308, y: 70,  r: 4.5 },
-		{ x: 346, y: 158, r: 5 },
-		{ x: 118, y: 178, r: 4 },
-		{ x: 200, y: 222, r: 6.5, hub: true },
-		{ x: 296, y: 208, r: 3.5 },
-		{ x: 52,  y: 208, r: 3 }
-	];
-	const STAR_EDGES = [[0,1],[1,2],[2,3],[3,4],[2,5],[5,6],[0,5],[6,7],[4,7],[6,8],[8,0],[2,6]];
-	const BG_STARS = [
-		{ x: 38, y: 42, r: 1 }, { x: 112, y: 30, r: 1.2 }, { x: 190, y: 38, r: 0.9 },
-		{ x: 270, y: 32, r: 1 }, { x: 356, y: 48, r: 1.1 }, { x: 30, y: 130, r: 0.9 },
-		{ x: 372, y: 110, r: 1 }, { x: 260, y: 150, r: 1.2 }, { x: 90, y: 240, r: 1 },
-		{ x: 160, y: 258, r: 0.9 }, { x: 250, y: 258, r: 1.1 }, { x: 340, y: 245, r: 1 },
-		{ x: 150, y: 110, r: 0.9 }, { x: 300, y: 250, r: 0.8 }
-	];
+	// ── 夜行人図鑑の抜粋（実データ）──
+	const ROLE_COLOR = {
+		'屋台営業者': '#b85c2b', '屋台オーナー': '#b5892e',
+		'土地オーナー': '#5f7a52', '流浪人': '#6b7688'
+	};
+	// 一言（迷言）が入っている夜行人を先頭から3人ピックアップ
+	const figureList = networkSeed.nodes
+		.filter((n) => n.type === 'person' && n.message && n.message.replace(/[「」\s]/g, ''))
+		.slice(0, 3);
 
 	// ── ニュース（掲載・受賞） ──
 	const newsList = [
@@ -311,38 +301,24 @@
 	</div>
 
 	<div class="net-layout">
-		<!-- ネットワーク・ビジュアル（夜の星図） -->
-		<a href="{base}/directory" class="starmap" aria-label="夜行人図鑑を見る">
-			<svg
-				class="network-svg"
-				class:animate={linesVisible}
-				viewBox="0 0 400 280"
-				preserveAspectRatio="xMidYMid meet"
-				aria-hidden="true"
-			>
-				<!-- 背景の微光 -->
-				{#each BG_STARS as s}
-					<circle class="bg-star" cx={s.x} cy={s.y} r={s.r} />
-				{/each}
-				<!-- 縁（つながり） -->
-				{#each STAR_EDGES as [a, b], i}
-					<line
-						class="star-edge"
-						x1={STAR_NODES[a].x} y1={STAR_NODES[a].y}
-						x2={STAR_NODES[b].x} y2={STAR_NODES[b].y}
-						style="transition-delay: {i * 0.12}s"
-					/>
-				{/each}
-				<!-- 灯り（夜行人） -->
-				{#each STAR_NODES as n, i}
-					<g class="star-node" style="animation-delay: {i * 0.45}s">
-						<circle class="halo" cx={n.x} cy={n.y} r={n.r * 2.6} />
-						<circle class="core" class:hub={n.hub} cx={n.x} cy={n.y} r={n.r} />
-					</g>
-				{/each}
-			</svg>
-			<span class="starmap-caption">縁が広がる夜の星図</span>
-		</a>
+		<!-- 夜行人図鑑の抜粋（実際の登録者を紹介） -->
+		<div class="figure-cards" class:revealed={linesVisible}>
+			<span class="figure-kicker">図鑑より</span>
+			{#each figureList as f, i}
+				<a href="{base}/directory" class="figure-card" style="transition-delay: {i * 0.1}s">
+					{#if f.img}
+						<img src="{base + f.img}" alt={f.name} class="figure-avatar" loading="lazy" decoding="async" />
+					{:else}
+						<span class="figure-avatar placeholder" style="background:{ROLE_COLOR[f.roles?.[0]] ?? '#6b7688'}">{f.name.charAt(0)}</span>
+					{/if}
+					<div class="figure-body">
+						<span class="figure-name">{f.name}</span>
+						<span class="figure-status">{f.status}</span>
+						<p class="figure-msg">{f.message}</p>
+					</div>
+				</a>
+			{/each}
+		</div>
 
 		<!-- 何ができるか（3ステップ） -->
 		<ol class="net-steps">
@@ -678,48 +654,42 @@
 	.section-title { font-size: 1.3rem; font-weight: 700; color: var(--ink); letter-spacing: 0.1em; }
 	.section-desc  { font-size: 0.85rem; color: var(--ink-2); letter-spacing: 0.03em; }
 
-	/* ── 夜の星図（ネットワーク・ビジュアル）── */
-	.starmap {
-		position: relative; display: block;
-		width: 100%; max-width: 500px; margin: 0 auto;
-		aspect-ratio: 400 / 280;
-		border-radius: var(--r-lg);
-		overflow: hidden;
-		background:
-			radial-gradient(120% 90% at 30% 20%, #3c4658 0%, #2b3340 55%, #232a35 100%);
-		box-shadow: var(--shadow-2), inset 0 0 60px rgba(0,0,0,0.35);
-		text-decoration: none;
+	/* ── 夜行人図鑑の抜粋カード ── */
+	.figure-cards {
+		display: flex; flex-direction: column; gap: 12px;
+		width: 100%; max-width: 480px; margin: 0 auto;
 	}
-	.network-svg {
-		position: absolute; inset: 0; width: 100%; height: 100%;
+	.figure-kicker {
+		font-size: 0.68rem; font-weight: 600; letter-spacing: 0.18em;
+		color: var(--ink-3); text-align: left; margin-bottom: 2px;
 	}
-	.bg-star { fill: #fff; opacity: 0.14; }
+	.figure-card {
+		display: flex; align-items: center; gap: 14px;
+		background: var(--surface); border: 1px solid var(--line);
+		border-radius: var(--r-lg); padding: 14px 16px;
+		text-decoration: none; box-shadow: var(--shadow-1);
+		opacity: 0; transform: translateY(12px);
+		transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+	}
+	.figure-cards.revealed .figure-card { opacity: 1; transform: translateY(0); }
+	.figure-card:hover { box-shadow: var(--shadow-2); border-color: var(--line-strong); }
 
-	.star-edge {
-		stroke: rgba(240, 192, 120, 0.4); stroke-width: 1.1; fill: none;
-		stroke-dasharray: 500; stroke-dashoffset: 500;
-		transition: stroke-dashoffset 1s ease;
+	.figure-avatar {
+		width: 54px; height: 54px; border-radius: 50%;
+		object-fit: cover; flex-shrink: 0;
+		border: 2px solid var(--line); background: var(--surface-sunk);
 	}
-	.network-svg.animate .star-edge { stroke-dashoffset: 0; }
-
-	.star-node { animation: flicker 3.5s ease-in-out infinite; transform-origin: center; }
-	.halo { fill: #b85c2b; opacity: 0.22; }
-	.core { fill: #f0c078; }
-	.core.hub { fill: #ffdca0; }
-	@keyframes flicker {
-		0%, 100% { opacity: 1; }
-		45%      { opacity: 0.72; }
-	}
-
-	.starmap-caption {
-		position: absolute; left: 0; right: 0; bottom: 12px;
-		text-align: center; font-size: 0.72rem; letter-spacing: 0.14em;
-		color: rgba(240, 224, 196, 0.7);
+	.figure-avatar.placeholder {
+		display: flex; align-items: center; justify-content: center;
+		border: none; color: #fff; font-weight: 700; font-size: 1.3rem;
 		font-family: "Zen Antique", serif;
 	}
-	.starmap:hover .starmap-caption { color: rgba(240, 224, 196, 0.95); }
-	@media (prefers-reduced-motion: reduce) {
-		.star-node { animation: none; }
+	.figure-body { min-width: 0; text-align: left; }
+	.figure-name { font-size: 0.98rem; font-weight: 700; color: var(--ink); }
+	.figure-status { display: block; font-size: 0.72rem; color: var(--ink-3); margin: 1px 0 5px; }
+	.figure-msg {
+		font-size: 0.84rem; line-height: 1.55; color: var(--ink-2);
+		font-family: "Zen Antique", serif; margin: 0;
 	}
 
 	/* レイアウト: ネットワーク + ステップ説明 */
@@ -732,8 +702,8 @@
 		align-items: center;
 	}
 	@media (min-width: 820px) {
-		.net-layout { grid-template-columns: 1.05fr 0.95fr; gap: 40px; }
-		.starmap { margin: 0; }
+		.net-layout { grid-template-columns: 0.95fr 1.05fr; gap: 40px; }
+		.figure-cards { margin: 0; }
 	}
 
 	/* 何ができるか: 3ステップ */
