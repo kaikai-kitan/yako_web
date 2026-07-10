@@ -1,6 +1,7 @@
 <!-- 夜行人ネットワーク（フルスクリーン 3D） -->
 <script>
 	import { onMount, onDestroy } from 'svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase.js';
@@ -207,7 +208,10 @@
 					<div class="detail-avatar placeholder">{selected.name?.charAt(0) ?? '?'}</div>
 				{/if}
 				<div>
-					<h2 class="detail-name">{selected.name}</h2>
+					<h2 class="detail-name">
+					{selected.name}
+					{#if selected.corporate}<span class="corp-badge" title="法人アカウント"><Icon name="badge-check" size={16} /></span>{/if}
+				</h2>
 					<p class="detail-deg">{connectLabel(selected.__deg ?? selected.degree ?? 0)}</p>
 				</div>
 			</div>
@@ -362,7 +366,8 @@
 	.detail-head { display: flex; align-items: center; gap: 14px; }
 	.detail-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--line); }
 	.detail-avatar.placeholder { display: flex; align-items: center; justify-content: center; background: var(--surface-sunk); color: var(--ink-3); font-family: "Zen Antique", serif; font-size: 1.5rem; }
-	.detail-name { font-family: "Zen Antique", serif; font-size: 1.15rem; letter-spacing: 0.06em; color: var(--ink); margin: 0; }
+	.detail-name { font-family: "Zen Antique", serif; font-size: 1.15rem; letter-spacing: 0.06em; color: var(--ink); margin: 0; display: inline-flex; align-items: center; gap: 6px; }
+	.corp-badge { display: inline-flex; color: #b5892e; }
 	.detail-deg { font-size: 0.76rem; color: var(--ink-3); margin: 4px 0 0; letter-spacing: 0.03em; }
 	.roles { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
 	.role-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.74rem; color: var(--ink-2); letter-spacing: 0.05em; }

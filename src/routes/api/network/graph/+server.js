@@ -34,14 +34,32 @@ export async function GET({ setHeaders }) {
 	const profiles = profilesRes.data ?? [];
 	const publicIds = new Set(profiles.map((p) => p.user_id));
 
-	// ロール取得（user_profiles をまとめて引く）
+	// ロール & 法人/広告状態を取得（user_profiles をまとめて引く）
 	let roleMap = {};
+	let corpMap = {}; // user_id → { corporate, adActive }
 	if (profiles.length > 0) {
-		const { data: ups } = await supabase
+		// account_type / ad_active は migration v18 で追加。未適用環境でも動くようフォールバック
+		let ups = null;
+		const r = await supabase
 			.from('user_profiles')
-			.select('user_id, is_shop_operator, is_yatai_owner, is_land_owner, user_type')
+			.select('user_id, is_shop_operator, is_yatai_owner, is_land_owner, user_type, account_type, ad_active')
 			.in('user_id', [...publicIds]);
-		for (const p of ups ?? []) roleMap[p.user_id] = rolesFor(p);
+		if (r.error && (r.error.code === '42703' || /account_type|ad_active/.test(r.error.message ?? ''))) {
+			const r2 = await supabase
+				.from('user_profiles')
+				.select('user_id, is_shop_operator, is_yatai_owner, is_land_owner, user_type')
+				.in('user_id', [...publicIds]);
+			ups = r2.data;
+		} else {
+			ups = r.data;
+		}
+		for (const p of ups ?? []) {
+			roleMap[p.user_id] = rolesFor(p);
+			corpMap[p.user_id] = {
+				corporate: p.account_type === 'corporate',
+				adActive: p.ad_active === true
+			};
+		}
 	}
 
 	// --- 人 ↔ 人 エッジ（両端が公開者のみ） ---
@@ -69,6 +87,8 @@ export async function GET({ setHeaders }) {
 		message: p.one_liner || '',
 		roles: roleMap[p.user_id] ?? ['流浪人'],
 		degree: degree[p.user_id] ?? 0,
+		corporate: corpMap[p.user_id]?.corporate ?? false,
+		adActive: corpMap[p.user_id]?.adActive ?? false,
 		type: 'person'
 	}));
 

@@ -134,6 +134,75 @@
 		</table>
 	</section>
 
+	<section class="section">
+		<h2 class="section-title">夜行人図鑑 法人プラン（月額）・アイコン装飾</h2>
+
+		<table class="info-table">
+			<tbody>
+				<tr>
+					<th>サービス提供者</th>
+					<td>微小夜行電灯</td>
+				</tr>
+				<tr>
+					<th>メールアドレス</th>
+					<td>delta10yako@gmail.com<br>※代表者・所在地・電話番号はお問い合わせいただいた場合、遅滞なく開示いたします</td>
+				</tr>
+				<tr>
+					<th>サービスの内容</th>
+					<td>
+						夜行人図鑑における<strong>法人アカウント</strong>の提供（広告の掲載、法人バッジの付与、図鑑内での掲載枠など）。<br>
+						個人ユーザー向けの<strong>アイコン装飾・形状変更</strong>（都度購入のデジタルコンテンツ）。
+					</td>
+				</tr>
+				<tr>
+					<th>料金</th>
+					<td>
+						法人プラン：月額 <strong>[金額]円（税込）</strong>（申込画面に表示の金額）<br>
+						アイコン装飾：<strong>[金額]円（税込）</strong>／点（購入画面に表示の金額）<br>
+						<span class="note-inline">※正式な金額は提供開始時に確定・表示します。</span>
+					</td>
+				</tr>
+				<tr>
+					<th>支払方法</th>
+					<td>クレジットカード（Visa・Mastercard・American Express・JCB）</td>
+				</tr>
+				<tr>
+					<th>支払時期・課金</th>
+					<td>
+						法人プラン：お申し込み日を起点に<strong>毎月自動更新</strong>で課金されます。<br>
+						アイコン装飾：ご購入手続き時に確定します。
+					</td>
+				</tr>
+				<tr>
+					<th>提供時期</th>
+					<td>決済確認後、すみやかに掲載・反映を開始します。</td>
+				</tr>
+				<tr>
+					<th>解約について</th>
+					<td>
+						法人プランはマイページ（お支払い管理）から<strong>いつでも解約</strong>できます。<br>
+						解約した場合、当該請求期間の末日をもって広告掲載・法人機能を終了します。<br>
+						月の途中で解約した場合の<strong>日割り返金は行いません</strong>。
+					</td>
+				</tr>
+				<tr>
+					<th>返金について</th>
+					<td>
+						サービスの性質上、原則として返金はいたしかねます（当社に重大な過失がある場合を除く）。<br>
+						アイコン装飾はデジタルコンテンツのため、購入後の返品・返金はできません。
+					</td>
+				</tr>
+				<tr>
+					<th>広告の掲載について</th>
+					<td>
+						掲載内容は当社の審査を経て掲載します。関係法令・公序良俗に反する内容はお断りする場合があります。<br>
+						広告には「PR」「広告」等の表示を付す場合があります。
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</section>
+
 	<p class="update-date">最終更新日：2025年[XX]月[XX]日</p>
 </div>
 
@@ -156,6 +225,13 @@
 
 	.section {
 		margin-bottom: 48px;
+	}
+
+	.note-inline {
+		display: inline-block;
+		font-size: 0.8rem;
+		color: var(--ink-3);
+		margin-top: 4px;
 	}
 
 	.section-title {

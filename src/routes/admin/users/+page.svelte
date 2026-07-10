@@ -69,6 +69,32 @@
 		}
 	}
 
+	async function toggleCorporate(user) {
+		const enable = user.account_type !== 'corporate';
+		const label = enable
+			? 'このユーザーを法人アカウントとして有効化（広告表示ON）しますか？'
+			: 'このユーザーの法人アカウントを解除（一般アカウント化・広告OFF）しますか？';
+		if (!confirm(label)) return;
+		isProcessing = true;
+		errMsg = '';
+		const res = await fetch('/api/admin/users', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ userId: user.user_id, action: enable ? 'enable_corporate' : 'disable_corporate' })
+		});
+		isProcessing = false;
+		if (res.ok) {
+			msg = enable ? '法人アカウントを有効化しました' : '法人アカウントを解除しました';
+			users = users.map((u) => u.user_id === user.user_id
+				? { ...u, account_type: enable ? 'corporate' : 'individual', ad_active: enable, corp_status: enable ? 'approved' : 'none' }
+				: u);
+			setTimeout(() => (msg = ''), 3000);
+		} else {
+			const d = await res.json().catch(() => ({}));
+			errMsg = d.message ?? '更新に失敗しました';
+		}
+	}
+
 	function scoreClass(score) {
 		if (score >= 200) return 'score-good';
 		if (score >= 100) return 'score-warn';
@@ -107,6 +133,9 @@
 					<div class="user-header">
 						<div class="user-identity">
 							<span class="user-name">{user.name ?? '（名前なし）'}</span>
+							{#if user.account_type === 'corporate'}
+								<span class="corp-badge-adm">法人{user.ad_active ? '・広告ON' : ''}</span>
+							{/if}
 							{#if user.is_suspended}
 								<span class="suspended-badge">アカウント停止中</span>
 							{/if}
@@ -141,6 +170,13 @@
 							disabled={isProcessing}
 						>
 							スコアリセット (→300)
+						</button>
+						<button
+							class="action-btn corp"
+							onclick={() => toggleCorporate(user)}
+							disabled={isProcessing}
+						>
+							{user.account_type === 'corporate' ? '法人を解除' : '法人を有効化'}
 						</button>
 					</div>
 				</div>
@@ -228,6 +264,13 @@
 	.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 	.action-btn.unsuspend { background: var(--ink-2); color: white; }
 	.action-btn.unsuspend:hover:not(:disabled) { background: #14532d; }
+	.action-btn.corp { background: #b5892e; color: white; }
+	.action-btn.corp:hover:not(:disabled) { background: #9a7325; }
+	.corp-badge-adm {
+		font-size: 0.68rem; font-weight: 700; color: #8a6a1e;
+		background: rgba(181, 137, 46, 0.14); border: 1px solid rgba(181, 137, 46, 0.4);
+		padding: 2px 8px; border-radius: 20px;
+	}
 	.action-btn.reset { background: var(--surface-sunk); color: var(--ink); border: 1px solid var(--line); }
 	.action-btn.reset:hover:not(:disabled) { background: #ede8e2; }
 </style>

@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import seedNetwork from '$lib/assets/data/network.json';
+	import Icon from '$lib/components/Icon.svelte';
 
 	// 抑えた和の配色（グラフと共通）
 	const ROLE_COLOR = {
@@ -14,17 +15,33 @@
 
 	let featured = $state([]); // 今日の夜行人
 
-	function seededPick(people, n) {
+	// 日付シードで決定的に並べ替える（1日1回変わる・公平ローテーション）
+	function dailySort(people) {
 		const today = new Date();
 		const seedBase = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-		const scored = people.map((p) => {
-			let h = seedBase;
-			const s = String(p.id);
-			for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 1000000007;
-			return { p, score: (h % 1000) + (p.degree ?? 0) * 3 };
-		});
-		scored.sort((a, b) => b.score - a.score);
-		return scored.slice(0, n).map((x) => x.p);
+		return people
+			.map((p) => {
+				let h = seedBase;
+				const s = String(p.id);
+				for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 1000000007;
+				return { p, score: (h % 1000) + (p.degree ?? 0) * 3 };
+			})
+			.sort((a, b) => b.score - a.score)
+			.map((x) => x.p);
+	}
+
+	// リコメンド抽出（内部的に 広告有効2 + 無料1。ユーザーには非公開）
+	//  - 広告有効ユーザーが2人未満なら、その分は無料ユーザーで埋める（＝全体から）
+	//  - 表示順は日付シードで混ぜ、どれが課金枠かは分からないようにする
+	//  - 無料枠は毎日入れ替わり、無課金にも露出が回る
+	function pickFeatured(persons, total = 3, paidSlots = 2) {
+		const paid = dailySort(persons.filter((p) => p.adActive));
+		const free = dailySort(persons.filter((p) => !p.adActive));
+		const chosen = [];
+		for (const p of paid) { if (chosen.length >= paidSlots) break; chosen.push(p); }
+		for (const p of free) { if (chosen.length >= total) break; chosen.push(p); }
+		for (const p of paid) { if (chosen.length >= total) break; if (!chosen.includes(p)) chosen.push(p); }
+		return dailySort(chosen).slice(0, total); // 最終表示順を混ぜる
 	}
 
 	onMount(async () => {
@@ -38,7 +55,7 @@
 		if (persons.length < 2) {
 			persons = seedNetwork.nodes.filter((n) => n.type !== 'stall');
 		}
-		featured = seededPick(persons, Math.min(3, persons.length));
+		featured = pickFeatured(persons, Math.min(3, persons.length));
 	});
 </script>
 
@@ -87,7 +104,10 @@
 								<span class="face placeholder">{p.name?.charAt(0) ?? '?'}</span>
 							{/if}
 							<div class="person-body">
-								<span class="person-name">{p.name}</span>
+								<span class="person-name">
+									{p.name}
+									{#if p.corporate}<span class="corp-badge" title="法人アカウント"><Icon name="badge-check" size={15} /></span>{/if}
+								</span>
 								{#if p.roles?.length}
 									<span class="person-roles">
 										{#each p.roles as r}
@@ -189,7 +209,9 @@
 	.person-body { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 	.person-name {
 		font-family: "Zen Antique", serif; font-size: 1.05rem; letter-spacing: 0.06em; color: var(--ink);
+		display: inline-flex; align-items: center; gap: 5px;
 	}
+	.corp-badge { display: inline-flex; color: #b5892e; }
 	.person-roles { display: flex; gap: 12px; flex-wrap: wrap; }
 	.role { display: inline-flex; align-items: center; gap: 5px; font-size: 0.7rem; color: var(--ink-3); letter-spacing: 0.06em; }
 	.role i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
