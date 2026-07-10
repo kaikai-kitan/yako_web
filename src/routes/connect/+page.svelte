@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase.js';
+	import Icon from '$lib/components/Icon.svelte';
 
 	/** @type {'loading'|'confirm'|'connecting'|'done'|'error'} */
 	let phase = $state('loading');
@@ -123,7 +124,9 @@
 
 	{:else if phase === 'confirm'}
 		<div class="card">
-			<div class="emoji">{targetKind === 'stall' ? '🏮' : '🤝'}</div>
+			<div class="icon-badge">
+				{#if targetKind === 'stall'}<Icon name="yatai" size={30} />{:else}<Icon name="handshake" size={30} />{/if}
+			</div>
 			<h1 class="q">「{targetName}」とつながりますか？</h1>
 			<p class="note">
 				あなたの夜行人ネットワークに追加されます。<br />
@@ -135,7 +138,9 @@
 
 	{:else if phase === 'done'}
 		<div class="card">
-			<div class="emoji">🎉</div>
+			<div class="icon-badge success">
+				<Icon name="circle-check" size={30} />
+			</div>
 			<h1 class="q">つながりました！</h1>
 			<p class="note">{resultMsg}</p>
 			<button class="primary" onclick={() => goto(`${base}/directory`)}>ネットワークを見る</button>
@@ -143,7 +148,9 @@
 
 	{:else if phase === 'error'}
 		<div class="card">
-			<div class="emoji">⚠️</div>
+			<div class="icon-badge warn">
+				<Icon name="alert-triangle" size={30} />
+			</div>
 			<h1 class="q">つながれませんでした</h1>
 			<p class="note">{errorMsg}</p>
 			<button class="ghost" onclick={() => goto(`${base}/directory`)}>夜行人図鑑へ</button>
@@ -162,7 +169,14 @@
 		display: flex; flex-direction: column; align-items: center; gap: 14px;
 		box-shadow: 0 6px 24px rgba(0,0,0,0.06);
 	}
-	.emoji { font-size: 3rem; }
+	.icon-badge {
+		width: 64px; height: 64px; margin: 0 auto;
+		border-radius: 50%;
+		display: flex; align-items: center; justify-content: center;
+		background: var(--accent-tint); color: var(--accent);
+	}
+	.icon-badge.success { background: rgba(95, 122, 82, 0.14); color: #4a6a3a; }
+	.icon-badge.warn { background: rgba(184, 92, 43, 0.1); color: var(--accent-deep); }
 	.q { font-size: 1.15rem; color: var(--ink); margin: 0; line-height: 1.4; }
 	.note { font-size: 0.85rem; color: #6b5f54; line-height: 1.65; margin: 0; }
 
