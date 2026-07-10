@@ -210,7 +210,7 @@
 				<div>
 					<h2 class="detail-name">
 					{selected.name}
-					{#if selected.corporate}<span class="corp-badge" title="法人アカウント"><Icon name="badge-check" size={16} /></span>{/if}
+					{#if selected.adActive}<span class="corp-badge" title="法人アカウント"><Icon name="badge-check" size={16} /></span>{/if}
 				</h2>
 					<p class="detail-deg">{connectLabel(selected.__deg ?? selected.degree ?? 0)}</p>
 				</div>

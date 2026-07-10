@@ -301,7 +301,57 @@
 		isApplying = false;
 	}
 
+	// ---- 法人プラン（夜行人図鑑の広告） ----
+	let corpName = $state('');
+	let corpMsg = $state('');
+	let corpError = $state('');
+	let corpBusy = $state(false);
 
+	async function applyCorporate() {
+		corpError = ''; corpMsg = '';
+		if (!corpName.trim()) { corpError = '法人名（屋号）を入力してください'; return; }
+		corpBusy = true;
+		try {
+			const res = await fetch('/api/corporate/apply', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+				body: JSON.stringify({ corpName })
+			});
+			if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.message ?? '申請に失敗しました'); }
+			profile = { ...profile, corp_name: corpName.trim(), corp_status: 'pending' };
+			corpMsg = '法人申請を送信しました。運営の審査をお待ちください。';
+		} catch (e) { corpError = e.message; } finally { corpBusy = false; }
+	}
+
+	async function subscribeCorporate() {
+		corpError = '';
+		corpBusy = true;
+		try {
+			const res = await fetch('/api/subscription/checkout', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+				body: JSON.stringify({})
+			});
+			const d = await res.json().catch(() => ({}));
+			if (!res.ok || !d.url) throw new Error(d.message ?? '決済ページの作成に失敗しました');
+			window.location.href = d.url;
+		} catch (e) { corpError = e.message; corpBusy = false; }
+	}
+
+	async function openCorpPortal() {
+		corpError = '';
+		corpBusy = true;
+		try {
+			const res = await fetch('/api/subscription/portal', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+				body: JSON.stringify({})
+			});
+			const d = await res.json().catch(() => ({}));
+			if (!res.ok || !d.url) throw new Error(d.message ?? 'お支払い管理ページを開けませんでした');
+			window.location.href = d.url;
+		} catch (e) { corpError = e.message; corpBusy = false; }
+	}
 </script>
 
 <div class="page">
@@ -632,6 +682,47 @@
 				{/if}
 			</section>
 		{/if}
+
+		<!-- ===== 法人プラン（夜行人図鑑の広告） ===== -->
+		<section class="section">
+			<h3 class="section-title"><Icon name="badge-check" size={18} /> 法人プラン（夜行人図鑑の広告）</h3>
+			<p class="section-hint">法人として登録すると、夜行人図鑑に広告を掲載でき、名前の横に法人バッジが付きます。</p>
+
+			{#if corpError}<p class="error-msg">{corpError}</p>{/if}
+			{#if corpMsg}<p class="save-msg">{corpMsg}</p>{/if}
+
+			{#if profile.subscription_status === 'active'}
+				<div class="corp-box active">
+					<span class="corp-state ok"><Icon name="circle-check" size={14} /> 法人プランご利用中</span>
+					<p>夜行人図鑑に広告が掲載され、法人バッジが表示されています。</p>
+					<button class="corp-btn ghost" onclick={openCorpPortal} disabled={corpBusy}>お支払い・プランの管理</button>
+				</div>
+			{:else if profile.corp_status === 'approved'}
+				<div class="corp-box">
+					<span class="corp-state ok"><Icon name="circle-check" size={14} /> 法人審査 承認済み</span>
+					<p>法人プラン（月額）にお申し込みいただくと、広告掲載が始まります。</p>
+					<button class="corp-btn" onclick={subscribeCorporate} disabled={corpBusy}>法人プランに申し込む（月額）</button>
+					<p class="corp-fine">解約はいつでも「お支払い管理」から可能です。金額は申込画面に表示されます。</p>
+				</div>
+			{:else if profile.corp_status === 'pending'}
+				<div class="corp-box">
+					<span class="corp-state pending"><Icon name="clock" size={14} /> 審査中</span>
+					<p>法人申請を受け付けました。運営の審査完了をお待ちください。</p>
+				</div>
+			{:else}
+				<div class="corp-box">
+					{#if profile.corp_status === 'rejected'}
+						<span class="corp-state rejected"><Icon name="x" size={14} /> 前回の申請は承認されませんでした</span>
+					{/if}
+					<label class="field-label">
+						法人名 / 屋号
+						<input type="text" bind:value={corpName} class="field-input" placeholder="例: 株式会社 夜行社" />
+					</label>
+					<button class="corp-btn" onclick={applyCorporate} disabled={corpBusy}>法人として申請する</button>
+					<p class="corp-fine">申請後、運営が審査します。承認後にプランへお申し込みいただけます。</p>
+				</div>
+			{/if}
+		</section>
 
 		<!-- ===== ログアウト ===== -->
 		<div class="logout-section">
@@ -1316,6 +1407,32 @@
 
 	/* ===== オンラインストア申請 ===== */
 	.shop-apply-section { }
+
+	/* 法人プラン */
+	.corp-box {
+		background: var(--surface); border: 1px solid var(--line);
+		border-radius: var(--r-lg); padding: 16px 18px; box-shadow: var(--shadow-1);
+	}
+	.corp-box.active { background: var(--accent-tint); border-color: rgba(184, 92, 43, 0.28); }
+	.corp-box p { font-size: 0.85rem; color: var(--ink-2); line-height: 1.6; margin: 8px 0; }
+	.corp-state {
+		display: inline-flex; align-items: center; gap: 5px;
+		font-size: 0.78rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+	}
+	.corp-state.ok { background: rgba(95, 122, 82, 0.12); color: #4a6a3a; }
+	.corp-state.pending { background: rgba(184, 92, 43, 0.1); color: var(--accent-deep); }
+	.corp-state.rejected { background: rgba(184, 92, 43, 0.08); color: var(--accent-deep); }
+	.corp-btn {
+		width: 100%; margin-top: 8px; padding: 12px; border: none; border-radius: var(--r-md);
+		background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 600;
+		font-family: inherit; cursor: pointer; box-shadow: 0 2px 8px rgba(184, 92, 43, 0.22);
+		transition: background 0.15s;
+	}
+	.corp-btn:hover:not(:disabled) { background: var(--accent-deep); }
+	.corp-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+	.corp-btn.ghost { background: none; color: var(--ink); border: 1.5px solid var(--line-strong); box-shadow: none; }
+	.corp-btn.ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+	.corp-fine { font-size: 0.72rem !important; color: var(--ink-3) !important; margin: 8px 0 0 !important; }
 	.shop-status-box {
 		border-radius: 12px; padding: 16px;
 		margin-bottom: 8px;

@@ -69,31 +69,36 @@
 		}
 	}
 
-	async function toggleCorporate(user) {
-		const enable = user.account_type !== 'corporate';
-		const label = enable
-			? 'このユーザーを法人アカウントとして有効化（広告表示ON）しますか？'
-			: 'このユーザーの法人アカウントを解除（一般アカウント化・広告OFF）しますか？';
-		if (!confirm(label)) return;
+	async function corpAction(user, action, confirmText, patch, okMsg) {
+		if (!confirm(confirmText)) return;
 		isProcessing = true;
 		errMsg = '';
 		const res = await fetch('/api/admin/users', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ userId: user.user_id, action: enable ? 'enable_corporate' : 'disable_corporate' })
+			body: JSON.stringify({ userId: user.user_id, action })
 		});
 		isProcessing = false;
 		if (res.ok) {
-			msg = enable ? '法人アカウントを有効化しました' : '法人アカウントを解除しました';
-			users = users.map((u) => u.user_id === user.user_id
-				? { ...u, account_type: enable ? 'corporate' : 'individual', ad_active: enable, corp_status: enable ? 'approved' : 'none' }
-				: u);
+			msg = okMsg;
+			users = users.map((u) => u.user_id === user.user_id ? { ...u, ...patch } : u);
 			setTimeout(() => (msg = ''), 3000);
 		} else {
 			const d = await res.json().catch(() => ({}));
 			errMsg = d.message ?? '更新に失敗しました';
 		}
 	}
+
+	const approveCorporate = (u) => corpAction(u, 'approve_corporate',
+		'この法人申請を承認しますか？（決済後に広告表示が有効になります）',
+		{ account_type: 'corporate', corp_status: 'approved' }, '法人申請を承認しました');
+	const rejectCorporate = (u) => corpAction(u, 'reject_corporate',
+		'この法人申請を却下しますか？', { corp_status: 'rejected' }, '法人申請を却下しました');
+	// Stripe未使用のテスト用: 広告表示を強制ON/OFF
+	const testEnableCorp = (u) => corpAction(u, 'enable_corporate',
+		'【テスト】法人＋広告表示ONにしますか？', { account_type: 'corporate', corp_status: 'approved', ad_active: true }, 'テスト有効化しました');
+	const testDisableCorp = (u) => corpAction(u, 'disable_corporate',
+		'【テスト】法人を解除（広告OFF）しますか？', { account_type: 'individual', corp_status: 'none', ad_active: false }, 'テスト解除しました');
 
 	function scoreClass(score) {
 		if (score >= 200) return 'score-good';
@@ -171,13 +176,15 @@
 						>
 							スコアリセット (→300)
 						</button>
-						<button
-							class="action-btn corp"
-							onclick={() => toggleCorporate(user)}
-							disabled={isProcessing}
-						>
-							{user.account_type === 'corporate' ? '法人を解除' : '法人を有効化'}
-						</button>
+						{#if user.corp_status === 'pending'}
+							<button class="action-btn corp" onclick={() => approveCorporate(user)} disabled={isProcessing}>法人承認</button>
+							<button class="action-btn reject" onclick={() => rejectCorporate(user)} disabled={isProcessing}>却下</button>
+						{/if}
+						{#if user.account_type === 'corporate'}
+							<button class="action-btn corp-off" onclick={() => testDisableCorp(user)} disabled={isProcessing}>法人解除(テスト)</button>
+						{:else}
+							<button class="action-btn corp" onclick={() => testEnableCorp(user)} disabled={isProcessing}>法人有効化(テスト)</button>
+						{/if}
 					</div>
 				</div>
 			{/each}
@@ -266,6 +273,8 @@
 	.action-btn.unsuspend:hover:not(:disabled) { background: #14532d; }
 	.action-btn.corp { background: #b5892e; color: white; }
 	.action-btn.corp:hover:not(:disabled) { background: #9a7325; }
+	.action-btn.reject { background: none; border: 1px solid var(--line-strong); color: var(--accent-deep); }
+	.action-btn.corp-off { background: none; border: 1px solid var(--line-strong); color: var(--ink-2); }
 	.corp-badge-adm {
 		font-size: 0.68rem; font-weight: 700; color: #8a6a1e;
 		background: rgba(181, 137, 46, 0.14); border: 1px solid rgba(181, 137, 46, 0.4);

@@ -106,7 +106,7 @@
 							<div class="person-body">
 								<span class="person-name">
 									{p.name}
-									{#if p.corporate}<span class="corp-badge" title="法人アカウント"><Icon name="badge-check" size={15} /></span>{/if}
+									{#if p.adActive}<span class="corp-badge" title="法人アカウント"><Icon name="badge-check" size={15} /></span>{/if}
 								</span>
 								{#if p.roles?.length}
 									<span class="person-roles">

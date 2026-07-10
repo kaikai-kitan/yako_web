@@ -65,7 +65,27 @@ export async function POST({ request, cookies }) {
 		return json({ ok: true });
 	}
 
-	// 法人アカウントを有効化（承認＋広告表示ON）。※テスト有効化にも使用
+	// 法人申請を承認（法人化。広告表示は決済後にwebhookでON）
+	if (action === 'approve_corporate') {
+		const { error: err } = await supabase
+			.from('user_profiles')
+			.update({ account_type: 'corporate', corp_status: 'approved' })
+			.eq('user_id', userId);
+		if (err) throw error(500, err.message);
+		return json({ ok: true });
+	}
+
+	// 法人申請を却下
+	if (action === 'reject_corporate') {
+		const { error: err } = await supabase
+			.from('user_profiles')
+			.update({ corp_status: 'rejected' })
+			.eq('user_id', userId);
+		if (err) throw error(500, err.message);
+		return json({ ok: true });
+	}
+
+	// 法人アカウントを有効化（承認＋広告表示ON）。※Stripe未使用のテスト有効化用
 	if (action === 'enable_corporate') {
 		const { error: err } = await supabase
 			.from('user_profiles')

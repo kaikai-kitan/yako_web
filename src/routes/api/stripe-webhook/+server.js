@@ -186,7 +186,19 @@ export async function POST({ request }) {
 		const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 		const customerEmail = session.customer_details?.email ?? null;
 
-		if (metadata.type === 'rental' && metadata.reservationId) {
+		if (metadata.type === 'corporate_subscription' && metadata.userId) {
+			// 法人サブスク: 広告表示を有効化
+			const { error } = await supabase
+				.from('user_profiles')
+				.update({
+					stripe_customer_id: session.customer ?? null,
+					stripe_subscription_id: session.subscription ?? null,
+					subscription_status: 'active',
+					ad_active: true
+				})
+				.eq('user_id', metadata.userId);
+			if (error) console.error('Corporate subscription activate error:', error);
+		} else if (metadata.type === 'rental' && metadata.reservationId) {
 			// レンタル決済: 予約をアクティブ化
 			const { error } = await supabase
 				.from('reservations')
@@ -317,6 +329,39 @@ export async function POST({ request }) {
 					}
 				}
 			}
+		}
+	}
+
+	// --- サブスクの状態変化を広告表示に反映 ---
+	if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
+		const sub = event.data.object;
+		const supabaseUrl = env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+		const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+		if (supabaseUrl && serviceKey) {
+			const supabase = createClient(supabaseUrl, serviceKey);
+			const status = event.type === 'customer.subscription.deleted' ? 'canceled' : sub.status;
+			// active/trialing のときだけ広告表示ON。失効時は一般アカウントとして残す（広告OFF）
+			const adActive = status === 'active' || status === 'trialing';
+			const { error } = await supabase
+				.from('user_profiles')
+				.update({ subscription_status: status, ad_active: adActive })
+				.eq('stripe_subscription_id', sub.id);
+			if (error) console.error('Subscription update error:', error);
+		}
+	}
+
+	// --- 支払い失敗 ---
+	if (event.type === 'invoice.payment_failed') {
+		const invoice = event.data.object;
+		const subId = invoice.subscription;
+		const supabaseUrl = env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+		const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+		if (subId && supabaseUrl && serviceKey) {
+			const supabase = createClient(supabaseUrl, serviceKey);
+			await supabase
+				.from('user_profiles')
+				.update({ subscription_status: 'past_due' })
+				.eq('stripe_subscription_id', subId);
 		}
 	}
 
