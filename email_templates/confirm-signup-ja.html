@@ -1,0 +1,93 @@
+<!--
+  Supabase メールテンプレート（日本語）: Confirm signup（新規登録の確認）
+  貼り付け先: Supabase ダッシュボード → Authentication → Emails → 「Confirm signup」
+    - Subject（件名）: 【微小夜行電灯】メールアドレスの確認をお願いします
+    - Message body（本文）: 以下の <body> 内の HTML をそのまま貼り付け
+  変数: {{ .ConfirmationURL }} が確認リンクに置き換わります
+  ※ メール用にすべて inline スタイル＋table レイアウトで記述しています
+-->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">微小夜行電灯へのご登録ありがとうございます。下のボタンからメールアドレスの確認を完了してください。</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f1e6;margin:0;padding:24px 0;">
+  <tr>
+    <td align="center" style="padding:0 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#fffdf7;border:1px solid #e6dcc9;border-radius:16px;overflow:hidden;">
+
+        <!-- ヘッダー -->
+        <tr>
+          <td align="center" style="padding:32px 32px 8px;">
+            <img src="https://delta-yako.com/images/icon.png" width="56" height="56" alt="微小夜行電灯" style="display:block;border:0;outline:none;text-decoration:none;width:56px;height:56px;" />
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:0 32px 4px;">
+            <div style="font-family:'Hiragino Mincho ProN','Yu Mincho',serif;font-size:18px;font-weight:700;letter-spacing:0.08em;color:#262019;">微小夜行電灯</div>
+          </td>
+        </tr>
+
+        <!-- 本文 -->
+        <tr>
+          <td style="padding:20px 32px 8px;">
+            <h1 style="margin:0 0 16px;font-family:'Hiragino Mincho ProN','Yu Mincho',serif;font-size:20px;font-weight:700;color:#262019;text-align:center;letter-spacing:0.04em;">メールアドレスの確認</h1>
+            <p style="margin:0 0 14px;font-family:-apple-system,'Hiragino Sans',sans-serif;font-size:14px;line-height:1.8;color:#5c5248;">
+              このたびは微小夜行電灯にご登録いただき、ありがとうございます。<br />
+              下のボタンを押して、メールアドレスの確認を完了してください。
+            </p>
+          </td>
+        </tr>
+
+        <!-- ボタン -->
+        <tr>
+          <td align="center" style="padding:8px 32px 20px;">
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center" bgcolor="#b85c2b" style="border-radius:10px;">
+                  <a href="{{ .ConfirmationURL }}" target="_blank"
+                     style="display:inline-block;padding:14px 32px;font-family:-apple-system,'Hiragino Sans',sans-serif;font-size:15px;font-weight:600;letter-spacing:0.04em;color:#ffffff;text-decoration:none;border-radius:10px;">
+                    メールアドレスを確認する
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- 予備リンク -->
+        <tr>
+          <td style="padding:0 32px 20px;">
+            <p style="margin:0 0 8px;font-family:-apple-system,'Hiragino Sans',sans-serif;font-size:12px;line-height:1.7;color:#948979;">
+              ボタンが押せない場合は、以下のURLをブラウザに貼り付けてください。
+            </p>
+            <p style="margin:0;font-family:-apple-system,'Hiragino Sans',sans-serif;font-size:12px;line-height:1.7;word-break:break-all;">
+              <a href="{{ .ConfirmationURL }}" target="_blank" style="color:#9c4b20;text-decoration:underline;">{{ .ConfirmationURL }}</a>
+            </p>
+          </td>
+        </tr>
+
+        <!-- 注意書き -->
+        <tr>
+          <td style="padding:0 32px 28px;">
+            <div style="border-top:1px solid #e6dcc9;padding-top:16px;">
+              <p style="margin:0;font-family:-apple-system,'Hiragino Sans',sans-serif;font-size:12px;line-height:1.7;color:#948979;">
+                このメールにお心当たりがない場合は、お手数ですがそのまま破棄してください。確認が完了しない限り、アカウントは有効になりません。<br />
+                このリンクの有効期限は24時間です。
+              </p>
+            </div>
+          </td>
+        </tr>
+
+        <!-- フッター -->
+        <tr>
+          <td align="center" style="background-color:#2b3340;padding:20px 32px;">
+            <p style="margin:0 0 4px;font-family:'Hiragino Mincho ProN','Yu Mincho',serif;font-size:13px;letter-spacing:0.08em;color:#e6dcc9;">微小夜行電灯</p>
+            <p style="margin:0;font-family:-apple-system,'Hiragino Sans',sans-serif;font-size:11px;line-height:1.7;color:#948979;">
+              京都・鴨川の屋台シェアリングサービス<br />
+              このメールは送信専用です。ご返信いただいてもお答えできません。
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>

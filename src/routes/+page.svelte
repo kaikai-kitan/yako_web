@@ -7,7 +7,6 @@
 	import { onMount } from 'svelte';
 
 	import homeData from '$lib/assets/data/home.json';
-	import directoryList from '$lib/assets/data/directory.json';
 
 	let splash = $state();
 	let phrase1, phrase2, phrase3;
@@ -39,15 +38,26 @@
 		return html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
 	}
 
-	// ── 夜行人図鑑ノード ──
-	const NODE_SVG = [
-		{ x: 60,  y: 70  },
-		{ x: 300, y: 55  },
-		{ x: 55,  y: 215 },
-		{ x: 192, y: 155 },
-		{ x: 335, y: 210 },
+	// ── 夜行人ネットワーク（夜の星図：小さな灯りが縁でつながる）──
+	const STAR_NODES = [
+		{ x: 70,  y: 90,  r: 6,   hub: true },
+		{ x: 155, y: 52,  r: 3.5 },
+		{ x: 220, y: 120, r: 8,   hub: true },
+		{ x: 308, y: 70,  r: 4.5 },
+		{ x: 346, y: 158, r: 5 },
+		{ x: 118, y: 178, r: 4 },
+		{ x: 200, y: 222, r: 6.5, hub: true },
+		{ x: 296, y: 208, r: 3.5 },
+		{ x: 52,  y: 208, r: 3 }
 	];
-	const EDGES = [[0,1],[0,2],[1,3],[2,3],[3,4],[1,4]];
+	const STAR_EDGES = [[0,1],[1,2],[2,3],[3,4],[2,5],[5,6],[0,5],[6,7],[4,7],[6,8],[8,0],[2,6]];
+	const BG_STARS = [
+		{ x: 38, y: 42, r: 1 }, { x: 112, y: 30, r: 1.2 }, { x: 190, y: 38, r: 0.9 },
+		{ x: 270, y: 32, r: 1 }, { x: 356, y: 48, r: 1.1 }, { x: 30, y: 130, r: 0.9 },
+		{ x: 372, y: 110, r: 1 }, { x: 260, y: 150, r: 1.2 }, { x: 90, y: 240, r: 1 },
+		{ x: 160, y: 258, r: 0.9 }, { x: 250, y: 258, r: 1.1 }, { x: 340, y: 245, r: 1 },
+		{ x: 150, y: 110, r: 0.9 }, { x: 300, y: 250, r: 0.8 }
+	];
 
 	// ── ニュース（掲載・受賞） ──
 	const newsList = [
@@ -301,8 +311,8 @@
 	</div>
 
 	<div class="net-layout">
-		<!-- ネットワーク・ビジュアル -->
-		<div class="network-wrap">
+		<!-- ネットワーク・ビジュアル（夜の星図） -->
+		<a href="{base}/directory" class="starmap" aria-label="夜行人図鑑を見る">
 			<svg
 				class="network-svg"
 				class:animate={linesVisible}
@@ -310,31 +320,29 @@
 				preserveAspectRatio="xMidYMid meet"
 				aria-hidden="true"
 			>
-				{#each EDGES as [from, to], i}
+				<!-- 背景の微光 -->
+				{#each BG_STARS as s}
+					<circle class="bg-star" cx={s.x} cy={s.y} r={s.r} />
+				{/each}
+				<!-- 縁（つながり） -->
+				{#each STAR_EDGES as [a, b], i}
 					<line
-						class="network-edge"
-						x1={NODE_SVG[from].x} y1={NODE_SVG[from].y}
-						x2={NODE_SVG[to].x}   y2={NODE_SVG[to].y}
-						style="transition-delay: {i * 0.18}s"
+						class="star-edge"
+						x1={STAR_NODES[a].x} y1={STAR_NODES[a].y}
+						x2={STAR_NODES[b].x} y2={STAR_NODES[b].y}
+						style="transition-delay: {i * 0.12}s"
 					/>
 				{/each}
+				<!-- 灯り（夜行人） -->
+				{#each STAR_NODES as n, i}
+					<g class="star-node" style="animation-delay: {i * 0.45}s">
+						<circle class="halo" cx={n.x} cy={n.y} r={n.r * 2.6} />
+						<circle class="core" class:hub={n.hub} cx={n.x} cy={n.y} r={n.r} />
+					</g>
+				{/each}
 			</svg>
-
-			{#each directoryList.slice(0, NODE_SVG.length) as person, i}
-				<a
-					href="{base}/directory"
-					class="node"
-					style="left: {(NODE_SVG[i].x / 400) * 100}%; top: {(NODE_SVG[i].y / 280) * 100}%"
-				>
-					{#if person.image}
-						<img src="{base + person.image}" alt={person.name} class="node-img" loading="lazy" decoding="async" />
-					{:else}
-						<div class="node-placeholder">{person.name[0]}</div>
-					{/if}
-					<span class="node-label">{person.name}</span>
-				</a>
-			{/each}
-		</div>
+			<span class="starmap-caption">縁が広がる夜の星図</span>
+		</a>
 
 		<!-- 何ができるか（3ステップ） -->
 		<ol class="net-steps">
@@ -670,44 +678,49 @@
 	.section-title { font-size: 1.3rem; font-weight: 700; color: var(--ink); letter-spacing: 0.1em; }
 	.section-desc  { font-size: 0.85rem; color: var(--ink-2); letter-spacing: 0.03em; }
 
-	.network-wrap {
-		position: relative;
-		width: 100%;
-		max-width: 500px;
+	/* ── 夜の星図（ネットワーク・ビジュアル）── */
+	.starmap {
+		position: relative; display: block;
+		width: 100%; max-width: 500px; margin: 0 auto;
 		aspect-ratio: 400 / 280;
-		margin: 0 auto;
+		border-radius: var(--r-lg);
+		overflow: hidden;
+		background:
+			radial-gradient(120% 90% at 30% 20%, #3c4658 0%, #2b3340 55%, #232a35 100%);
+		box-shadow: var(--shadow-2), inset 0 0 60px rgba(0,0,0,0.35);
+		text-decoration: none;
 	}
 	.network-svg {
 		position: absolute; inset: 0; width: 100%; height: 100%;
 	}
-	.network-edge {
-		stroke: var(--accent); stroke-width: 1.5; fill: none;
-		stroke-dasharray: 600; stroke-dashoffset: 600;
-		transition: stroke-dashoffset 0.9s ease;
-	}
-	.network-svg.animate .network-edge { stroke-dashoffset: 0; }
+	.bg-star { fill: #fff; opacity: 0.14; }
 
-	.node {
-		position: absolute;
-		transform: translate(-50%, -50%);
-		display: flex; flex-direction: column; align-items: center;
-		gap: 4px; text-decoration: none; color: var(--ink); z-index: 1;
+	.star-edge {
+		stroke: rgba(240, 192, 120, 0.4); stroke-width: 1.1; fill: none;
+		stroke-dasharray: 500; stroke-dashoffset: 500;
+		transition: stroke-dashoffset 1s ease;
 	}
-	.node-img {
-		width: 56px; height: 56px; border-radius: 50%;
-		object-fit: cover; border: 2px solid var(--line);
-		background: var(--surface-sunk); transition: border-color 0.2s, transform 0.2s;
+	.network-svg.animate .star-edge { stroke-dashoffset: 0; }
+
+	.star-node { animation: flicker 3.5s ease-in-out infinite; transform-origin: center; }
+	.halo { fill: #b85c2b; opacity: 0.22; }
+	.core { fill: #f0c078; }
+	.core.hub { fill: #ffdca0; }
+	@keyframes flicker {
+		0%, 100% { opacity: 1; }
+		45%      { opacity: 0.72; }
 	}
-	.node-placeholder {
-		width: 56px; height: 56px; border-radius: 50%;
-		background: var(--surface-sunk); border: 2px solid var(--line);
-		display: flex; align-items: center; justify-content: center;
-		font-size: 1.1rem; font-weight: 700; color: var(--ink-2);
-		transition: border-color 0.2s, transform 0.2s;
+
+	.starmap-caption {
+		position: absolute; left: 0; right: 0; bottom: 12px;
+		text-align: center; font-size: 0.72rem; letter-spacing: 0.14em;
+		color: rgba(240, 224, 196, 0.7);
+		font-family: "Zen Antique", serif;
 	}
-	.node:hover .node-img,
-	.node:hover .node-placeholder { border-color: var(--accent); transform: scale(1.1); }
-	.node-label { font-size: 0.7rem; color: var(--ink-2); white-space: nowrap; letter-spacing: 0.02em; }
+	.starmap:hover .starmap-caption { color: rgba(240, 224, 196, 0.95); }
+	@media (prefers-reduced-motion: reduce) {
+		.star-node { animation: none; }
+	}
 
 	/* レイアウト: ネットワーク + ステップ説明 */
 	.net-layout {
@@ -720,7 +733,7 @@
 	}
 	@media (min-width: 820px) {
 		.net-layout { grid-template-columns: 1.05fr 0.95fr; gap: 40px; }
-		.network-wrap { margin: 0; }
+		.starmap { margin: 0; }
 	}
 
 	/* 何ができるか: 3ステップ */
@@ -851,8 +864,4 @@
 		.news-thumb { aspect-ratio: 21 / 9; }
 	}
 
-	@media (max-width: 480px) {
-		.node-img, .node-placeholder { width: 42px; height: 42px; font-size: 0.9rem; }
-		.node-label { font-size: 0.6rem; }
-	}
 </style>
