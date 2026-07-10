@@ -2,6 +2,7 @@
 <script>
 	import ImageSlideshow from '$lib/components/ImageSlideshow.svelte';
 	import SplashView from '$lib/components/SplashView.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { base } from '$app/paths';
 	import { onMount } from 'svelte';
 
@@ -295,45 +296,76 @@
 <section class="directory-network-section" bind:this={networkSection}>
 	<div class="section-header">
 		<span class="section-sep"></span>
-		<h2 class="section-title">夜行人図鑑</h2>
-		<p class="section-desc">屋台に集まった、ちょっと変わった夜行人たち</p>
+		<h2 class="section-title">夜行人ネットワーク</h2>
+		<p class="section-desc">屋台での一夜の出会いを、夜の人脈に。</p>
 	</div>
 
-	<div class="network-wrap">
-		<svg
-			class="network-svg"
-			class:animate={linesVisible}
-			viewBox="0 0 400 280"
-			preserveAspectRatio="xMidYMid meet"
-			aria-hidden="true"
-		>
-			{#each EDGES as [from, to], i}
-				<line
-					class="network-edge"
-					x1={NODE_SVG[from].x} y1={NODE_SVG[from].y}
-					x2={NODE_SVG[to].x}   y2={NODE_SVG[to].y}
-					style="transition-delay: {i * 0.18}s"
-				/>
-			{/each}
-		</svg>
-
-		{#each directoryList.slice(0, NODE_SVG.length) as person, i}
-			<a
-				href="{base}/directory"
-				class="node"
-				style="left: {(NODE_SVG[i].x / 400) * 100}%; top: {(NODE_SVG[i].y / 280) * 100}%"
+	<div class="net-layout">
+		<!-- ネットワーク・ビジュアル -->
+		<div class="network-wrap">
+			<svg
+				class="network-svg"
+				class:animate={linesVisible}
+				viewBox="0 0 400 280"
+				preserveAspectRatio="xMidYMid meet"
+				aria-hidden="true"
 			>
-				{#if person.image}
-					<img src="{base + person.image}" alt={person.name} class="node-img" loading="lazy" decoding="async" />
-				{:else}
-					<div class="node-placeholder">{person.name[0]}</div>
-				{/if}
-				<span class="node-label">{person.name}</span>
-			</a>
-		{/each}
+				{#each EDGES as [from, to], i}
+					<line
+						class="network-edge"
+						x1={NODE_SVG[from].x} y1={NODE_SVG[from].y}
+						x2={NODE_SVG[to].x}   y2={NODE_SVG[to].y}
+						style="transition-delay: {i * 0.18}s"
+					/>
+				{/each}
+			</svg>
+
+			{#each directoryList.slice(0, NODE_SVG.length) as person, i}
+				<a
+					href="{base}/directory"
+					class="node"
+					style="left: {(NODE_SVG[i].x / 400) * 100}%; top: {(NODE_SVG[i].y / 280) * 100}%"
+				>
+					{#if person.image}
+						<img src="{base + person.image}" alt={person.name} class="node-img" loading="lazy" decoding="async" />
+					{:else}
+						<div class="node-placeholder">{person.name[0]}</div>
+					{/if}
+					<span class="node-label">{person.name}</span>
+				</a>
+			{/each}
+		</div>
+
+		<!-- 何ができるか（3ステップ） -->
+		<ol class="net-steps">
+			<li class="net-step">
+				<span class="net-step-ic"><Icon name="yatai" size={22} /></span>
+				<div class="net-step-body">
+					<strong>屋台で出会う</strong>
+					<p>夜の屋台で、ちょっと変わった人と隣り合う。</p>
+				</div>
+			</li>
+			<li class="net-step">
+				<span class="net-step-ic"><Icon name="qr-code" size={22} /></span>
+				<div class="net-step-body">
+					<strong>QRでつながる</strong>
+					<p>お互いのQRを読み取れば「夜行人」として登録。実名や連絡先は不要。</p>
+				</div>
+			</li>
+			<li class="net-step">
+				<span class="net-step-ic"><Icon name="share" size={22} /></span>
+				<div class="net-step-body">
+					<strong>縁が星図に広がる</strong>
+					<p>つながりは3Dネットワーク（星図）として可視化され、夜ごとに育っていく。</p>
+				</div>
+			</li>
+		</ol>
 	</div>
 
-	<a href="{base}/directory" class="directory-more">夜行人図鑑を見る →</a>
+	<div class="net-ctas">
+		<a href="{base}/directory" class="net-cta primary">夜行人図鑑を見る →</a>
+		<a href="{base}/yakonin/setup" class="net-cta ghost">夜行人になる</a>
+	</div>
 </section>
 
 <!-- ニュース（掲載・受賞） -->
@@ -677,13 +709,65 @@
 	.node:hover .node-placeholder { border-color: var(--accent); transform: scale(1.1); }
 	.node-label { font-size: 0.7rem; color: var(--ink-2); white-space: nowrap; letter-spacing: 0.02em; }
 
-	.directory-more {
-		display: inline-block; margin-top: 28px;
-		font-size: 0.9rem; color: var(--accent); text-decoration: none;
-		letter-spacing: 0.05em; border-bottom: 1px solid transparent;
-		transition: border-color 0.2s;
+	/* レイアウト: ネットワーク + ステップ説明 */
+	.net-layout {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 8px;
+		max-width: 940px;
+		margin: 0 auto;
+		align-items: center;
 	}
-	.directory-more:hover { border-bottom-color: var(--accent); }
+	@media (min-width: 820px) {
+		.net-layout { grid-template-columns: 1.05fr 0.95fr; gap: 40px; }
+		.network-wrap { margin: 0; }
+	}
+
+	/* 何ができるか: 3ステップ */
+	.net-steps {
+		list-style: none; margin: 0; padding: 0;
+		display: flex; flex-direction: column; gap: 14px;
+		text-align: left;
+	}
+	.net-step {
+		display: flex; align-items: flex-start; gap: 14px;
+		background: var(--surface);
+		border: 1px solid var(--line);
+		border-radius: var(--r-lg);
+		padding: 16px 18px;
+		box-shadow: var(--shadow-1);
+		margin: 0;
+	}
+	.net-step-ic {
+		flex-shrink: 0;
+		width: 42px; height: 42px; border-radius: 12px;
+		display: inline-flex; align-items: center; justify-content: center;
+		background: var(--accent-tint); color: var(--accent);
+	}
+	.net-step-body strong { display: block; font-size: 0.98rem; color: var(--ink); margin-bottom: 3px; }
+	.net-step-body p { font-size: 0.82rem; color: var(--ink-2); line-height: 1.6; margin: 0; }
+
+	/* CTA */
+	.net-ctas {
+		display: flex; flex-wrap: wrap; gap: 12px;
+		justify-content: center; align-items: center;
+		margin-top: 32px;
+	}
+	.net-cta {
+		display: inline-flex; align-items: center; justify-content: center;
+		padding: 12px 24px; border-radius: 100px;
+		font-size: 0.92rem; font-weight: 600; text-decoration: none;
+		letter-spacing: 0.03em; transition: all 0.15s ease;
+	}
+	.net-cta.primary {
+		background: var(--accent); color: #fff;
+		box-shadow: 0 2px 10px rgba(184, 92, 43, 0.25);
+	}
+	.net-cta.primary:hover { background: var(--accent-deep); transform: translateY(-1px); }
+	.net-cta.ghost {
+		background: none; color: var(--ink); border: 1.5px solid var(--line-strong);
+	}
+	.net-cta.ghost:hover { border-color: var(--accent); color: var(--accent); }
 
 	/* ===== ニュース ===== */
 	.news-section {
