@@ -82,10 +82,6 @@
 		} catch { /* QR 生成失敗は致命的でない */ }
 	}
 
-	async function copyConnectUrl() {
-		try { await navigator.clipboard.writeText(connectUrl); } catch { /* noop */ }
-	}
-
 	async function handleSave() {
 		if (!handle.trim()) { saveError = 'ニックネームを入力してください'; return; }
 		// 既にロック済みなら名前は元に戻す（変更させない）
@@ -226,12 +222,8 @@
 				<h2 class="qr-title">あなたの接続QR</h2>
 				<p class="muted">相手にこれを読み取ってもらうと、その場でつながれます（Instagram の QR のような感覚です）。</p>
 				<img src={connectQr} alt="接続QRコード" class="qr-img" />
-				<div class="url-row">
-					<input type="text" readonly value={connectUrl} />
-					<button onclick={copyConnectUrl}>コピー</button>
-				</div>
 				<p class="nfc-hint">
-					このURLを NFC タグ（カードキー）に書き込めば、営業中にレジへ置いて<strong>タッチで繋がる</strong>使い方もできます。
+					タッチで繋がる <strong>NFCカード</strong>（レジに置いて使えます）は、追って公式より提供予定です。
 				</p>
 			</div>
 		{/if}
@@ -289,8 +281,5 @@
 	}
 	.qr-title { font-size: 1rem; color: var(--ink); margin-bottom: 0.4rem; }
 	.qr-img { width: 220px; height: 220px; margin-top: 12px; }
-	.url-row { display: flex; gap: 8px; margin: 14px auto 0; max-width: 320px; }
-	.url-row input { flex: 1; border: 1px solid #ded3c4; border-radius: 8px; padding: 8px 10px; font-size: 0.72rem; color: #5a4f45; background: var(--surface-sunk); }
-	.url-row button { border: none; background: var(--ink); color: #fff; border-radius: 8px; padding: 0 14px; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
 	.nfc-hint { font-size: 0.76rem; color: #6b5f54; line-height: 1.6; margin: 12px 0 0; }
 </style>
