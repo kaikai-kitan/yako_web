@@ -12,6 +12,10 @@ node_modules
 .DS_Store
 Thumbs.db
 
+# デザイン作業用フォルダ（アプリは static/images/ を使用）
+/images/
+*.studio3
+
 # Env
 .env
 .env.*
