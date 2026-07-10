@@ -313,8 +313,8 @@
 		});
 	}
 
-	// 屋台アイコン（提灯絵文字の代わり。店舗＝屋台のラインアイコン）
-	const STALL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#b85c2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>';
+	// 屋台アイコン（提灯絵文字の代わり。屋台＝ひさし・カウンター・車輪のラインアイコン）
+	const STALL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#b85c2b" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><path d="M12 5.5V3h2.6l-.9 1.1.9 1.1H12"/><path d="M3.5 10 5.5 6h13l2 4"/><path d="M3 10h18"/><path d="M5.5 10v7h13v-7"/><path d="M5.5 13.5h13"/><circle cx="9" cy="19.4" r="1.3"/><circle cx="15" cy="19.4" r="1.3"/></svg>';
 
 	function makeMarkerEl(type, opts = {}) {
 		const el = document.createElement('div');
@@ -1004,9 +1004,9 @@
 
 			{#if currentView === 'map' && mapMode === 'available'}
 				<div class="legend">
-					<span class="legend-item">🔵 スペース</span>
-					<span class="legend-item">🟡 屋台</span>
-					<span class="legend-item">⚫ 予約済み</span>
+					<span class="legend-item"><span class="lg-ic lg-space"><Icon name="map-pin" size={14} /></span> スペース</span>
+					<span class="legend-item"><span class="lg-ic lg-stall"><Icon name="yatai" size={14} /></span> 屋台</span>
+					<span class="legend-item"><span class="lg-ic lg-booked"><Icon name="yatai" size={14} /></span> 予約済み</span>
 				</div>
 			{/if}
 		</div>
@@ -1020,7 +1020,7 @@
 						<img src={selectedStall.image} alt={selectedStall.name} class="stall-thumb" />
 					{:else}
 						<div class="stall-thumb no-image">
-							{#if selectedStall.status === 'stall'}<Icon name="store" size={30} />{:else}<Icon name="map-pin" size={30} />{/if}
+							{#if selectedStall.status === 'stall'}<Icon name="yatai" size={30} />{:else}<Icon name="map-pin" size={30} />{/if}
 						</div>
 					{/if}
 					<div class="stall-info">
@@ -1063,7 +1063,7 @@
 								<p class="specs specs-icon"><Icon name="map-pin" size={14} /> {selectedStall.address}</p>
 							{/if}
 							<div class="space-meta">
-								<span class="meta-icon"><Icon name="store" size={14} /> 最大 {selectedStall.maxStalls ?? 1} 台</span>
+								<span class="meta-icon"><Icon name="yatai" size={14} /> 最大 {selectedStall.maxStalls ?? 1} 台</span>
 								<span>👥 {selectedStall.capacity ?? 10} 名まで</span>
 							</div>
 							<p class="price">¥{(selectedStall.price ?? 0).toLocaleString()} / 泊</p>
@@ -1799,9 +1799,14 @@
 	.legend {
 		position: absolute; bottom: 88px; left: 12px;
 		background: white; border-radius: 10px; padding: 7px 12px;
-		display: flex; gap: 10px; font-size: 0.72rem; color: var(--ink-2);
+		display: flex; gap: 12px; font-size: 0.72rem; color: var(--ink-2);
 		box-shadow: 0 2px 8px rgba(0,0,0,0.12); z-index: 800;
 	}
+	.legend-item { display: inline-flex; align-items: center; gap: 5px; }
+	.lg-ic { display: inline-flex; align-items: center; }
+	.lg-space :global(.icon) { color: #3b82f6; }
+	.lg-stall :global(.icon) { color: var(--accent); }
+	.lg-booked :global(.icon) { color: var(--ink-3); }
 
 	.map-overlay {
 		position: absolute; bottom: 96px; left: 50%; transform: translateX(-50%);

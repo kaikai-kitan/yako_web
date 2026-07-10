@@ -121,7 +121,7 @@
 				{#if wantYakonin}
 					<label class="field-label nested">
 						ニックネーム
-						<input type="text" bind:value={handle} class="field-input" maxlength="20" placeholder="例: タオ" />
+						<input type="text" bind:value={handle} class="field-input" maxlength="20" placeholder="例: ヤタイ タロウ" />
 					</label>
 				{/if}
 			</div>

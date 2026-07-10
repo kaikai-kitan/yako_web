@@ -89,7 +89,7 @@
                         マイページ
                     </a>
                     <a href="{base}/mypage/operator" class="dropdown-item" onclick={closeUserMenu} role="menuitem">
-                        🛍 出店者管理
+                        出店者管理
                     </a>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item dropdown-signout" onclick={handleSignOut} role="menuitem">

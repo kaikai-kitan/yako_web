@@ -175,7 +175,7 @@
 		<div class="form">
 			<label class="field">
 				<span class="label">ニックネーム <span class="req">必須</span></span>
-				<input type="text" bind:value={handle} maxlength="20" placeholder="例：タオ"
+				<input type="text" bind:value={handle} maxlength="20" placeholder="例：ヤタイ　タロウ"
 					disabled={handleLocked} />
 				{#if handleLocked}
 					<span class="field-note">名前は変更済みのため、これ以上変更できません。</span>
