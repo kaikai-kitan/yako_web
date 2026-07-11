@@ -347,6 +347,7 @@
 		});
 
 		graph.onEngineStop(() => {
+			refreshRoamRadius(); // 配置確定ごとに実測し、軌道を外側へ自動拡張
 			startRoaming(); // レイアウト確定後に放浪者の周回を開始
 			try { graph.zoomToFit(700, 80); } catch { /* noop */ }
 			// 単一・少数ノードでカメラが寄りすぎて見切れるのを防ぐ（最小距離）
@@ -371,6 +372,25 @@
 		resizeObs = new ResizeObserver(syncSize);
 		resizeObs.observe(container);
 	});
+
+	// 非放浪ノードの実際の広がり（原点からの距離＋見た目サイズ）を測る
+	function measuredExtent() {
+		if (!prepared) return 0;
+		let maxR = 0;
+		for (const n of prepared.nodes) {
+			if (!n || n.adActive) continue; // 放浪者自身は除外
+			const half = (BASE * (n.__mult || 1)) * 0.5; // ノードの見た目半径
+			const d = Math.hypot(n.x || 0, n.y || 0, n.z || 0) + half;
+			if (d > maxR) maxR = d;
+		}
+		return maxR;
+	}
+
+	// ネットワークが育っても放浪軌道が密集クラスタに食い込まないよう、外周へ自動拡張（縮小はしない）
+	function refreshRoamRadius() {
+		const want = measuredExtent() + 90; // クラスタ外側にマージン
+		if (want > roamRadius) roamRadius = want;
+	}
 
 	// 放浪者（契約中法人）を外周でゆっくり周回させる。各ノードで半径・位相・上下動を変える。
 	function startRoaming() {
