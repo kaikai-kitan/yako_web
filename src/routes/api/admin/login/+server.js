@@ -15,9 +15,13 @@ export async function POST({ request, cookies }) {
 	const { password } = body;
 	const secret = env.ADMIN_SECRET;
 
+	// 貼り付け時に末尾へ改行/空白が混入しても弾かないよう、前後の空白を除去してから比較する
+	const passwordStr = (typeof password === 'string' ? password : '').trim();
+	const secretStr   = (typeof secret   === 'string' ? secret   : '').trim();
+
 	// timingSafeEqual でタイミング攻撃を防ぐ。長さが異なる場合も即時拒否ではなくdummyで比較
-	const passwordBuf = Buffer.from(typeof password === 'string' ? password : '');
-	const secretBuf   = Buffer.from(typeof secret   === 'string' ? secret   : '');
+	const passwordBuf = Buffer.from(passwordStr);
+	const secretBuf   = Buffer.from(secretStr);
 	const valid = secret && password &&
 		passwordBuf.length === secretBuf.length &&
 		timingSafeEqual(passwordBuf, secretBuf);
