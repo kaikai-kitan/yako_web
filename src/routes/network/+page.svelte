@@ -226,6 +226,28 @@
 			{#if selected.status}<p class="detail-status">{selected.status}</p>{/if}
 			{#if selected.message && selected.message.replace(/[「」\s]/g, '')}<p class="detail-msg">{selected.message}</p>{/if}
 
+			{#if selected.adActive && selected.ad}
+				<div class="detail-ad">
+					<span class="ad-label"><Icon name="badge-check" size={12} /> PR</span>
+					{#if selected.ad.image}
+						<img src={selected.ad.image} alt="広告" class="ad-image" />
+					{/if}
+					{#if selected.ad.headline}<p class="ad-headline">{selected.ad.headline}</p>{/if}
+					<div class="ad-links">
+						{#if selected.ad.storeUrl}
+							<a href={selected.ad.storeUrl} target="_blank" rel="noopener noreferrer" class="ad-link store">
+								<Icon name="store" size={14} /> オンラインストア
+							</a>
+						{/if}
+						{#if selected.ad.recruitUrl}
+							<a href={selected.ad.recruitUrl} target="_blank" rel="noopener noreferrer" class="ad-link recruit">
+								<Icon name="clipboard-list" size={14} /> 採用情報
+							</a>
+						{/if}
+					</div>
+				</div>
+			{/if}
+
 			{#if selectedStalls.length > 0}
 				<div class="detail-stalls">
 					<span class="detail-stalls-label">屋台の営業情報</span>
@@ -374,6 +396,18 @@
 	.role-chip::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--dot, #6b7688); }
 	.detail-status { font-size: 0.85rem; color: var(--ink-2); margin: 14px 0 0; letter-spacing: 0.03em; }
 	.detail-msg { font-size: 0.9rem; color: var(--ink-2); margin: 8px 0 0; line-height: 1.7; font-style: italic; }
+
+	/* 法人広告（PR） */
+	.detail-ad { margin-top: 16px; padding: 14px; border-radius: 12px; background: rgba(181,137,46,0.08); border: 1px solid rgba(181,137,46,0.3); }
+	.ad-label { display: inline-flex; align-items: center; gap: 4px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; color: #8a6a1e; background: rgba(181,137,46,0.16); padding: 2px 8px; border-radius: 20px; }
+	.ad-image { display: block; width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px; margin: 10px 0 0; }
+	.ad-headline { font-size: 0.92rem; color: var(--ink); font-weight: 600; line-height: 1.6; margin: 10px 0 0; }
+	.ad-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+	.ad-link { display: inline-flex; align-items: center; gap: 5px; font-size: 0.78rem; font-weight: 600; text-decoration: none; padding: 7px 12px; border-radius: 8px; }
+	.ad-link.store { background: var(--accent); color: #fff; }
+	.ad-link.store:hover { background: var(--accent-deep); }
+	.ad-link.recruit { background: none; color: var(--ink); border: 1px solid var(--line-strong); }
+	.ad-link.recruit:hover { border-color: var(--accent); color: var(--accent); }
 	.detail-stalls { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
 	.detail-stalls-label { font-size: 0.72rem; color: var(--ink-3); letter-spacing: 0.08em; }
 	.stall-link {

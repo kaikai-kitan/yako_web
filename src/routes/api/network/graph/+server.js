@@ -42,9 +42,9 @@ export async function GET({ setHeaders }) {
 		let ups = null;
 		const r = await supabase
 			.from('user_profiles')
-			.select('user_id, is_shop_operator, is_yatai_owner, is_land_owner, user_type, account_type, ad_active')
+			.select('user_id, is_shop_operator, is_yatai_owner, is_land_owner, user_type, account_type, ad_active, ad_headline, ad_store_url, ad_recruit_url, ad_image_path, icon_shape')
 			.in('user_id', [...publicIds]);
-		if (r.error && (r.error.code === '42703' || /account_type|ad_active/.test(r.error.message ?? ''))) {
+		if (r.error && r.error.code === '42703') {
 			const r2 = await supabase
 				.from('user_profiles')
 				.select('user_id, is_shop_operator, is_yatai_owner, is_land_owner, user_type')
@@ -57,7 +57,14 @@ export async function GET({ setHeaders }) {
 			roleMap[p.user_id] = rolesFor(p);
 			corpMap[p.user_id] = {
 				corporate: p.account_type === 'corporate',
-				adActive: p.ad_active === true
+				adActive: p.ad_active === true,
+				shape: p.icon_shape || 'circle',
+				ad: p.ad_active === true ? {
+					headline: p.ad_headline || '',
+					storeUrl: p.ad_store_url || '',
+					recruitUrl: p.ad_recruit_url || '',
+					image: p.ad_image_path || ''
+				} : null
 			};
 		}
 	}
@@ -89,6 +96,8 @@ export async function GET({ setHeaders }) {
 		degree: degree[p.user_id] ?? 0,
 		corporate: corpMap[p.user_id]?.corporate ?? false,
 		adActive: corpMap[p.user_id]?.adActive ?? false,
+		shape: corpMap[p.user_id]?.shape ?? 'circle',
+		ad: corpMap[p.user_id]?.ad ?? null,
 		type: 'person'
 	}));
 

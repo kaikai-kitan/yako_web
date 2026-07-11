@@ -16,9 +16,11 @@
 		updateMenuItem,
 		deleteMenuItem,
 		uploadImage,
+		setIconShape,
 		signOut
 	} from '$lib/db.js';
 	import Icon from '$lib/components/Icon.svelte';
+	import ShapeIcon from '$lib/components/ShapeIcon.svelte';
 
 	let profile = $state(null);
 	let mySpaces = $state([]);
@@ -124,6 +126,22 @@
 				}
 			} catch { /* noop */ }
 			history.replaceState(null, '', `${base}/mypage`); // URLを整える（リロード時の再同期を防ぐ）
+		}
+
+		// アイコン形状の買い切り決済からの復帰: Stripe と同期して所有形状を反映
+		if (params.get('shape') === 'bought' && params.get('sid')) {
+			try {
+				const res = await fetch('/api/shapes/sync', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+					body: JSON.stringify({ sessionId: params.get('sid') })
+				});
+				if (res.ok) {
+					profile = await getMyProfile(userId);
+					shapeMsg = 'アイコンの形を購入しました。下から選んで反映できます。';
+				}
+			} catch { /* noop */ }
+			history.replaceState(null, '', `${base}/mypage`);
 		}
 
 		isLoading = false;
@@ -340,35 +358,51 @@
 		} catch (e) { corpError = e.message; } finally { corpBusy = false; }
 	}
 
-	async function subscribeCorporate() {
-		corpError = '';
-		corpBusy = true;
+	// ---- アイコン形状（買い切りカスタマイズ） ----
+	const SHAPE_LIST = [
+		{ key: 'star', label: '星' },
+		{ key: 'heart', label: 'ハート' },
+		{ key: 'diamond', label: '菱形' },
+		{ key: 'hexagon', label: '六角形' }
+	];
+	const SHAPE_PRICE = 500;
+	let shapeMsg = $state('');
+	let shapeError = $state('');
+	let shapeBusy = $state(false);
+
+	let ownedShapes = $derived(Array.isArray(profile?.owned_shapes) ? profile.owned_shapes : []);
+	let currentShape = $derived(profile?.icon_shape ?? 'circle');
+
+	async function selectShape(shape) {
+		if (shape !== 'circle' && !ownedShapes.includes(shape)) return;
+		shapeError = ''; shapeMsg = '';
+		const prev = profile.icon_shape;
+		profile = { ...profile, icon_shape: shape }; // 楽観的更新
 		try {
-			const res = await fetch('/api/subscription/checkout', {
+			await setIconShape(userId, shape);
+			shapeMsg = 'アイコンの形を変更しました。';
+			setTimeout(() => (shapeMsg = ''), 2500);
+		} catch (e) {
+			profile = { ...profile, icon_shape: prev };
+			shapeError = '変更に失敗しました。';
+		}
+	}
+
+	async function buyShape(shape) {
+		shapeError = ''; shapeMsg = '';
+		shapeBusy = true;
+		try {
+			const res = await fetch('/api/shapes/checkout', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-				body: JSON.stringify({})
+				body: JSON.stringify({ shape })
 			});
 			const d = await res.json().catch(() => ({}));
 			if (!res.ok || !d.url) throw new Error(d.message ?? '決済ページの作成に失敗しました');
 			window.location.href = d.url;
-		} catch (e) { corpError = e.message; corpBusy = false; }
+		} catch (e) { shapeError = e.message; shapeBusy = false; }
 	}
 
-	async function openCorpPortal() {
-		corpError = '';
-		corpBusy = true;
-		try {
-			const res = await fetch('/api/subscription/portal', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-				body: JSON.stringify({})
-			});
-			const d = await res.json().catch(() => ({}));
-			if (!res.ok || !d.url) throw new Error(d.message ?? 'お支払い管理ページを開けませんでした');
-			window.location.href = d.url;
-		} catch (e) { corpError = e.message; corpBusy = false; }
-	}
 </script>
 
 <div class="page">
@@ -708,18 +742,18 @@
 			{#if corpError}<p class="error-msg">{corpError}</p>{/if}
 			{#if corpMsg}<p class="save-msg">{corpMsg}</p>{/if}
 
-			{#if profile.subscription_status === 'active'}
+			{#if profile.subscription_status === 'active' || profile.subscription_status === 'trialing'}
 				<div class="corp-box active">
 					<span class="corp-state ok"><Icon name="circle-check" size={14} /> 法人プランご利用中</span>
-					<p>夜行人図鑑に広告が掲載され、法人バッジが表示されています。</p>
-					<button class="corp-btn ghost" onclick={openCorpPortal} disabled={corpBusy}>お支払い・プランの管理</button>
+					<p>夜行人図鑑に広告が掲載され、法人バッジが表示されています。広告内容の編集・プラン管理・解約はダッシュボードから行えます。</p>
+					<a class="corp-btn" href="{base}/mypage/corporate"><Icon name="badge-check" size={15} /> 法人ダッシュボードを開く</a>
 				</div>
 			{:else if profile.corp_status === 'approved'}
 				<div class="corp-box">
 					<span class="corp-state ok"><Icon name="circle-check" size={14} /> 法人審査 承認済み</span>
-					<p>法人プラン（月額）にお申し込みいただくと、広告掲載が始まります。</p>
-					<button class="corp-btn" onclick={subscribeCorporate} disabled={corpBusy}>法人プランに申し込む（月額）</button>
-					<p class="corp-fine">解約はいつでも「お支払い管理」から可能です。金額は申込画面に表示されます。</p>
+					<p>ダッシュボードから月額プランにお申し込みいただくと、広告掲載が始まります。</p>
+					<a class="corp-btn" href="{base}/mypage/corporate"><Icon name="badge-check" size={15} /> 法人ダッシュボードを開く</a>
+					<p class="corp-fine">解約はいつでもダッシュボードの「お支払い・プランの管理」から可能です。</p>
 				</div>
 			{:else if profile.corp_status === 'pending'}
 				<div class="corp-box">
@@ -739,6 +773,40 @@
 					<p class="corp-fine">申請後、運営が審査します。承認後にプランへお申し込みいただけます。</p>
 				</div>
 			{/if}
+		</section>
+
+		<!-- ===== アイコンの形（買い切りカスタマイズ） ===== -->
+		<section class="section">
+			<h3 class="section-title"><Icon name="badge-check" size={18} /> アイコンの形</h3>
+			<p class="section-hint">夜行人図鑑に表示されるあなたのアイコンの形を変更できます。星・ハートなどの特別な形は買い切り（¥{SHAPE_PRICE}）で解放されます。</p>
+
+			{#if shapeError}<p class="error-msg">{shapeError}</p>{/if}
+			{#if shapeMsg}<p class="save-msg">{shapeMsg}</p>{/if}
+
+			<div class="shape-grid">
+				<!-- 既定の円は誰でも選べる -->
+				<button class="shape-cell" class:selected={currentShape === 'circle'} onclick={() => selectShape('circle')}>
+					<ShapeIcon shape="circle" size={38} />
+					<span class="shape-name">まる</span>
+					{#if currentShape === 'circle'}<span class="shape-tag on">使用中</span>{/if}
+				</button>
+
+				{#each SHAPE_LIST as s}
+					{#if ownedShapes.includes(s.key)}
+						<button class="shape-cell" class:selected={currentShape === s.key} onclick={() => selectShape(s.key)}>
+							<ShapeIcon shape={s.key} size={38} filled={currentShape === s.key} />
+							<span class="shape-name">{s.label}</span>
+							{#if currentShape === s.key}<span class="shape-tag on">使用中</span>{:else}<span class="shape-tag">選ぶ</span>{/if}
+						</button>
+					{:else}
+						<div class="shape-cell locked">
+							<ShapeIcon shape={s.key} size={38} />
+							<span class="shape-name">{s.label}</span>
+							<button class="shape-buy" onclick={() => buyShape(s.key)} disabled={shapeBusy}>¥{SHAPE_PRICE} で購入</button>
+						</div>
+					{/if}
+				{/each}
+			</div>
 		</section>
 
 		<!-- ===== ログアウト ===== -->
@@ -1440,16 +1508,36 @@
 	.corp-state.pending { background: rgba(184, 92, 43, 0.1); color: var(--accent-deep); }
 	.corp-state.rejected { background: rgba(184, 92, 43, 0.08); color: var(--accent-deep); }
 	.corp-btn {
-		width: 100%; margin-top: 8px; padding: 12px; border: none; border-radius: var(--r-md);
+		width: 100%; box-sizing: border-box; margin-top: 8px; padding: 12px; border: none; border-radius: var(--r-md);
+		display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
 		background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 600;
 		font-family: inherit; cursor: pointer; box-shadow: 0 2px 8px rgba(184, 92, 43, 0.22);
 		transition: background 0.15s;
 	}
 	.corp-btn:hover:not(:disabled) { background: var(--accent-deep); }
 	.corp-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-	.corp-btn.ghost { background: none; color: var(--ink); border: 1.5px solid var(--line-strong); box-shadow: none; }
-	.corp-btn.ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 	.corp-fine { font-size: 0.72rem !important; color: var(--ink-3) !important; margin: 8px 0 0 !important; }
+
+	/* アイコン形状カスタマイズ */
+	.shape-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; margin-top: 8px; }
+	.shape-cell {
+		display: flex; flex-direction: column; align-items: center; gap: 6px;
+		padding: 14px 8px; border-radius: var(--r-md); border: 1.5px solid var(--line);
+		background: var(--surface); color: var(--ink-2); cursor: pointer; font-family: inherit;
+		transition: border-color 0.15s, color 0.15s, background 0.15s;
+	}
+	.shape-cell:hover:not(.locked) { border-color: var(--accent); color: var(--accent); }
+	.shape-cell.selected { border-color: var(--accent); color: var(--accent); background: var(--accent-tint); }
+	.shape-cell.locked { cursor: default; color: var(--ink-3); }
+	.shape-name { font-size: 0.78rem; font-weight: 600; }
+	.shape-tag { font-size: 0.68rem; color: var(--ink-3); }
+	.shape-tag.on { color: var(--accent-deep); font-weight: 700; }
+	.shape-buy {
+		font-size: 0.68rem; font-weight: 700; color: #fff; background: var(--accent);
+		border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer; font-family: inherit; white-space: nowrap;
+	}
+	.shape-buy:hover:not(:disabled) { background: var(--accent-deep); }
+	.shape-buy:disabled { opacity: 0.5; cursor: not-allowed; }
 	.shop-status-box {
 		border-radius: 12px; padding: 16px;
 		margin-bottom: 8px;

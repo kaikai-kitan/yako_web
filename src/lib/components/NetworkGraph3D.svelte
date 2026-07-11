@@ -22,6 +22,10 @@
 	let resumeTimer = null;
 	let prepared = null;
 	let currentHighlight = null;
+	let roamRAF = null;        // 放浪者（契約中法人）の周回アニメーション
+	let roamStarted = false;
+	let roamNodes = [];
+	let roamRadius = 260;
 
 	const ROLE_COLOR = {
 		'屋台営業者': '#b85c2b',
@@ -60,27 +64,57 @@
 	}
 
 	const TEX = 320;      // テクスチャ解像度
-	const R = TEX * 0.46; // 円半径（端に余白を残しリングの見切れを防ぐ）
+	const R = TEX * 0.46; // 半径（端に余白を残しリングの見切れを防ぐ）
 
-	// 円形アイコン（＋ロール色の細いリング）。中央を正方形 cover クロップ。
-	function circleTexture(THREE, img, ringColor) {
+	// 買い切りアイコン形状（circle 既定）。中心 c・半径 R のパスを ctx に描く（塗り/クリップ/線は呼び出し側）
+	function traceShape(ctx, shape, c, R) {
+		ctx.beginPath();
+		if (shape === 'diamond') {
+			ctx.moveTo(c, c - R); ctx.lineTo(c + R, c); ctx.lineTo(c, c + R); ctx.lineTo(c - R, c); ctx.closePath();
+		} else if (shape === 'hexagon') {
+			for (let i = 0; i < 6; i++) {
+				const a = (Math.PI / 180) * (60 * i - 30);
+				const x = c + R * Math.cos(a), y = c + R * Math.sin(a);
+				i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+			}
+			ctx.closePath();
+		} else if (shape === 'star') {
+			const spikes = 5, outer = R, inner = R * 0.46, rot = -Math.PI / 2;
+			for (let i = 0; i < spikes * 2; i++) {
+				const rr = i % 2 ? inner : outer;
+				const a = rot + (i * Math.PI) / spikes;
+				const x = c + rr * Math.cos(a), y = c + rr * Math.sin(a);
+				i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+			}
+			ctx.closePath();
+		} else if (shape === 'heart') {
+			ctx.moveTo(c, c + R * 0.42);
+			ctx.bezierCurveTo(c + R * 1.05, c - R * 0.35, c + R * 0.5, c - R * 1.02, c, c - R * 0.30);
+			ctx.bezierCurveTo(c - R * 0.5, c - R * 1.02, c - R * 1.05, c - R * 0.35, c, c + R * 0.42);
+			ctx.closePath();
+		} else {
+			ctx.arc(c, c, R, 0, 2 * Math.PI);
+		}
+	}
+
+	// アイコン画像（＋ロール色の細いリング）。中央を正方形 cover クロップし、形状でクリップ。
+	function circleTexture(THREE, img, ringColor, shape = 'circle') {
 		const canvas = document.createElement('canvas');
 		canvas.width = canvas.height = TEX;
 		const ctx = canvas.getContext('2d');
 		const cx = TEX / 2;
 		ctx.save();
-		ctx.beginPath();
-		ctx.arc(cx, cx, R, 0, 2 * Math.PI);
+		traceShape(ctx, shape, cx, R);
 		ctx.clip();
 		const m = Math.min(img.width, img.height);        // 短辺で正方形に切り出す
 		const sx = (img.width - m) / 2;
 		const sy = (img.height - m) / 2;
 		ctx.drawImage(img, sx, sy, m, m, cx - R, cx - R, R * 2, R * 2);
 		ctx.restore();
-		ctx.beginPath();
-		ctx.arc(cx, cx, R, 0, 2 * Math.PI);
+		traceShape(ctx, shape, cx, R);
 		ctx.lineWidth = TEX * 0.05;
 		ctx.strokeStyle = ringColor;
+		ctx.lineJoin = 'round';
 		ctx.stroke();
 		const tex = new THREE.Texture(canvas);
 		tex.colorSpace = THREE.SRGBColorSpace;
@@ -89,17 +123,17 @@
 	}
 
 	// 画像なしのプレースホルダ（頭文字＋ロール色リング）
-	function placeholderTexture(THREE, name, ringColor) {
+	function placeholderTexture(THREE, name, ringColor, shape = 'circle') {
 		const canvas = document.createElement('canvas');
 		canvas.width = canvas.height = TEX;
 		const ctx = canvas.getContext('2d');
 		const cx = TEX / 2;
-		ctx.beginPath();
-		ctx.arc(cx, cx, R, 0, 2 * Math.PI);
+		traceShape(ctx, shape, cx, R);
 		ctx.fillStyle = '#efe7da';
 		ctx.fill();
 		ctx.lineWidth = TEX * 0.05;
 		ctx.strokeStyle = ringColor;
+		ctx.lineJoin = 'round';
 		ctx.stroke();
 		ctx.fillStyle = '#8a7a5c';
 		ctx.font = `bold ${TEX * 0.36}px sans-serif`;
@@ -163,6 +197,10 @@
 		}
 		const ringRadius = Math.max(180, 110 + isolatedCount * 10);
 
+		// 契約中の法人（adActive）は「放浪者」として外周を周回させる
+		roamNodes = prepared.nodes.filter((n) => n.type === 'person' && n.adActive);
+		roamRadius = Math.max(ringRadius + 90, 240);
+
 		graph = new ForceGraph3D(container)
 			.backgroundColor(BG)
 			.showNavInfo(false)
@@ -183,21 +221,23 @@
 					return group;
 				}
 
-				const ringColor = ROLE_COLOR[node.roles?.[0]] ?? DEFAULT_RING;
+				const ringColor = node.adActive ? '#b5892e' : (ROLE_COLOR[node.roles?.[0]] ?? DEFAULT_RING);
+				const shape = node.shape || 'circle';
 				const material = new THREE.SpriteMaterial({
-					map: placeholderTexture(THREE, node.name, ringColor),
+					map: placeholderTexture(THREE, node.name, ringColor, shape),
 					transparent: true
 				});
 				const sprite = new THREE.Sprite(material);
 				sprite.scale.set(scale, scale, 1);
 				group.add(sprite);
 				node.__sprite = sprite;
+				node.__group = group;
 
 				if (node.img) {
 					const image = new Image();
 					image.crossOrigin = 'Anonymous';
 					image.onload = () => {
-						sprite.material.map = circleTexture(THREE, image, ringColor);
+						sprite.material.map = circleTexture(THREE, image, ringColor, shape);
 						sprite.material.needsUpdate = true;
 					};
 					image.src = node.img.startsWith('http') ? node.img : base + node.img;
@@ -257,6 +297,7 @@
 		});
 
 		graph.onEngineStop(() => {
+			startRoaming(); // レイアウト確定後に放浪者の周回を開始
 			try { graph.zoomToFit(700, 80); } catch { /* noop */ }
 			// 単一・少数ノードでカメラが寄りすぎて見切れるのを防ぐ（最小距離）
 			try {
@@ -281,6 +322,30 @@
 		resizeObs.observe(container);
 	});
 
+	// 放浪者（契約中法人）を外周でゆっくり周回させる。各ノードで半径・位相・上下動を変える。
+	function startRoaming() {
+		if (roamStarted || roamNodes.length === 0) return;
+		roamStarted = true;
+		const t0 = performance.now();
+		const step = (now) => {
+			const t = (now - t0) * 0.00016;
+			for (let i = 0; i < roamNodes.length; i++) {
+				const n = roamNodes[i];
+				const rad = roamRadius + i * 26;
+				const phase = i * 2.3999; // 黄金角で分散
+				const a = t + phase;
+				const x = rad * Math.cos(a);
+				const z = rad * Math.sin(a);
+				const y = (50 + i * 8) * Math.sin(a * 0.7 + phase);
+				// node座標とThreeオブジェクトの両方を更新（エンジン停止後も動かすため）
+				n.x = n.fx = x; n.y = n.fy = y; n.z = n.fz = z;
+				if (n.__group) n.__group.position.set(x, y, z);
+			}
+			roamRAF = requestAnimationFrame(step);
+		};
+		roamRAF = requestAnimationFrame(step);
+	}
+
 	function syncSize() {
 		if (!graph || !container) return;
 		const w = container.clientWidth || 300;
@@ -291,6 +356,7 @@
 	onDestroy(() => {
 		mounted = false;
 		if (resumeTimer) clearTimeout(resumeTimer);
+		if (roamRAF) cancelAnimationFrame(roamRAF);
 		resizeObs?.disconnect();
 		if (graph) {
 			graph._destructor?.();

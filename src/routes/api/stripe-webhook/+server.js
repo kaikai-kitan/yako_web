@@ -149,6 +149,24 @@ async function sendOperatorNotification({ resend, toEmail, items, totalAmount, s
 	});
 }
 
+/** アイコン形状を owned_shapes に追加（重複は無視） */
+async function grantShape(supabase, userId, shape) {
+	const valid = ['star', 'heart', 'diamond', 'hexagon'];
+	if (!valid.includes(shape)) return;
+	const { data } = await supabase
+		.from('user_profiles')
+		.select('owned_shapes')
+		.eq('user_id', userId)
+		.maybeSingle();
+	const owned = Array.isArray(data?.owned_shapes) ? data.owned_shapes : [];
+	if (owned.includes(shape)) return;
+	const { error } = await supabase
+		.from('user_profiles')
+		.update({ owned_shapes: [...owned, shape] })
+		.eq('user_id', userId);
+	if (error) console.error('grant shape error:', error);
+}
+
 export async function POST({ request }) {
 	const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 	const body = await request.text();
@@ -198,6 +216,9 @@ export async function POST({ request }) {
 				})
 				.eq('user_id', metadata.userId);
 			if (error) console.error('Corporate subscription activate error:', error);
+		} else if (metadata.type === 'icon_shape' && metadata.userId && metadata.shape) {
+			// アイコン形状の買い切り: owned_shapes に追加
+			await grantShape(supabase, metadata.userId, metadata.shape);
 		} else if (metadata.type === 'rental' && metadata.reservationId) {
 			// レンタル決済: 予約をアクティブ化
 			const { error } = await supabase

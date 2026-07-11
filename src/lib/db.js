@@ -239,6 +239,15 @@ export async function updateUserProfile(userId, { name, bio, iconPath }) {
 	if (error) throw error;
 }
 
+/** 選択中のアイコン形状を保存（circle または購入済みの形状） */
+export async function setIconShape(userId, shape) {
+	const { error } = await supabase
+		.from('user_profiles')
+		.update({ icon_shape: shape })
+		.eq('user_id', userId);
+	if (error) throw error;
+}
+
 // =====================================================
 // マイメニュー
 // =====================================================
