@@ -7,13 +7,10 @@
 	import { onMount } from 'svelte';
 
 	import homeData from '$lib/assets/data/home.json';
-	import networkSeed from '$lib/assets/data/network.json';
 
 	let splash = $state();
 	let phrase1, phrase2, phrase3;
 	let gallerySection;
-	let networkSection;
-	let linesVisible = $state(false);
 
 	// ── 出店スケジュール ──
 	let scheduleEvents = $state([]);
@@ -39,15 +36,6 @@
 		return html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
 	}
 
-	// ── 夜行人図鑑の抜粋（実データ）──
-	const ROLE_COLOR = {
-		'屋台営業者': '#b85c2b', '屋台オーナー': '#b5892e',
-		'土地オーナー': '#5f7a52', '流浪人': '#6b7688'
-	};
-	// 一言（迷言）が入っている夜行人を先頭から3人ピックアップ
-	const figureList = networkSeed.nodes
-		.filter((n) => n.type === 'person' && n.message && n.message.replace(/[「」\s]/g, ''))
-		.slice(0, 3);
 
 	// ── ニュース（掲載・受賞） ──
 	const newsList = [
@@ -141,13 +129,6 @@
 		onScrollGallery();
 		window.addEventListener('scroll', onScrollGallery, { passive: true });
 
-		// 夜行人ネットワーク: 画面内に入ったら線を描画
-		const observer = new IntersectionObserver(
-			([entry]) => { if (entry.isIntersecting) { linesVisible = true; observer.disconnect(); } },
-			{ threshold: 0.15 }
-		);
-		if (networkSection) observer.observe(networkSection);
-
 		// 出店スケジュール取得
 		try {
 			const res = await fetch('/api/schedule');
@@ -162,7 +143,6 @@
 
 		return () => {
 			window.removeEventListener('scroll', onScrollGallery);
-			observer.disconnect();
 		};
 	});
 </script>
@@ -293,7 +273,7 @@
 {/if}
 
 <!-- 夜行人図鑑ネットワーク -->
-<section class="directory-network-section" bind:this={networkSection}>
+<section class="directory-network-section">
 	<div class="section-header">
 		<span class="section-sep"></span>
 		<h2 class="section-title">夜行人ネットワーク</h2>
@@ -301,25 +281,6 @@
 	</div>
 
 	<div class="net-layout">
-		<!-- 夜行人図鑑の抜粋（実際の登録者を紹介） -->
-		<div class="figure-cards" class:revealed={linesVisible}>
-			<span class="figure-kicker">図鑑より</span>
-			{#each figureList as f, i}
-				<a href="{base}/directory" class="figure-card" style="transition-delay: {i * 0.1}s">
-					{#if f.img}
-						<img src="{base + f.img}" alt={f.name} class="figure-avatar" loading="lazy" decoding="async" />
-					{:else}
-						<span class="figure-avatar placeholder" style="background:{ROLE_COLOR[f.roles?.[0]] ?? '#6b7688'}">{f.name.charAt(0)}</span>
-					{/if}
-					<div class="figure-body">
-						<span class="figure-name">{f.name}</span>
-						<span class="figure-status">{f.status}</span>
-						<p class="figure-msg">{f.message}</p>
-					</div>
-				</a>
-			{/each}
-		</div>
-
 		<!-- 何ができるか（3ステップ） -->
 		<ol class="net-steps">
 			<li class="net-step">
@@ -654,56 +615,10 @@
 	.section-title { font-size: 1.3rem; font-weight: 700; color: var(--ink); letter-spacing: 0.1em; }
 	.section-desc  { font-size: 0.85rem; color: var(--ink-2); letter-spacing: 0.03em; }
 
-	/* ── 夜行人図鑑の抜粋カード ── */
-	.figure-cards {
-		display: flex; flex-direction: column; gap: 12px;
-		width: 100%; max-width: 480px; margin: 0 auto;
-	}
-	.figure-kicker {
-		font-size: 0.68rem; font-weight: 600; letter-spacing: 0.18em;
-		color: var(--ink-3); text-align: left; margin-bottom: 2px;
-	}
-	.figure-card {
-		display: flex; align-items: center; gap: 14px;
-		background: var(--surface); border: 1px solid var(--line);
-		border-radius: var(--r-lg); padding: 14px 16px;
-		text-decoration: none; box-shadow: var(--shadow-1);
-		opacity: 0; transform: translateY(12px);
-		transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-	}
-	.figure-cards.revealed .figure-card { opacity: 1; transform: translateY(0); }
-	.figure-card:hover { box-shadow: var(--shadow-2); border-color: var(--line-strong); }
-
-	.figure-avatar {
-		width: 54px; height: 54px; border-radius: 50%;
-		object-fit: cover; flex-shrink: 0;
-		border: 2px solid var(--line); background: var(--surface-sunk);
-	}
-	.figure-avatar.placeholder {
-		display: flex; align-items: center; justify-content: center;
-		border: none; color: #fff; font-weight: 700; font-size: 1.3rem;
-		font-family: "Zen Antique", serif;
-	}
-	.figure-body { min-width: 0; text-align: left; }
-	.figure-name { font-size: 0.98rem; font-weight: 700; color: var(--ink); }
-	.figure-status { display: block; font-size: 0.72rem; color: var(--ink-3); margin: 1px 0 5px; }
-	.figure-msg {
-		font-size: 0.84rem; line-height: 1.55; color: var(--ink-2);
-		font-family: "Zen Antique", serif; margin: 0;
-	}
-
-	/* レイアウト: ネットワーク + ステップ説明 */
+	/* レイアウト: ステップ説明 */
 	.net-layout {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 8px;
-		max-width: 940px;
+		max-width: 560px;
 		margin: 0 auto;
-		align-items: center;
-	}
-	@media (min-width: 820px) {
-		.net-layout { grid-template-columns: 0.95fr 1.05fr; gap: 40px; }
-		.figure-cards { margin: 0; }
 	}
 
 	/* 何ができるか: 3ステップ */
