@@ -46,7 +46,7 @@ export async function POST({ request }) {
 		client_reference_id: user.id,
 		metadata: { type: 'corporate_subscription', userId: user.id },
 		subscription_data: { metadata: { type: 'corporate_subscription', userId: user.id } },
-		success_url: successUrl || `${origin}/mypage?corp=subscribed`,
+		success_url: successUrl || `${origin}/mypage?corp=subscribed&sid={CHECKOUT_SESSION_ID}`,
 		cancel_url: cancelUrl || `${origin}/mypage`
 	});
 

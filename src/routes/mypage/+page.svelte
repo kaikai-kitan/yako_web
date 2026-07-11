@@ -109,6 +109,23 @@
 		}
 		await Promise.all(tasks);
 
+		// 法人サブスク決済からの復帰: Stripe と同期して状態を確定させる（webhook遅延・未達の保険）
+		const params = new URLSearchParams(window.location.search);
+		if (params.get('corp') === 'subscribed') {
+			try {
+				const res = await fetch('/api/subscription/sync', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+					body: JSON.stringify({ sessionId: params.get('sid') })
+				});
+				if (res.ok) {
+					profile = await getMyProfile(userId); // 反映後に再取得
+					corpMsg = '法人プランのお申し込みが完了しました。夜行人図鑑への広告掲載を開始できます。';
+				}
+			} catch { /* noop */ }
+			history.replaceState(null, '', `${base}/mypage`); // URLを整える（リロード時の再同期を防ぐ）
+		}
+
 		isLoading = false;
 	});
 
