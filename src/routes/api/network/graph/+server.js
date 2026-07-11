@@ -101,6 +101,40 @@ export async function GET({ setHeaders }) {
 		type: 'person'
 	}));
 
+	// --- 広告有効な法人アカウントを独立ノードとして追加 ---
+	// 屋台ネットワーク（yakonin_profiles）に未参加でも、契約中の法人は図鑑に「放浪者」として出現させる
+	const existingIds = new Set(nodes.map((n) => n.id));
+	try {
+		const adRes = await supabase
+			.from('user_profiles')
+			.select('user_id, name, icon_path, corp_name, ad_active, ad_headline, ad_store_url, ad_recruit_url, ad_image_path, icon_shape')
+			.eq('ad_active', true);
+		for (const p of adRes.data ?? []) {
+			const id = `u:${p.user_id}`;
+			if (existingIds.has(id)) continue; // 既に公開ネットワークに存在
+			nodes.push({
+				id,
+				name: p.corp_name || p.name || '法人',
+				img: p.icon_path || '',
+				status: '',
+				message: p.ad_headline || '',
+				roles: ['法人'],
+				degree: 0,
+				corporate: true,
+				adActive: true,
+				shape: p.icon_shape || 'circle',
+				ad: {
+					headline: p.ad_headline || '',
+					storeUrl: p.ad_store_url || '',
+					recruitUrl: p.ad_recruit_url || '',
+					image: p.ad_image_path || ''
+				},
+				type: 'person'
+			});
+			existingIds.add(id);
+		}
+	} catch { /* v19未適用など: 独立法人ノードはスキップ */ }
+
 	// --- 屋台ハブ（公開者からのリンクがある屋台だけをノード化） ---
 	const stallLinks = (stallLinksRes.data ?? []).filter((l) => publicIds.has(l.user_id));
 	const usedStallIds = [...new Set(stallLinks.map((l) => l.stall_id))];

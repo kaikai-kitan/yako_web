@@ -146,6 +146,52 @@
 		return tex;
 	}
 
+	// 屋台アイコン（Icon.svelte の yatai と同じパス。24x24 viewBox）
+	const YATAI_PATHS = [
+		'M12 5.5V3h2.6l-.9 1.1.9 1.1H12',
+		'M3.5 10 5.5 6h13l2 4',
+		'M3 10h18',
+		'M5.5 10v7h13v-7',
+		'M5.5 13.5h13'
+	];
+	const YATAI_CIRCLES = [[9, 19.4, 1.3], [15, 19.4, 1.3]];
+
+	// 法人アカウント（屋台含む）の限定アイコン：屋台マーク＋金色リング
+	function yataiTexture(THREE, ringColor) {
+		const canvas = document.createElement('canvas');
+		canvas.width = canvas.height = TEX;
+		const ctx = canvas.getContext('2d');
+		const cx = TEX / 2;
+		// 背景円
+		ctx.beginPath();
+		ctx.arc(cx, cx, R, 0, 2 * Math.PI);
+		ctx.fillStyle = '#fffdf7';
+		ctx.fill();
+		ctx.lineWidth = TEX * 0.05;
+		ctx.strokeStyle = ringColor;
+		ctx.stroke();
+		// 屋台マーク（中央）
+		const s = (2 * R * 0.6) / 24;
+		ctx.save();
+		ctx.translate(cx - 12 * s, cx - 11.5 * s);
+		ctx.scale(s, s);
+		ctx.strokeStyle = '#b85c2b';
+		ctx.lineWidth = 1.7;
+		ctx.lineCap = 'round';
+		ctx.lineJoin = 'round';
+		for (const d of YATAI_PATHS) ctx.stroke(new Path2D(d));
+		for (const [x, y, r] of YATAI_CIRCLES) {
+			ctx.beginPath();
+			ctx.arc(x, y, r, 0, 2 * Math.PI);
+			ctx.stroke();
+		}
+		ctx.restore();
+		const tex = new THREE.Texture(canvas);
+		tex.colorSpace = THREE.SRGBColorSpace;
+		tex.needsUpdate = true;
+		return tex;
+	}
+
 	// ロールハイライト：該当ロールのノードだけ強調、他を減光
 	function nodeMatches(n, role) {
 		return n && n.type !== 'stall' && (n.roles || []).includes(role);
@@ -192,7 +238,8 @@
 			const d = deg[n.id] ?? n.degree ?? 0;
 			n.__deg = d;
 			n.__isolated = n.type !== 'stall' && d === 0;
-			n.__mult = n.type === 'stall' ? 1 : sizeMultiplier(d);
+			// 契約中の法人は他より約2倍大きく目立たせる
+			n.__mult = n.type === 'stall' ? 1 : (n.adActive ? Math.max(2.2, sizeMultiplier(d)) : sizeMultiplier(d));
 			if (n.__isolated) isolatedCount++;
 		}
 		const ringRadius = Math.max(180, 110 + isolatedCount * 10);
@@ -223,8 +270,11 @@
 
 				const ringColor = node.adActive ? '#b5892e' : (ROLE_COLOR[node.roles?.[0]] ?? DEFAULT_RING);
 				const shape = node.shape || 'circle';
+				// 法人（契約中）は限定の屋台アイコンを採用。写真は使わない。
 				const material = new THREE.SpriteMaterial({
-					map: placeholderTexture(THREE, node.name, ringColor, shape),
+					map: node.adActive
+						? yataiTexture(THREE, ringColor)
+						: placeholderTexture(THREE, node.name, ringColor, shape),
 					transparent: true
 				});
 				const sprite = new THREE.Sprite(material);
@@ -233,7 +283,7 @@
 				node.__sprite = sprite;
 				node.__group = group;
 
-				if (node.img) {
+				if (!node.adActive && node.img) {
 					const image = new Image();
 					image.crossOrigin = 'Anonymous';
 					image.onload = () => {
