@@ -7,6 +7,7 @@
 	import { onMount } from 'svelte';
 
 	import homeData from '$lib/assets/data/home.json';
+	import company from '$lib/assets/data/company.json';
 
 	let splash = $state();
 	let phrase1, phrase2, phrase3;
@@ -340,50 +341,58 @@
 	</div>
 </section>
 
-<section class="hero">
-	<div class="hero-overlay"></div>
-	<div class="hero-content">
-		<h1 class="hero-title">YATAKARI</h1>
-		<p class="hero-subtitle">京都・鴨川の屋台シェアリングサービス</p>
-		<a href="{base}/yatakari" class="hero-cta" target="_blank" rel="noopener">マップで予約する →</a>
+<!-- 活動実績 -->
+<section class="works-section">
+	<div class="section-header">
+		<span class="section-sep"></span>
+		<h2 class="section-title">活動実績</h2>
+		<p class="section-desc">京都・鴨川の夜に灯してきた屋台の記録</p>
+	</div>
+
+	<div class="works-scroll">
+		<div class="works-track">
+			{#each company.gallery as image}
+				<div class="works-item">
+					<img src="{base + image}" alt="活動実績" loading="lazy" decoding="async" />
+				</div>
+			{/each}
+		</div>
+	</div>
+
+	<div class="works-cta-wrap">
+		<a href="{base}/company" class="works-link">会社概要を見る →</a>
+		<a href="{base}/yatakari" class="works-cta" target="_blank" rel="noopener">マップで予約する →</a>
 	</div>
 </section>
 
 <style>
-	/* ===== HERO ===== */
-	.hero {
-		position: relative;
-		width: 100%;
-		min-height: 70svh;
-		background-image: url('/images/back_yatai_road.png');
-		background-size: cover;
-		background-position: center;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		overflow: hidden;
+	/* ===== 活動実績 ===== */
+	.works-section { padding: 3rem 0 4rem; }
+	.works-scroll {
+		width: 100vw; margin-left: calc(50% - 50vw); margin-top: 1.6rem;
+		overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
 	}
-	.hero-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); }
-	.hero-content {
-		position: relative; z-index: 1; text-align: center; color: #fff;
-		padding: 0 24px; display: flex; flex-direction: column;
-		align-items: center; gap: 16px;
+	.works-scroll::-webkit-scrollbar { display: none; }
+	.works-track {
+		display: flex; gap: 12px; width: max-content;
+		padding: 0 max(20px, calc(50% - 320px)) 6px;
+		scroll-snap-type: x mandatory;
 	}
-	.hero-title {
-		font-size: clamp(2rem, 8vw, 3.5rem);
-		font-weight: 700; letter-spacing: 0.1em; line-height: 1.2;
-		color: #fff;
-		text-shadow: 0 1px 3px rgba(0,0,0,0.55);
+	.works-item {
+		flex-shrink: 0; width: min(70vw, 260px); aspect-ratio: 4 / 3;
+		scroll-snap-align: center; border-radius: 12px; overflow: hidden;
+		box-shadow: var(--shadow-1); background: var(--surface-sunk);
 	}
-	.hero-subtitle { font-size: clamp(0.9rem, 3vw, 1.2rem); letter-spacing: 0.05em; opacity: 0.9; }
-	.hero-cta {
-		display: inline-block; margin-top: 8px; padding: 14px 32px;
-		background: var(--accent); color: #fff; text-decoration: none;
-		border-radius: 100px; font-size: 1rem; font-weight: 700;
-		letter-spacing: 0.05em; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-		transition: background 0.2s;
+	.works-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+	.works-cta-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 2rem; }
+	.works-link { font-size: 0.9rem; color: var(--accent-deep); text-decoration: none; border-bottom: 1px solid var(--accent); padding-bottom: 2px; letter-spacing: 0.04em; }
+	.works-link:hover { color: var(--accent); }
+	.works-cta {
+		display: inline-block; padding: 13px 34px; background: var(--accent); color: #fff;
+		text-decoration: none; border-radius: 100px; font-size: 0.98rem; font-weight: 700;
+		letter-spacing: 0.05em; box-shadow: var(--shadow-2); transition: background 0.2s;
 	}
-	.hero-cta:hover { background: #b85c03; }
+	.works-cta:hover { background: var(--accent-deep); }
 
 	/* ===== MAIN ===== */
 	main { width: 100%; box-sizing: border-box; }
