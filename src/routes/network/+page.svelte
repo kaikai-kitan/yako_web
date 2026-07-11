@@ -13,7 +13,7 @@
 	let selected = $state(null); // クリックされた人物ノード
 	let highlightRole = $state(null); // 凡例クリックで属性ハイライト
 
-	const ROLES = ['屋台営業者', '屋台オーナー', '土地オーナー', '流浪人'];
+	const ROLES = ['屋台営業者', '屋台オーナー', '土地オーナー', '流浪人', '法人'];
 
 	function toggleRole(r) {
 		highlightRole = highlightRole === r ? null : r;
@@ -53,7 +53,8 @@
 		'屋台営業者': '#b85c2b',
 		'屋台オーナー': '#b5892e',
 		'土地オーナー': '#5f7a52',
-		'流浪人': '#6b7688'
+		'流浪人': '#6b7688',
+		'法人': '#b5892e'
 	};
 
 	// 法人広告のアクセス計測（fire-and-forget）
