@@ -26,6 +26,7 @@
 	let roamStarted = false;
 	let roamNodes = [];
 	let roamRadius = 260;
+	let renderer3d = null, scene3d = null, camera3d = null; // 周回フレームでの明示的再描画用
 
 	const ROLE_COLOR = {
 		'屋台営業者': '#b85c2b',
@@ -317,10 +318,16 @@
 
 		graph.graphData(prepared);
 
+		// three.js の描画系を保持（放浪フレームで明示的に再描画するため）
+		try {
+			renderer3d = graph.renderer();
+			scene3d = graph.scene();
+			camera3d = graph.camera();
+		} catch { /* noop */ }
+
 		// 立体感を出すフォグ（遠いノードが背景に溶ける＝奥行き知覚）
 		try {
-			const scene = graph.scene();
-			scene.fog = new THREE.Fog(BG, 240, 1100);
+			if (scene3d) scene3d.fog = new THREE.Fog(BG, 240, 1100);
 		} catch { /* noop */ }
 
 		// 孤立ノード（流浪人）を安定した radial 力で外周へ（土星の環）
@@ -368,6 +375,8 @@
 		ready = true;
 		// スプライトはレンダリングループで後から生成されるため、少し遅延して初期ハイライトを適用
 		setTimeout(() => applyHighlight(highlightRole), 400);
+		// 放浪はonEngineStop（最大数秒〜15秒後）を待たず即開始する
+		setTimeout(() => { refreshRoamRadius(); startRoaming(); }, 700);
 
 		resizeObs = new ResizeObserver(syncSize);
 		resizeObs.observe(container);
@@ -410,6 +419,10 @@
 				// node座標とThreeオブジェクトの両方を更新（エンジン停止後も動かすため）
 				n.x = n.fx = x; n.y = n.fy = y; n.z = n.fz = z;
 				if (n.__group) n.__group.position.set(x, y, z);
+			}
+			// エンジン停止後は3d-force-graphの描画ループが休止するため、明示的に再描画して動きを反映
+			if (renderer3d && scene3d && camera3d) {
+				try { renderer3d.render(scene3d, camera3d); } catch { /* noop */ }
 			}
 			roamRAF = requestAnimationFrame(step);
 		};
