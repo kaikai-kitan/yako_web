@@ -69,10 +69,16 @@ export async function GET({ setHeaders }) {
 		}
 	}
 
-	// --- 人 ↔ 人 エッジ（両端が公開者のみ） ---
+	// 契約中の法人（adActive）は「放浪者」として独立させ、人脈エッジ・屋台リンクを表示しない
+	const adActiveSet = new Set(
+		Object.entries(corpMap).filter(([, v]) => v.adActive).map(([uid]) => uid)
+	);
+
+	// --- 人 ↔ 人 エッジ（両端が公開者・かつ法人でない） ---
 	const links = [];
 	const degree = {}; // user_id → 人とのつながり数
 	for (const e of edgesRes.data ?? []) {
+		if (adActiveSet.has(e.user_a) || adActiveSet.has(e.user_b)) continue; // 法人ノードのエッジは非表示
 		if (publicIds.has(e.user_a) && publicIds.has(e.user_b)) {
 			links.push({
 				source: `u:${e.user_a}`,
@@ -135,8 +141,8 @@ export async function GET({ setHeaders }) {
 		}
 	} catch { /* v19未適用など: 独立法人ノードはスキップ */ }
 
-	// --- 屋台ハブ（公開者からのリンクがある屋台だけをノード化） ---
-	const stallLinks = (stallLinksRes.data ?? []).filter((l) => publicIds.has(l.user_id));
+	// --- 屋台ハブ（公開者からのリンクがある屋台だけをノード化。法人ノードのリンクは除外） ---
+	const stallLinks = (stallLinksRes.data ?? []).filter((l) => publicIds.has(l.user_id) && !adActiveSet.has(l.user_id));
 	const usedStallIds = [...new Set(stallLinks.map((l) => l.stall_id))];
 
 	if (usedStallIds.length > 0) {
