@@ -11,6 +11,10 @@
 	let isSaving = $state(false);
 	let errorMessage = $state('');
 
+	// アカウント種別（個人 / 法人）
+	let accountType = $state('individual');
+	let corpName = $state('');
+
 	// 基本情報（必須）
 	let name = $state('');
 
@@ -36,6 +40,25 @@
 	async function finish(skipOptional) {
 		errorMessage = '';
 		if (!name.trim()) { errorMessage = 'お名前（表示名）を入力してください'; return; }
+
+		// 法人アカウント: 名前＋法人名で審査待ちにする
+		if (accountType === 'corporate') {
+			if (!corpName.trim()) { errorMessage = '法人名（屋号）を入力してください'; return; }
+			isSaving = true;
+			try {
+				await createUserProfile(userId, '購入者', name.trim());
+				const { error } = await supabase
+					.from('user_profiles')
+					.update({ account_type: 'corporate', corp_name: corpName.trim(), corp_status: 'pending' })
+					.eq('user_id', userId);
+				if (error) throw error;
+				goto(`${base}/mypage`);
+			} catch (e) {
+				errorMessage = `設定に失敗しました: ${e.message}`;
+				isSaving = false;
+			}
+			return;
+		}
 
 		const doOperator = !skipOptional && wantOperator;
 		const doYakonin  = !skipOptional && wantYakonin;
@@ -82,6 +105,21 @@
 		{:else}
 			{#if errorMessage}<p class="error-msg">{errorMessage}</p>{/if}
 
+			<!-- アカウント種別 -->
+			<div class="section">
+				<span class="section-label">アカウント種別 <span class="req">必須</span></span>
+				<div class="type-toggle">
+					<button type="button" class="type-btn" class:on={accountType === 'individual'} onclick={() => (accountType = 'individual')}>
+						<strong>個人</strong>
+						<small>屋台の利用・夜行人ネットワーク</small>
+					</button>
+					<button type="button" class="type-btn" class:on={accountType === 'corporate'} onclick={() => (accountType = 'corporate')}>
+						<strong>法人</strong>
+						<small>広告掲載・法人プラン（要審査）</small>
+					</button>
+				</div>
+			</div>
+
 			<!-- 基本情報 -->
 			<div class="section">
 				<span class="section-label">基本情報 <span class="req">必須</span></span>
@@ -90,9 +128,17 @@
 					<input type="text" bind:value={name} class="field-input" placeholder="山田 太郎" />
 					<span class="field-note">後からマイページで変更できます。</span>
 				</label>
+				{#if accountType === 'corporate'}
+					<label class="field-label">
+						法人名 / 屋号
+						<input type="text" bind:value={corpName} class="field-input" placeholder="例: 株式会社 夜行社" />
+						<span class="field-note">運営の審査後、法人プラン・広告掲載が利用できます。</span>
+					</label>
+				{/if}
 			</div>
 
-			<!-- 任意: 屋台営業 -->
+			{#if accountType === 'individual'}
+			<!-- 任意: 屋台営業（個人のみ） -->
 			<div class="opt-card" class:on={wantOperator}>
 				<label class="opt-head">
 					<input type="checkbox" bind:checked={wantOperator} />
@@ -125,13 +171,16 @@
 					</label>
 				{/if}
 			</div>
+			{/if}
 
 			<button class="primary-btn" onclick={() => finish(false)} disabled={isSaving}>
-				{isSaving ? '設定中…' : '設定して始める →'}
+				{isSaving ? '設定中…' : (accountType === 'corporate' ? '法人として申請する →' : '設定して始める →')}
 			</button>
-			<button class="skip-btn" onclick={() => finish(true)} disabled={isSaving}>
-				基本設定だけで始める（あとで設定する）
-			</button>
+			{#if accountType === 'individual'}
+				<button class="skip-btn" onclick={() => finish(true)} disabled={isSaving}>
+					基本設定だけで始める（あとで設定する）
+				</button>
+			{/if}
 		{/if}
 	</div>
 </div>
@@ -191,6 +240,18 @@
 		text-transform: uppercase; margin-bottom: 10px;
 	}
 	.req { color: var(--accent); font-size: 0.62rem; margin-left: 4px; letter-spacing: 0; }
+
+	.type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+	.type-btn {
+		display: flex; flex-direction: column; gap: 3px; text-align: left;
+		padding: 12px 14px; border: 1.5px solid var(--line); border-radius: var(--r-md);
+		background: var(--paper); color: var(--ink-2); font-family: inherit; cursor: pointer;
+		transition: border-color 0.15s, background 0.15s, color 0.15s;
+	}
+	.type-btn:hover { border-color: var(--accent); }
+	.type-btn.on { border-color: var(--accent); background: var(--accent-tint); color: var(--ink); }
+	.type-btn strong { font-size: 0.92rem; color: var(--ink); }
+	.type-btn small { font-size: 0.7rem; color: var(--ink-2); line-height: 1.4; }
 
 	.field-label {
 		display: block; text-align: left;

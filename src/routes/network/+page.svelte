@@ -56,6 +56,16 @@
 		'流浪人': '#6b7688'
 	};
 
+	// 法人広告のアクセス計測（fire-and-forget）
+	function trackAd(node, kind) {
+		if (!node?.adActive || !node.id?.startsWith('u:')) return;
+		fetch('/api/corporate/track', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ userId: node.id.slice(2), kind })
+		}).catch(() => {});
+	}
+
 	onMount(async () => {
 		try {
 			const res = await fetch('/api/network/graph');
@@ -64,6 +74,8 @@
 			// 2人以上登録されていればライブ表示、それ未満はデモ（seed）
 			if (persons.length >= 2) {
 				graphData = data;
+				// 表示計測: 広告有効な法人ノードを1回ずつカウント
+				for (const n of persons) trackAd(n, 'view');
 			} else {
 				graphData = seedNetwork;
 				usingSeed = true;
@@ -83,6 +95,7 @@
 		if (node.type === 'stall') { selected = null; return; }
 		selected = node;
 		selectedStalls = [];
+		trackAd(node, 'click'); // クリック計測（広告有効な法人のみ加算）
 		// 屋台営業者なら、その人の屋台情報を取得してリンク表示
 		if (node.roles?.includes('屋台営業者') && node.id?.startsWith('u:')) {
 			const uid = node.id.slice(2);

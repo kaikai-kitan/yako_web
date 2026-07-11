@@ -734,10 +734,11 @@
 			</section>
 		{/if}
 
-		<!-- ===== 法人プラン（夜行人図鑑の広告） ===== -->
+		<!-- ===== 法人プラン（法人アカウントのみ） ===== -->
+		{#if profile.account_type === 'corporate'}
 		<section class="section">
 			<h3 class="section-title"><Icon name="badge-check" size={18} /> 法人プラン（夜行人図鑑の広告）</h3>
-			<p class="section-hint">法人として登録すると、夜行人図鑑に広告を掲載でき、名前の横に法人バッジが付きます。</p>
+			<p class="section-hint">夜行人図鑑に広告を掲載でき、名前の横に法人バッジが付きます。広告・プラン・アクセス解析はダッシュボードから管理します。</p>
 
 			{#if corpError}<p class="error-msg">{corpError}</p>{/if}
 			{#if corpMsg}<p class="save-msg">{corpMsg}</p>{/if}
@@ -774,8 +775,10 @@
 				</div>
 			{/if}
 		</section>
+		{/if}
 
-		<!-- ===== アイコンの形（買い切りカスタマイズ） ===== -->
+		<!-- ===== アイコンの形（個人アカウントのみ・買い切りカスタマイズ） ===== -->
+		{#if profile.account_type !== 'corporate'}
 		<section class="section">
 			<h3 class="section-title"><Icon name="badge-check" size={18} /> アイコンの形</h3>
 			<p class="section-hint">夜行人図鑑に表示されるあなたのアイコンの形を変更できます。星・ハートなどの特別な形は買い切り（¥{SHAPE_PRICE}）で解放されます。</p>
@@ -808,6 +811,7 @@
 				{/each}
 			</div>
 		</section>
+		{/if}
 
 		<!-- ===== ログアウト ===== -->
 		<div class="logout-section">

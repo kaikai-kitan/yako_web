@@ -101,6 +101,12 @@
 		} catch (e) { errMsg = e.message; busy = false; }
 	}
 
+	let ctr = $derived((() => {
+		const v = profile?.ad_view_count ?? 0;
+		const c = profile?.ad_click_count ?? 0;
+		if (!v) return '—';
+		return `${((c / v) * 100).toFixed(1)}%`;
+	})());
 	let isActive = $derived(profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing');
 	let statusLabel = $derived(
 		profile?.subscription_status === 'active' ? '利用中'
@@ -144,6 +150,26 @@
 				{:else}
 					<button class="btn" onclick={subscribe} disabled={busy}>法人プランに申し込む（月額）</button>
 				{/if}
+			</div>
+		</section>
+
+		<!-- アクセス解析 -->
+		<section class="card">
+			<h2 class="card-title">アクセス解析</h2>
+			<p class="card-hint">夜行人図鑑での広告の表示回数と、アイコンがクリックされた回数です。</p>
+			<div class="metric-row">
+				<div class="metric">
+					<span class="metric-value">{(profile.ad_view_count ?? 0).toLocaleString()}</span>
+					<span class="metric-label">表示回数</span>
+				</div>
+				<div class="metric">
+					<span class="metric-value">{(profile.ad_click_count ?? 0).toLocaleString()}</span>
+					<span class="metric-label">クリック回数</span>
+				</div>
+				<div class="metric">
+					<span class="metric-value">{ctr}</span>
+					<span class="metric-label">クリック率</span>
+				</div>
 			</div>
 		</section>
 
@@ -208,6 +234,11 @@
 	.status-chip { font-size: 0.8rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; background: var(--surface-sunk); color: var(--ink-2); border: 1px solid var(--line); }
 	.status-chip.on { background: rgba(181,137,46,0.14); color: #8a6a1e; border-color: rgba(181,137,46,0.4); }
 	.status-note { font-size: 0.82rem; color: var(--ink-2); }
+
+	.metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+	.metric { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 8px; border-radius: 12px; background: var(--surface-sunk); border: 1px solid var(--line); }
+	.metric-value { font-size: 1.5rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+	.metric-label { font-size: 0.72rem; color: var(--ink-3); font-weight: 600; }
 
 	.field { display: block; margin-bottom: 16px; }
 	.field-label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
