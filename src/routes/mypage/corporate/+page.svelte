@@ -147,6 +147,7 @@
 			<div class="card-actions">
 				{#if isActive}
 					<button class="btn ghost" onclick={openPortal} disabled={busy}>お支払い・プランの管理（解約）</button>
+					<a class="btn ghost" href="{base}/groups">イベントグループを作成・管理</a>
 				{:else}
 					<button class="btn" onclick={subscribe} disabled={busy}>法人プランに申し込む（月額）</button>
 				{/if}

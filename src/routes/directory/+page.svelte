@@ -84,6 +84,16 @@
 		<span class="portal-arrow" aria-hidden="true">→</span>
 	</a>
 
+	<!-- イベントグループへの入口 -->
+	<a href="{base}/groups" class="portal groups-portal">
+		<div class="portal-body">
+			<span class="portal-kicker">イベントごとに集う</span>
+			<span class="portal-title">イベントグループ</span>
+			<span class="portal-desc">その場の縁を、グループの星図に</span>
+		</div>
+		<span class="portal-arrow" aria-hidden="true">→</span>
+	</a>
+
 	<!-- 今日の夜行人 -->
 	<section class="today">
 		<div class="section-head">
@@ -172,6 +182,8 @@
 		background: radial-gradient(circle, rgba(230,170,90,0.28), transparent 70%);
 	}
 	.portal:hover { transform: translateY(-2px); }
+	.groups-portal { margin-top: -1.8rem; background: var(--accent-deep); }
+	.groups-portal::before { background: radial-gradient(circle, rgba(240,200,140,0.30), transparent 70%); }
 	.portal-body { display: flex; flex-direction: column; gap: 4px; position: relative; }
 	.portal-kicker { font-size: 0.66rem; letter-spacing: 0.32em; color: #c9a06a; }
 	.portal-title {
