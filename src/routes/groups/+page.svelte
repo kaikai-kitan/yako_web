@@ -143,9 +143,22 @@
 				{/if}
 			</section>
 		{:else}
-			<section class="card muted-card">
-				<p class="upsell"><Icon name="badge-check" size={16} /> グループの作成は<strong>有料プランのご契約者</strong>のみご利用いただけます。</p>
-				<a class="btn ghost sm" href="{base}/mypage">プランを確認する</a>
+			<section class="card upsell-card">
+				<div class="upsell-head">
+					<span class="upsell-ic"><Icon name="badge-check" size={22} /></span>
+					<div>
+						<h2 class="card-title">グループ作成は有料プラン限定です</h2>
+						<p class="card-hint">有料プラン（法人プラン・月額）にご契約いただくと、その場でイベントグループを作成できます。</p>
+					</div>
+				</div>
+				<ul class="perk-list">
+					<li><span class="perk-ic"><Icon name="share" size={15} /></span>イベントごとのグループ作成・招待QRの発行</li>
+					<li><span class="perk-ic"><Icon name="badge-check" size={15} /></span>夜行人図鑑への広告掲載・名前の横に法人バッジ</li>
+					<li><span class="perk-ic"><Icon name="yatai" size={15} /></span>放浪アイコンとして図鑑内を巡回（露出アップ）</li>
+					<li><span class="perk-ic"><Icon name="bar-chart" size={15} /></span>アクセス解析（表示回数・クリック回数）</li>
+				</ul>
+				<a class="btn full" href="{base}/mypage#corp-plan">有料プランを始める →</a>
+				<p class="fine">申し込みは審査後、月額プランのご契約ですぐにご利用いただけます。</p>
 			</section>
 		{/if}
 
@@ -192,8 +205,15 @@
 	.card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 	.card-title { display: inline-flex; align-items: center; gap: 7px; font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0 0 8px; }
 	.card-hint { font-size: 0.8rem; color: var(--ink-2); line-height: 1.6; margin: 0 0 12px; }
-	.muted-card { text-align: center; }
-	.upsell { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--ink-2); margin: 0 0 12px; }
+	.upsell-card { background: linear-gradient(180deg, var(--accent-tint), var(--surface)); border-color: rgba(184,92,43,0.28); }
+	.upsell-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+	.upsell-ic { flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px; background: var(--accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; }
+	.upsell-head .card-title { margin: 0 0 4px; }
+	.upsell-head .card-hint { margin: 0; }
+	.perk-list { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+	.perk-list li { display: flex; align-items: center; gap: 10px; font-size: 0.84rem; color: var(--ink); line-height: 1.4; }
+	.perk-ic { flex-shrink: 0; width: 26px; height: 26px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); color: var(--accent-deep); display: inline-flex; align-items: center; justify-content: center; }
+	.btn.full { width: 100%; box-sizing: border-box; }
 
 	.err { background: #fef2f2; color: var(--accent-deep); border: 1px solid #fecaca; border-radius: 10px; padding: 8px 12px; font-size: 0.82rem; margin: 0 0 12px; }
 
