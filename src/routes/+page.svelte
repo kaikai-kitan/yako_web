@@ -41,6 +41,14 @@
 	// ── ニュース（掲載・受賞） ──
 	const newsList = [
 		{
+			source: '京都産業大学',
+			year: '2026',
+			date: '7月29日',
+			title: '学生が京都試作ネット25周年・京都試作センター20周年の記念イベントに協力',
+			image: '/images/news/shisaku.png',
+			url: 'https://www.kyoto-su.ac.jp/news/news-003319.html'
+		},
+		{
 			source: '京都新聞 夕刊',
 			year: '2025',
 			date: '6月16日',
