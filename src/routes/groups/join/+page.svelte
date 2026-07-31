@@ -13,6 +13,7 @@
 	let group = $state(null);
 	let errMsg = $state('');
 	let busy = $state(false);
+	let requested = $state(false); // 承認制で申請済み
 
 	let code = $state('');
 
@@ -43,7 +44,11 @@
 			});
 			const d = await res.json().catch(() => ({}));
 			if (!res.ok) throw new Error(d.message ?? '参加に失敗しました');
-			goto(`${base}/groups/${d.groupId}`);
+			if (d.status === 'active') {
+				goto(`${base}/groups/${d.groupId}`); // 即参加（or 承認済み）→ グループへ
+			} else {
+				requested = true; busy = false; // 承認待ち
+			}
 		} catch (e) { errMsg = e.message; busy = false; }
 	}
 </script>
@@ -56,20 +61,28 @@
 			<div class="icon-badge err"><Icon name="alert-triangle" size={26} /></div>
 			<p class="msg">{errMsg}</p>
 			<a class="btn ghost" href="{base}/groups">グループ一覧へ</a>
+		{:else if requested}
+			<div class="icon-badge"><Icon name="clock" size={26} /></div>
+			<span class="kicker">申請しました</span>
+			<h1 class="g-name">{group.name}</h1>
+			<p class="g-desc">参加申請を受け付けました。管理者が承認すると、グループのネットワーク図を閲覧できます。</p>
+			<a class="btn ghost" href="{base}/groups">グループ一覧へ</a>
 		{:else if group}
 			<div class="icon-badge"><Icon name="handshake" size={26} /></div>
 			<span class="kicker">グループに参加</span>
 			<h1 class="g-name">{group.name}</h1>
 			{#if group.description}<p class="g-desc">{group.description}</p>{/if}
-			<p class="g-meta">{group.member_count}人が参加中</p>
+			<p class="g-meta">{group.member_count}人が参加中{#if group.join_policy !== 'open'} ・ 承認制{/if}</p>
 
 			{#if group.closed}
 				<p class="closed">このグループは受付を終了しています。</p>
 				<a class="btn ghost" href="{base}/groups">グループ一覧へ</a>
 			{:else}
 				{#if errMsg}<p class="err-inline">{errMsg}</p>{/if}
-				<button class="btn" onclick={join} disabled={busy}>{busy ? '参加中…' : 'このグループに参加する'}</button>
-				<p class="fine">無課金のアカウントでも参加できます。</p>
+				<button class="btn" onclick={join} disabled={busy}>
+					{busy ? '送信中…' : (group.join_policy === 'open' ? 'このグループに参加する' : '参加を申請する')}
+				</button>
+				<p class="fine">{group.join_policy === 'open' ? '無課金のアカウントでも参加できます。' : '無課金のアカウントでも申請できます。管理者の承認後に参加が完了します。'}</p>
 			{/if}
 		{/if}
 	</div>

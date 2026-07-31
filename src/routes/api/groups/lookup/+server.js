@@ -12,7 +12,7 @@ export async function GET({ url }) {
 	const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 	const { data: group } = await supabase
 		.from('yakonin_groups')
-		.select('id, name, description, ends_at, is_closed')
+		.select('id, name, description, join_policy, ends_at, is_closed')
 		.eq('join_code', code)
 		.maybeSingle();
 	if (!group) throw error(404, 'グループが見つかりません');
@@ -28,6 +28,7 @@ export async function GET({ url }) {
 		id: group.id,
 		name: group.name,
 		description: group.description,
+		join_policy: group.join_policy,
 		ends_at: group.ends_at,
 		closed: !!closed,
 		member_count: count ?? 0

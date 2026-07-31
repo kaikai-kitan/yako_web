@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { json, error } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
+import { logAudit } from '$lib/server/groups.js';
 
 export const prerender = false;
 
@@ -39,6 +40,8 @@ export async function POST({ request }) {
 	const description = (body.description ?? '').trim().slice(0, 200) || null;
 	const startsAt = body.startsAt || null;
 	const endsAt = body.endsAt || null;
+	// 参加方式: 'approval'（申請→承認）| 'open'（即参加）。不正値は安全側の承認制に
+	const joinPolicy = body.joinPolicy === 'open' ? 'open' : 'approval';
 
 	// 一意なコードを最大5回リトライ
 	let group = null;
@@ -46,7 +49,7 @@ export async function POST({ request }) {
 		const join_code = genCode();
 		const { data, error: insErr } = await supabase
 			.from('yakonin_groups')
-			.insert({ owner_id: user.id, name, description, join_code, starts_at: startsAt, ends_at: endsAt })
+			.insert({ owner_id: user.id, name, description, join_code, join_policy: joinPolicy, starts_at: startsAt, ends_at: endsAt })
 			.select()
 			.single();
 		if (!insErr) { group = data; break; }
@@ -54,8 +57,9 @@ export async function POST({ request }) {
 	}
 	if (!group) throw error(500, 'グループの作成に失敗しました');
 
-	// 作成者を自動でメンバーに追加
-	await supabase.from('yakonin_group_members').insert({ group_id: group.id, user_id: user.id });
+	// 作成者を owner ロールの正式メンバーとして追加
+	await supabase.from('yakonin_group_members').insert({ group_id: group.id, user_id: user.id, role: 'owner', status: 'active' });
+	await logAudit(supabase, { groupId: group.id, actorId: user.id, action: 'create', detail: { name, joinPolicy } });
 
 	return json({ group });
 }

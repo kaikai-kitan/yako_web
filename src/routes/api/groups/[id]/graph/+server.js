@@ -26,21 +26,22 @@ export async function GET({ params, request, setHeaders }) {
 
 	const { data: group } = await supabase
 		.from('yakonin_groups')
-		.select('id, owner_id, name, description, starts_at, ends_at, is_closed')
+		.select('id, owner_id, name, description, join_policy, starts_at, ends_at, is_closed')
 		.eq('id', params.id)
 		.maybeSingle();
 	if (!group) throw error(404, 'グループが見つかりません');
 
-	// メンバー一覧
+	// 正式メンバー(active)のみ。承認待ち(pending)は図に出さない
 	const { data: members } = await supabase
 		.from('yakonin_group_members')
-		.select('user_id')
+		.select('user_id, status')
 		.eq('group_id', group.id);
-	const memberIds = (members ?? []).map((m) => m.user_id);
-	const memberSet = new Set(memberIds);
+	const me = (members ?? []).find((m) => m.user_id === user.id);
+	// 閲覧は正式メンバーのみ（承認待ち・非メンバーは不可）
+	if (!me || me.status !== 'active') throw error(403, 'このグループの正式メンバーのみ閲覧できます');
 
-	// 閲覧はメンバーのみ
-	if (!memberSet.has(user.id)) throw error(403, 'このグループのメンバーのみ閲覧できます');
+	const memberIds = (members ?? []).filter((m) => m.status === 'active').map((m) => m.user_id);
+	const memberSet = new Set(memberIds);
 
 	// メンバーのプロフィール
 	let profiles = [];
@@ -82,7 +83,15 @@ export async function GET({ params, request, setHeaders }) {
 
 	setHeaders({ 'cache-control': 'private, max-age=15' });
 	return json({
-		group: { id: group.id, name: group.name, description: group.description, starts_at: group.starts_at, ends_at: group.ends_at, is_owner: group.owner_id === user.id, member_count: memberIds.length },
+		group: {
+			id: group.id, name: group.name, description: group.description,
+			starts_at: group.starts_at, ends_at: group.ends_at,
+			join_policy: group.join_policy,
+			is_closed: group.is_closed,
+			is_owner: group.owner_id === user.id,
+			my_role: me.role,
+			member_count: memberIds.length
+		},
 		nodes,
 		links
 	});
