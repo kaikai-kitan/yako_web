@@ -74,6 +74,22 @@
 		}
 	];
 
+	// 掲載日が1ヶ月以内なら NEW を表示（閲覧時の時刻で判定するので、
+	// 1ヶ月を超えると自動で消える。日付が無い記事は対象外）
+	const NEW_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+	let nowTs = $state(Date.now());
+	function articleTs(item) {
+		const m = (item.date || '').match(/(\d+)月(\d+)日/);
+		if (!m || !item.year) return null;
+		return new Date(Number(item.year), Number(m[1]) - 1, Number(m[2])).getTime();
+	}
+	function isNew(item) {
+		const t = articleTs(item);
+		if (t == null) return false;
+		const diff = nowTs - t;
+		return diff >= -86400000 && diff <= NEW_WINDOW_MS; // 掲載から30日以内
+	}
+
 	// ── スプラッシュ ──
 	function showSplashInNecessary() {
 		const KEY = 'no_splash_expiration_key';
@@ -333,6 +349,7 @@
 	<div class="news-grid">
 		{#each newsList as item}
 			<a class="news-card" href={item.url} target="_blank" rel="noopener noreferrer">
+				{#if isNew(item)}<span class="news-new">NEW</span>{/if}
 				<div class="news-thumb">
 					<img src="{base + item.image}" alt={item.title} loading="lazy" decoding="async" />
 					<span class="news-thumb-label">{item.source}</span>
@@ -700,6 +717,7 @@
 	.news-card {
 		display: flex;
 		flex-direction: column;
+		position: relative;
 		background: var(--surface);
 		border: 1px solid var(--line);
 		border-radius: var(--r-lg);
@@ -708,6 +726,19 @@
 		text-align: left;
 		box-shadow: var(--shadow-1);
 		transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+	}
+	.news-new {
+		position: absolute;
+		top: 10px; right: 10px;
+		z-index: 2;
+		background: var(--accent);
+		color: #fff;
+		font-size: 0.64rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		padding: 3px 8px;
+		border-radius: 100px;
+		box-shadow: 0 2px 8px rgba(184, 92, 43, 0.4);
 	}
 	.news-card:hover {
 		transform: translateY(-3px);
