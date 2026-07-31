@@ -34,9 +34,10 @@
 		'土地オーナー': '#5f7a52',
 		'流浪人': '#6b7688'
 	};
-	const DEFAULT_RING = '#6b7688';
+	const DEFAULT_RING = '#8a94ab';
 
-	const BG = '#ece4d6'; // 立体感を出すためのわずかに暖色グレー（和紙）
+	const BG = '#0b0e16'; // 夜の3D空間（深い藍色の闇）
+	let GLOW = null;       // ネオン風グロー（放射状グラデ）テクスチャ。onMountで生成し使い回す
 
 	// つながり数 → アイコン倍率（依頼の例に沿った区分線形補間）
 	const SIZE_STOPS = [[0, 1], [5, 1.5], [30, 3], [70, 5], [100, 8], [300, 20]];
@@ -193,6 +194,39 @@
 		return tex;
 	}
 
+	// ネオン風グロー（放射状グラデ）。加算合成でノード背後に敷き、色はスプライト側で着色。
+	function glowTexture(THREE) {
+		const size = 128;
+		const canvas = document.createElement('canvas');
+		canvas.width = canvas.height = size;
+		const ctx = canvas.getContext('2d');
+		const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+		g.addColorStop(0, 'rgba(255,255,255,0.85)');
+		g.addColorStop(0.30, 'rgba(255,255,255,0.35)');
+		g.addColorStop(0.65, 'rgba(255,255,255,0.08)');
+		g.addColorStop(1, 'rgba(255,255,255,0)');
+		ctx.fillStyle = g;
+		ctx.fillRect(0, 0, size, size);
+		const tex = new THREE.Texture(canvas);
+		tex.needsUpdate = true;
+		return tex;
+	}
+
+	// ノード背後にグローを1枚追加（控えめ）。強さは opacity で調整。
+	function addGlow(THREE, group, scale, color, opacity) {
+		if (!GLOW) return null;
+		const mat = new THREE.SpriteMaterial({
+			map: GLOW, color: new THREE.Color(color),
+			transparent: true, opacity, depthWrite: false,
+			blending: THREE.AdditiveBlending
+		});
+		const s = new THREE.Sprite(mat);
+		s.scale.set(scale, scale, 1);
+		s.position.set(0, 0, -1); // 本体スプライトの背後
+		group.add(s);
+		return s;
+	}
+
 	// ロールハイライト：該当ロールのノードだけ強調、他を減光
 	function nodeMatches(n, role) {
 		return n && n.type !== 'stall' && (n.roles || []).includes(role);
@@ -201,9 +235,11 @@
 		currentHighlight = role || null;
 		if (!prepared) return;
 		for (const n of prepared.nodes) {
-			const op = !role ? 1 : nodeMatches(n, role) ? 1 : 0.1;
+			const match = !role || nodeMatches(n, role);
+			const op = match ? 1 : 0.1;
 			if (n.__sprite) { n.__sprite.material.transparent = true; n.__sprite.material.opacity = op; }
 			if (n.__label) { n.__label.material.transparent = true; n.__label.material.opacity = op; }
+			if (n.__glow) { n.__glow.material.opacity = match ? (n.__glowBase ?? 0.4) : (n.__glowBase ?? 0.4) * 0.12; }
 		}
 		if (graph) {
 			graph.linkOpacity((l) => {
@@ -249,28 +285,36 @@
 		roamNodes = prepared.nodes.filter((n) => n.type === 'person' && n.adActive);
 		roamRadius = Math.max(ringRadius + 90, 240);
 
+		GLOW = glowTexture(THREE); // ネオン風グローを1枚用意して使い回す
+
 		graph = new ForceGraph3D(container)
 			.backgroundColor(BG)
 			.showNavInfo(false)
 			.enableNodeDrag(false)
 			.nodeLabel((n) => (n.type === 'stall' ? `🏮 ${n.name}` : n.name))
-			.linkColor((l) => (l.origin === 'stall' ? '#b9a888' : '#3a3128'))
-			.linkOpacity(0.5)
+			.linkColor((l) => (l.origin === 'stall' ? '#6a5a34' : '#33405a'))
+			.linkOpacity(0.42)
 			.linkWidth(0.5)
 			.nodeThreeObject((node) => {
 				const group = new THREE.Group();
 				const scale = BASE * (node.__mult ?? 1);
 
 				if (node.type === 'stall') {
+					// 屋台ハブは淡い金のグロー点＋ラベル
+					addGlow(THREE, group, scale * 1.6, '#e0b96a', 0.32);
 					const label = new SpriteText(`🏮 ${node.name}`);
-					label.color = '#8a5a12';
+					label.color = '#e6c98a';
 					label.textHeight = 6;
+					label.material.transparent = true;
 					group.add(label);
 					return group;
 				}
 
-				const ringColor = node.adActive ? '#b5892e' : (ROLE_COLOR[node.roles?.[0]] ?? DEFAULT_RING);
+				const ringColor = node.adActive ? '#e8b34d' : (ROLE_COLOR[node.roles?.[0]] ?? DEFAULT_RING);
 				const shape = node.shape || 'circle';
+				// 本体の背後に控えめなグロー（法人は少し強め）
+				node.__glowBase = node.adActive ? 0.5 : 0.4;
+			node.__glow = addGlow(THREE, group, scale * (node.adActive ? 2.1 : 1.85), ringColor, node.__glowBase);
 				// 法人（契約中）は限定の屋台アイコンを採用。写真は使わない。
 				const material = new THREE.SpriteMaterial({
 					map: node.adActive
@@ -295,7 +339,7 @@
 				}
 
 				const label = new SpriteText(node.name);
-				label.color = '#26201a';
+				label.color = '#e7ddc9';
 				label.material.transparent = true;
 				label.textHeight = Math.max(4, scale * 0.2);
 				label.position.set(0, -(scale / 2 + label.textHeight), 0);
@@ -325,9 +369,33 @@
 			camera3d = graph.camera();
 		} catch { /* noop */ }
 
-		// 立体感を出すフォグ（遠いノードが背景に溶ける＝奥行き知覚）
+		// 立体感を出すフォグ（遠いノードが夜闇に溶ける＝奥行き知覚）
 		try {
-			if (scene3d) scene3d.fog = new THREE.Fog(BG, 240, 1100);
+			if (scene3d) scene3d.fog = new THREE.Fog(BG, 320, 1500);
+		} catch { /* noop */ }
+
+		// 星屑を撒いて「3D空間」であることを分かりやすく（回転で視差が出る）
+		try {
+			if (scene3d) {
+				const N = 340;
+				const pos = new Float32Array(N * 3);
+				for (let i = 0; i < N; i++) {
+					// 球殻状にランダム配置（内側の空洞を空けてノードと重なりすぎないように）
+					const r = 520 + Math.random() * 900;
+					const th = Math.acos(2 * Math.random() - 1);
+					const ph = Math.random() * Math.PI * 2;
+					pos[i * 3]     = r * Math.sin(th) * Math.cos(ph);
+					pos[i * 3 + 1] = r * Math.sin(th) * Math.sin(ph);
+					pos[i * 3 + 2] = r * Math.cos(th);
+				}
+				const geo = new THREE.BufferGeometry();
+				geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+				const mat = new THREE.PointsMaterial({
+					color: 0x9fb0cf, size: 2.2, sizeAttenuation: true,
+					transparent: true, opacity: 0.55, depthWrite: false, fog: false
+				});
+				scene3d.add(new THREE.Points(geo, mat));
+			}
 		} catch { /* noop */ }
 
 		// 孤立ノード（流浪人）を安定した radial 力で外周へ（土星の環）
@@ -454,7 +522,7 @@
 	.graph-host {
 		width: 100%;
 		min-height: 320px;
-		background: #ece4d6;
+		background: #0b0e16;
 		touch-action: none;
 	}
 	.graph-host :global(canvas) {
