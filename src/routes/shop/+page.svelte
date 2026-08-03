@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { supabase } from '$lib/supabase.js';
 	import { cart, cartItems, cartCount, cartTotal } from '$lib/cart.js';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let products = $state([]);
 	let isLoading = $state(true);
@@ -282,7 +283,7 @@
 			{#if recommendedProducts.length > 0}
 				<section class="section">
 					<div class="section-header">
-						<h2 class="section-title">⭐ おすすめ</h2>
+						<h2 class="section-title"><Icon name="star" size={19} /> おすすめ</h2>
 					</div>
 					<div class="horizontal-scroll">
 						{#each recommendedProducts as product}
@@ -311,7 +312,7 @@
 			{#if rankingProducts.length > 0}
 				<section class="section">
 					<div class="section-header">
-						<h2 class="section-title">🏆 売れ筋ランキング</h2>
+						<h2 class="section-title"><Icon name="trophy" size={19} /> 売れ筋ランキング</h2>
 					</div>
 					<div class="ranking-list">
 						{#each rankingProducts as product, i}
@@ -581,7 +582,8 @@
 		display: flex; align-items: center; justify-content: space-between;
 		padding: 0 16px 10px;
 	}
-	.section-title { font-size: 0.95rem; font-weight: 700; color: var(--ink); margin: 0; }
+	.section-title { font-size: 0.95rem; font-weight: 700; color: var(--ink); margin: 0; display: inline-flex; align-items: center; gap: 7px; }
+	.section-title :global(.icon) { color: var(--accent); }
 
 	/* ソート */
 	.sort-select {
