@@ -106,6 +106,7 @@
 		<a href="{base}/admin/applications" class="admin-nav-link">📋 出品申請管理</a>
 		<a href="{base}/admin/users" class="admin-nav-link">👥 ユーザー管理</a>
 		<a href="{base}/admin/connect-codes" class="admin-nav-link">🔗 接続コード（NFC）管理</a>
+		<a href="{base}/admin/stalls" class="admin-nav-link">🏮 屋台のできること</a>
 	</div>
 
 	<!-- フィルター -->

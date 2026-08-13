@@ -40,6 +40,13 @@
 	let userProfile = $state(null);
 	let accessToken = $state('');
 	let isSuspended = $state(false);
+	let isYataijin = $state(false);         // 屋台人登録済みか
+	let registeringYataijin = $state(false);
+
+	// 選択屋台の公開詳細（能力・貸出中の借主・過去利用者）
+	let stallDetail = $state(null);
+	let stallDetailLoading = $state(false);
+	let stallDetailFor = null;
 
 	// DBデータ
 	let availableSpaces = $state([]);
@@ -142,6 +149,7 @@
 				myUserReservations = results[5] ?? [];
 				userProfile = results[6];
 				isSuspended = userProfile?.is_suspended ?? false;
+				isYataijin = userProfile?.is_yataijin === true;
 				myMenuItems = results[7] ?? [];
 				allReservations = await getMyReservations(currentUser.id);
 
@@ -354,7 +362,9 @@
 		markers.forEach((m) => map.removeLayer(m));
 		markers = [];
 
-		if (mapMode === 'available') {
+		if (mapMode === 'available' && !isYataijin) {
+			// 屋台人未登録は貸出可能屋台を閲覧不可（プロンプトを表示）
+		} else if (mapMode === 'available') {
 			availableSpaces.forEach((stall) => {
 				if (!stall.lat || !stall.lng) return;
 				const icon = L.divIcon({
@@ -841,7 +851,37 @@
 		qrScanPhase = 'idle';
 	}
 
-	function closeDetail() { selectedStall = null; }
+	function closeDetail() { selectedStall = null; stallDetail = null; stallDetailFor = null; }
+
+	// 選択屋台の公開詳細を取得（貸出中の借主・過去利用者・能力）
+	async function loadStallDetail(id) {
+		if (stallDetailFor === id) return;
+		stallDetailFor = id;
+		stallDetail = null;
+		stallDetailLoading = true;
+		try {
+			const res = await fetch(`/api/stalls/${id}/detail`);
+			stallDetail = res.ok ? await res.json() : null;
+		} catch { stallDetail = null; } finally { stallDetailLoading = false; }
+	}
+
+	// selectedStall が屋台のとき詳細を取得
+	$effect(() => {
+		const s = selectedStall;
+		if (s && s.status === 'stall' && s.id) loadStallDetail(s.id);
+	});
+
+	// 屋台人登録（ワンタップ。貸出可能屋台の閲覧・できること表示が解禁される）
+	async function registerYataijin() {
+		if (!currentUser) { goto(`${base}/auth?redirectTo=/map`); return; }
+		registeringYataijin = true;
+		const { error: e } = await supabase
+			.from('user_profiles')
+			.update({ is_yataijin: true, yataijin_registered_at: new Date().toISOString() })
+			.eq('user_id', currentUser.id);
+		registeringYataijin = false;
+		if (!e) { isYataijin = true; if (mapInstance) updateMarkers(mapInstance); }
+	}
 
 	// ===== 予約確認パネル用ヘルパー =====
 	function formatDate(isoString) {
@@ -1002,6 +1042,20 @@
 				<div class="map-overlay info"><p>現在出店中の屋台はありません</p></div>
 			{/if}
 
+			<!-- 屋台人ゲート: 未登録は貸出可能屋台を閲覧不可 -->
+			{#if !isLoading && mapMode === 'available' && !isYataijin}
+				<div class="yataijin-gate">
+					<div class="yataijin-card">
+						<span class="yg-badge"><Icon name="yatai" size={26} /></span>
+						<h3 class="yg-title">屋台人になると貸出可能な屋台を閲覧できます</h3>
+						<p class="yg-desc">登録すると、貸し出し可能な屋台と「その屋台でできること（現場調理・小売・ワークショップ）」が表示されます。無料・ワンタップで登録できます。</p>
+						<button class="yg-btn" onclick={registerYataijin} disabled={registeringYataijin}>
+							{registeringYataijin ? '登録中…' : (currentUser ? '屋台人になる' : 'ログインして屋台人になる')}
+						</button>
+					</div>
+				</div>
+			{/if}
+
 			{#if currentView === 'map' && mapMode === 'available'}
 				<div class="legend">
 					<span class="legend-item"><span class="lg-ic lg-space"><Icon name="map-pin" size={14} /></span> スペース</span>
@@ -1031,6 +1085,49 @@
 							<p class="specs">提供者: {selectedStall.owner}</p>
 							{#if selectedStall.specs}<p class="specs">{selectedStall.specs}</p>{/if}
 							<p class="price">¥{(selectedStall.price ?? 0).toLocaleString()} / 日</p>
+
+							<!-- できること（屋台人のみ表示） -->
+							{#if isYataijin && stallDetail?.capabilities}
+								{@const c = stallDetail.capabilities}
+								{#if c.cook || c.retail || c.workshop}
+									<div class="cap-row">
+										{#if c.cook}<span class="cap"><Icon name="flame" size={13} /> 現場調理可</span>{/if}
+										{#if c.retail}<span class="cap"><Icon name="shopping-bag" size={13} /> 小売可</span>{/if}
+										{#if c.workshop}<span class="cap"><Icon name="carrot" size={13} /> ワークショップ可</span>{/if}
+									</div>
+								{/if}
+							{/if}
+
+							<!-- 貸出中＝借りている店 ／ 未貸出＝過去利用者5件 -->
+							{#if stallDetail?.rentedBy}
+								<div class="renter">
+									<span class="renter-label">現在この屋台で出店中</span>
+									<div class="renter-main">
+										{#if stallDetail.rentedBy.image}<img class="renter-ava" src={stallDetail.rentedBy.image} alt="" />{/if}
+										<div class="renter-body">
+											<span class="renter-name">{stallDetail.rentedBy.name}</span>
+											{#if stallDetail.rentedBy.items?.length}<span class="renter-items">{stallDetail.rentedBy.items.join('・')}</span>{/if}
+										</div>
+									</div>
+								</div>
+							{:else if stallDetail?.pastUsers?.length}
+								<div class="past-users">
+									<span class="pu-label">この屋台を利用した夜行人</span>
+									<div class="pu-list">
+										{#each stallDetail.pastUsers as u}
+											<a class="pu-item" href="{base}/directory" title={u.handle}>
+												{#if u.avatar}
+													<img class="pu-ava" src={u.avatar.startsWith('http') ? u.avatar : base + u.avatar} alt={u.handle} />
+												{:else}
+													<span class="pu-ava ph">{u.handle?.charAt(0) ?? '?'}</span>
+												{/if}
+												<span class="pu-name">{u.handle}</span>
+											</a>
+										{/each}
+									</div>
+								</div>
+							{/if}
+
 							{#if currentUser}
 								{@const activeRes = myUserReservations.find((r) => r.stall_id === selectedStall.id && r.status === 'active')}
 								{@const pendingRes = myUserReservations.find((r) => r.stall_id === selectedStall.id && r.status === 'pending')}
@@ -2154,6 +2251,39 @@
 	}
 	.reserve-fab svg { width: 18px; height: 18px; }
 	.reserve-fab.active { background: var(--accent); }
+
+	/* 屋台の「できること」 */
+	.cap-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
+	.cap { display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 700; color: #8a6a1e; background: rgba(181,137,46,0.14); border: 1px solid rgba(181,137,46,0.35); border-radius: 20px; padding: 3px 9px; }
+	.cap :global(.icon) { color: currentColor; }
+
+	/* 貸出中の借主 */
+	.renter { margin: 10px 0 2px; padding: 10px 12px; border-radius: 12px; background: var(--surface-sunk); border: 1px solid var(--line); }
+	.renter-label { font-size: 0.7rem; font-weight: 700; color: var(--accent-deep); }
+	.renter-main { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+	.renter-ava { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+	.renter-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+	.renter-name { font-size: 0.9rem; font-weight: 700; color: var(--ink); }
+	.renter-items { font-size: 0.76rem; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+	/* 過去利用者 */
+	.past-users { margin: 10px 0 2px; }
+	.pu-label { font-size: 0.72rem; font-weight: 700; color: var(--ink-2); }
+	.pu-list { display: flex; gap: 12px; margin-top: 8px; overflow-x: auto; padding-bottom: 2px; }
+	.pu-item { display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; flex-shrink: 0; width: 52px; }
+	.pu-ava { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }
+	.pu-ava.ph { display: flex; align-items: center; justify-content: center; background: var(--surface-sunk); color: var(--ink-3); font-weight: 700; font-family: "Zen Antique", serif; }
+	.pu-name { font-size: 0.66rem; color: var(--ink-2); max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+	/* 屋台人ゲート */
+	.yataijin-gate { position: absolute; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(247,241,230,0.72); backdrop-filter: blur(3px); }
+	.yataijin-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 26px 24px; max-width: 340px; text-align: center; box-shadow: var(--shadow-2); }
+	.yg-badge { width: 54px; height: 54px; border-radius: 50%; background: var(--accent-tint); color: var(--accent-deep); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+	.yg-title { font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0 0 8px; line-height: 1.5; }
+	.yg-desc { font-size: 0.8rem; color: var(--ink-2); line-height: 1.7; margin: 0 0 18px; }
+	.yg-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 0.92rem; font-weight: 700; font-family: inherit; cursor: pointer; }
+	.yg-btn:hover:not(:disabled) { background: var(--accent-deep); }
+	.yg-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 	/* Dashboard Modal */
 	.modal-overlay {
