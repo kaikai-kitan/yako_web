@@ -297,47 +297,6 @@
 </section>
 {/if}
 
-<!-- 夜行人図鑑ネットワーク -->
-<section class="directory-network-section">
-	<div class="section-header">
-		<span class="section-sep"></span>
-		<h2 class="section-title">夜行人ネットワーク</h2>
-		<p class="section-desc">屋台での一夜の出会いを、夜の人脈に。</p>
-	</div>
-
-	<div class="net-layout">
-		<!-- 何ができるか（3ステップ） -->
-		<ol class="net-steps">
-			<li class="net-step">
-				<span class="net-step-ic"><Icon name="yatai" size={22} /></span>
-				<div class="net-step-body">
-					<strong>屋台で出会う</strong>
-					<p>夜の屋台で、ちょっと変わった人と隣り合う。</p>
-				</div>
-			</li>
-			<li class="net-step">
-				<span class="net-step-ic"><Icon name="qr-code" size={22} /></span>
-				<div class="net-step-body">
-					<strong>QRでつながる</strong>
-					<p>お互いのQRを読み取れば「夜行人」として登録。実名や連絡先は不要。</p>
-				</div>
-			</li>
-			<li class="net-step">
-				<span class="net-step-ic"><Icon name="share" size={22} /></span>
-				<div class="net-step-body">
-					<strong>縁が星図に広がる</strong>
-					<p>つながりは3Dネットワーク（星図）として可視化され、夜ごとに育っていく。</p>
-				</div>
-			</li>
-		</ol>
-	</div>
-
-	<div class="net-ctas">
-		<a href="{base}/directory" class="net-cta primary">夜行人図鑑を見る →</a>
-		<a href="{base}/yakonin/setup" class="net-cta ghost">夜行人になる</a>
-	</div>
-</section>
-
 <!-- ニュース（掲載・受賞） -->
 <section class="news-section">
 	<div class="section-header">
@@ -632,12 +591,6 @@
 		white-space: pre-wrap;
 	}
 
-	/* ===== 夜行人図鑑ネットワーク ===== */
-	.directory-network-section {
-		padding: 48px 24px 40px;
-		background: var(--surface-sunk);
-		text-align: center;
-	}
 	.section-header {
 		display: flex; flex-direction: column; align-items: center;
 		gap: 8px; margin-bottom: 32px;
@@ -648,58 +601,6 @@
 	}
 	.section-title { font-size: 1.3rem; font-weight: 700; color: var(--ink); letter-spacing: 0.1em; }
 	.section-desc  { font-size: 0.85rem; color: var(--ink-2); letter-spacing: 0.03em; }
-
-	/* レイアウト: ステップ説明 */
-	.net-layout {
-		max-width: 560px;
-		margin: 0 auto;
-	}
-
-	/* 何ができるか: 3ステップ */
-	.net-steps {
-		list-style: none; margin: 0; padding: 0;
-		display: flex; flex-direction: column; gap: 14px;
-		text-align: left;
-	}
-	.net-step {
-		display: flex; align-items: flex-start; gap: 14px;
-		background: var(--surface);
-		border: 1px solid var(--line);
-		border-radius: var(--r-lg);
-		padding: 16px 18px;
-		box-shadow: var(--shadow-1);
-		margin: 0;
-	}
-	.net-step-ic {
-		flex-shrink: 0;
-		width: 42px; height: 42px; border-radius: 12px;
-		display: inline-flex; align-items: center; justify-content: center;
-		background: var(--accent-tint); color: var(--accent);
-	}
-	.net-step-body strong { display: block; font-size: 0.98rem; color: var(--ink); margin-bottom: 3px; }
-	.net-step-body p { font-size: 0.82rem; color: var(--ink-2); line-height: 1.6; margin: 0; }
-
-	/* CTA */
-	.net-ctas {
-		display: flex; flex-wrap: wrap; gap: 12px;
-		justify-content: center; align-items: center;
-		margin-top: 32px;
-	}
-	.net-cta {
-		display: inline-flex; align-items: center; justify-content: center;
-		padding: 12px 24px; border-radius: 100px;
-		font-size: 0.92rem; font-weight: 600; text-decoration: none;
-		letter-spacing: 0.03em; transition: all 0.15s ease;
-	}
-	.net-cta.primary {
-		background: var(--accent); color: #fff;
-		box-shadow: 0 2px 10px rgba(184, 92, 43, 0.25);
-	}
-	.net-cta.primary:hover { background: var(--accent-deep); transform: translateY(-1px); }
-	.net-cta.ghost {
-		background: none; color: var(--ink); border: 1.5px solid var(--line-strong);
-	}
-	.net-cta.ghost:hover { border-color: var(--accent); color: var(--accent); }
 
 	/* ===== ニュース ===== */
 	.news-section {

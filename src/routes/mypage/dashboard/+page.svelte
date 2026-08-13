@@ -5,10 +5,11 @@
 <script>
 	import { onMount } from 'svelte';
 	import { supabase } from '$lib/supabase.js';
-	import { getMyStalls, getMyMenuItems, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage } from '$lib/db.js';
+	import { getMyStalls, getMyMenuItems, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage, setIconShape } from '$lib/db.js';
 	import { base } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
+	import ShapeIcon from '$lib/components/ShapeIcon.svelte';
 
 	let userId = $state(null);
 	let profile = $state(null);
@@ -375,6 +376,22 @@
 		} catch (e) { profileErr = '保存に失敗しました: ' + e.message; } finally { savingProfile = false; }
 	}
 
+	// ── 夜行人図鑑用アイコン形状（所有分の選択・変更） ──
+	const SHAPE_LABELS = { star: '星', heart: 'ハート', diamond: '菱形', hexagon: '六角形' };
+	let shapeMsg = $state('');
+	let ownedShapes = $derived(Array.isArray(profile?.owned_shapes) ? profile.owned_shapes : []);
+	let currentShape = $derived(profile?.icon_shape ?? 'circle');
+	async function selectShape(shape) {
+		if (shape !== 'circle' && !ownedShapes.includes(shape)) return;
+		const prev = profile.icon_shape;
+		profile = { ...profile, icon_shape: shape };
+		try {
+			await setIconShape(userId, shape);
+			shapeMsg = 'アイコンの形を変更しました';
+			setTimeout(() => (shapeMsg = ''), 2500);
+		} catch { profile = { ...profile, icon_shape: prev }; }
+	}
+
 	// ── サブスクリプション（法人ダッシュボードを移植） ──
 	let accessToken = $state('');
 	let adHeadline = $state(''), adStoreUrl = $state(''), adRecruitUrl = $state('');
@@ -522,6 +539,34 @@
 
 			<button class="btn-primary" onclick={saveProfile} disabled={savingProfile}>{savingProfile ? '保存中…' : 'プロフィールを保存'}</button>
 			<a href="{base}/network" class="card-foot-link">夜行人ネットワークで見る ›</a>
+		</section>
+
+		<!-- 所有アイコンの選択・変更 -->
+		<section class="card">
+			<div class="card-head"><h2 class="card-title">アイコンの形</h2></div>
+			<p class="card-note">夜行人図鑑（星図）に表示されるアイコンの形を、所有している中から選べます。</p>
+			{#if shapeMsg}<p class="ok-msg">{shapeMsg}</p>{/if}
+			<div class="shape-grid">
+				<button class="shape-cell" class:selected={currentShape === 'circle'} onclick={() => selectShape('circle')}>
+					<ShapeIcon shape="circle" size={36} />
+					<span class="shape-name">まる</span>
+					{#if currentShape === 'circle'}<span class="shape-tag">使用中</span>{/if}
+				</button>
+				{#each Object.keys(SHAPE_LABELS) as key}
+					{#if ownedShapes.includes(key)}
+						<button class="shape-cell" class:selected={currentShape === key} onclick={() => selectShape(key)}>
+							<ShapeIcon shape={key} size={36} filled={currentShape === key} />
+							<span class="shape-name">{SHAPE_LABELS[key]}</span>
+							{#if currentShape === key}<span class="shape-tag">使用中</span>{:else}<span class="shape-tag pick">選ぶ</span>{/if}
+						</button>
+					{/if}
+				{/each}
+			</div>
+			{#if ownedShapes.length === 0}
+				<a href="{base}/shop" class="card-foot-link">オンラインストアでアイコンを購入する ›</a>
+			{:else}
+				<a href="{base}/shop" class="card-foot-link">ほかのアイコンを購入する ›</a>
+			{/if}
 		</section>
 
 	<!-- ===== 収益 ===== -->
@@ -1080,6 +1125,15 @@
 	.file-btn:hover { border-color: var(--accent); color: var(--accent); }
 	.file-btn :global(.icon) { color: var(--accent); }
 	.avatar-note { font-size: 0.7rem; color: var(--ink-3); }
+
+	/* アイコンの形 */
+	.shape-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin: 4px 0 6px; }
+	.shape-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border-radius: var(--r-md); border: 1.5px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; font-family: inherit; transition: border-color 0.15s, color 0.15s, background 0.15s; }
+	.shape-cell:hover { border-color: var(--accent); color: var(--accent); }
+	.shape-cell.selected { border-color: var(--accent); color: var(--accent); background: var(--accent-tint); }
+	.shape-name { font-size: 0.78rem; font-weight: 600; }
+	.shape-tag { font-size: 0.66rem; color: var(--accent-deep); font-weight: 700; }
+	.shape-tag.pick { color: var(--ink-3); font-weight: 500; }
 	.ta { resize: vertical; min-height: 68px; line-height: 1.6; }
 	.trust-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; padding: 12px 14px; background: var(--surface-sunk); border-radius: 10px; }
 	.trust-val { font-size: 1.4rem; font-weight: 800; color: var(--accent-deep); font-variant-numeric: tabular-nums; }

@@ -453,13 +453,6 @@
 	}
 
 	/* 商品情報 */
-	.brand {
-		font-size: 0.75rem;
-		color: var(--ink-3);
-		letter-spacing: 0.08em;
-		margin: 0 0 6px;
-		text-transform: uppercase;
-	}
 	.product-name {
 		font-size: 1.4rem;
 		font-weight: 700;
