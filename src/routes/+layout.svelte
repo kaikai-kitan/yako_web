@@ -33,11 +33,11 @@
 	let isApp = $derived(APP_PREFIXES.some((p) => path === p || path.startsWith(p + '/')));
 	let hideShell = $derived(isApp);
 	// 共有ボトムナビを出さない画面:
-	//  - /map（自前ナビ）, /yatakari（起動スプラッシュ）
+	//  - /yatakari（起動スプラッシュ）
 	//  - /network とグループ詳細（全画面3D＋独自の下部CTAと衝突するため）
 	let showBottomNav = $derived(
 		isApp
-		&& !(path === '/map' || path.startsWith('/yatakari'))
+		&& !path.startsWith('/yatakari')
 		&& !path.startsWith('/network')
 		&& !(/^\/groups\/[^/]+$/.test(path) && path !== '/groups/join')
 	);

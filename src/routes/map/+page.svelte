@@ -1495,66 +1495,14 @@
 
 	<!-- ボトムナビゲーション -->
 	{#if currentView === 'map'}
-		<!-- 外部リンクポップアップ -->
-		{#if isExternalMenuOpen}
-			<div class="ext-menu-overlay" onclick={() => (isExternalMenuOpen = false)}
-				onkeydown={(e) => e.key === 'Escape' && (isExternalMenuOpen = false)}
-				role="button" tabindex="-1" aria-label="メニューを閉じる">
-			</div>
-			<div class="ext-menu">
-				<a href="{base}/" class="ext-menu-item">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ext-menu-icon"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-					ホームページ
-				</a>
-				<a href="{base}/shop" class="ext-menu-item">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ext-menu-icon"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-					公式オンラインストア
-				</a>
-				<a href="{base}/contact" class="ext-menu-item">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ext-menu-icon"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-					お問い合わせ
-				</a>
-			</div>
-		{/if}
-
-		<nav class="bottom-nav">
-			<button class="nav-item" class:active={isReservationOpen}
-				onclick={() => { isReservationOpen = true; isDashboardOpen = false; }}>
-				<img src="{base}/images/map_icon/calendar.jpg" alt="予約確認" class="nav-icon" />
-				<span>予約確認</span>
-			</button>
-			<a href="{base}/mypage" class="nav-item">
-				<img src="{base}/images/map_icon/yatainin.jpg" alt="マイページ" class="nav-icon" />
-				<span>マイページ</span>
-			</a>
-			<button class="nav-item" class:active={isExternalMenuOpen}
-				onclick={() => (isExternalMenuOpen = !isExternalMenuOpen)}>
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-					stroke-linecap="round" stroke-linejoin="round" class="nav-icon-svg" aria-hidden="true">
-					<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
-				</svg>
-				<span>メニュー ▾</span>
-			</button>
-			<button class="nav-item" onclick={handleAuthNav}>
-				{#if currentUser}
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-						stroke-linecap="round" stroke-linejoin="round" class="nav-icon-svg" aria-hidden="true">
-						<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-						<polyline points="16 17 21 12 16 7"/>
-						<line x1="21" y1="12" x2="9" y2="12"/>
-					</svg>
-					<span>ログアウト</span>
-				{:else}
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-						stroke-linecap="round" stroke-linejoin="round" class="nav-icon-svg" aria-hidden="true">
-						<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-						<polyline points="10 17 15 12 10 7"/>
-						<line x1="15" y1="12" x2="3" y2="12"/>
-					</svg>
-					<span>ログイン</span>
-				{/if}
-			</button>
-		</nav>
+		<!-- 予約確認（フローティング）。ナビは共有ボトムナビ（レイアウト側）に統一 -->
+		<button class="reserve-fab" class:active={isReservationOpen}
+			onclick={() => { isReservationOpen = true; isDashboardOpen = false; }} aria-label="予約確認">
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+			</svg>
+			<span>予約確認</span>
+		</button>
 	{/if}
 </div>
 
@@ -2193,28 +2141,19 @@
 	.finish-screen { background: #10b981; }
 	.success-icon { font-size: 4rem; margin-bottom: 20px; }
 
-	/* Bottom Nav */
-	.bottom-nav {
-		position: fixed; bottom: 0; left: 0; right: 0;
-		height: 70px; background: white; display: flex;
-		justify-content: space-around; align-items: stretch;
-		border-top: 1px solid var(--line-strong); z-index: 800;
+	/* 予約確認（フローティング。共有ボトムナビの上に配置） */
+	.reserve-fab {
+		position: fixed; right: 12px;
+		bottom: calc(64px + env(safe-area-inset-bottom, 0) + 12px);
+		z-index: 700;
+		display: inline-flex; align-items: center; gap: 7px;
+		padding: 10px 16px; border-radius: 100px;
+		background: var(--ink); color: #fff; border: none;
+		font-size: 0.82rem; font-weight: 700; font-family: inherit; cursor: pointer;
+		box-shadow: 0 4px 16px rgba(0,0,0,0.22);
 	}
-	.nav-item {
-		background: none; border: none; display: flex; flex-direction: column;
-		align-items: center; justify-content: center;
-		color: var(--ink-3); font-size: 0.7rem; gap: 4px;
-		cursor: pointer; text-decoration: none;
-		padding: 0 16px;
-		border-bottom: 3px solid transparent;
-		transition: color 0.15s, border-color 0.15s;
-	}
-	.nav-item.active {
-		color: var(--ink);
-		border-bottom-color: #f97316;
-	}
-	.nav-icon { width: 24px; height: 24px; object-fit: contain; }
-	.nav-icon-svg { width: 24px; height: 24px; stroke: currentColor; }
+	.reserve-fab svg { width: 18px; height: 18px; }
+	.reserve-fab.active { background: var(--accent); }
 
 	/* Dashboard Modal */
 	.modal-overlay {
@@ -2291,36 +2230,6 @@
 	.res-action-scan  { background: var(--ink); color: white; }
 	.res-action-return { background: var(--ink); color: white; }
 	.res-action-cancel { background: none; border: 1.5px solid var(--line-strong); color: var(--ink-2); }
-
-	/* 外部リンクメニュー */
-	.ext-menu-overlay {
-		position: fixed; inset: 0; z-index: 790;
-	}
-	.ext-menu {
-		position: fixed;
-		bottom: 78px;
-		right: 8px;
-		background: white;
-		border-radius: 14px;
-		box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-		padding: 8px 0;
-		z-index: 800;
-		min-width: 180px;
-	}
-	.ext-menu-item {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		padding: 12px 18px;
-		font-size: 0.88rem;
-		font-weight: 600;
-		color: var(--ink);
-		text-decoration: none;
-		border-bottom: 1px solid var(--surface-sunk);
-	}
-	.ext-menu-item:last-child { border-bottom: none; }
-	.ext-menu-item:hover { background: var(--surface); }
-	.ext-menu-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--ink-2); }
 
 	/* 予約フィルター */
 	.res-filters {
