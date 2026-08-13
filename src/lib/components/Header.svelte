@@ -30,35 +30,13 @@
         <span class="logo-text">微小夜行電灯</span>
     </a>
 
-    <!-- プライマリナビ（常時表示） -->
+    <!-- プライマリナビ（事業サイト側はアプリ導線=YATAKARIのみ） -->
     <nav class="primary-nav" aria-label="主要ナビゲーション">
-        <!-- 一般客向け -->
         <a href="{base}/yatakari" target="_blank" rel="noopener noreferrer"
             class="primary-nav-item yatakari-btn" onclick={closeMenu}>
             <img src="{base}/images/yatakari_icon.png" alt="" class="nav-icon yatakari-icon" aria-hidden="true" />
             <span>YATAKARI</span>
         </a>
-
-        <!-- 事業者向けグループ（デスクトップ） -->
-        <div class="nav-divider" aria-hidden="true"></div>
-        <a href="{base}/shop" class="primary-nav-item shop-btn"
-            class:nav-active={currentPath.startsWith('/shop')} onclick={closeMenu}>
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-            </svg>
-            <span>ストア</span>
-        </a>
-
-        <!-- デスクトップ用テキストリンク -->
-        <a href="{base}/menu" class="desktop-nav-item" onclick={closeMenu}>メニュー</a>
-        <a href="{base}/company" class="desktop-nav-item" onclick={closeMenu}>会社概要</a>
-        {#if $session}
-            <button class="desktop-nav-item desktop-auth-btn" onclick={handleSignOut}>ログアウト</button>
-        {:else}
-            <a href="{base}/auth" class="desktop-nav-item desktop-auth-link" onclick={closeMenu}>ログイン</a>
-        {/if}
     </nav>
 
     <!-- ユーザーアイコン -->
@@ -221,12 +199,6 @@
         display: flex; align-items: center; gap: 4px;
         margin-left: auto; min-width: 0; overflow: hidden;
     }
-    .nav-divider {
-        display: none;
-        width: 1px; height: 24px; background: var(--line); margin: 0 4px;
-        flex-shrink: 0;
-    }
-
     .primary-nav-item {
         display: flex; flex-direction: column; align-items: center; gap: 2px;
         padding: 6px 10px; text-decoration: none; color: var(--ink);
@@ -234,34 +206,13 @@
         white-space: nowrap;
     }
     .primary-nav-item:hover { background: var(--surface-sunk); }
-    .primary-nav-item.nav-active { color: var(--ink); position: relative; }
-    .primary-nav-item.nav-active::after {
-        content: ''; position: absolute; bottom: -2px; left: 20%; right: 20%;
-        height: 3px; background: var(--accent); border-radius: 2px;
-    }
 
     /* YATAKARIボタン */
     .yatakari-btn { border: 1px solid var(--line); }
     .yatakari-btn:hover { border-color: var(--accent); background: var(--surface-sunk); }
 
-    /* ストアボタン */
-    .shop-btn { border: 1px solid var(--line); }
-    .shop-btn:hover { border-color: var(--accent); background: var(--surface-sunk); }
-
     .nav-icon { width: 22px; height: 22px; stroke: currentColor; }
     .nav-icon.yatakari-icon { object-fit: contain; stroke: none; }
-
-    /* デスクトップ専用リンク */
-    .desktop-nav-item {
-        display: none; padding: 8px 12px; text-decoration: none;
-        color: var(--ink); font-size: 0.88rem; border-radius: 6px;
-        white-space: nowrap; background: none; border: none;
-        cursor: pointer; font-family: inherit; transition: background 0.15s;
-    }
-    .desktop-nav-item:hover { background: var(--surface-sunk); }
-    .desktop-auth-link, .desktop-auth-btn {
-        border: 1.5px solid var(--ink); border-radius: 6px; padding: 6px 12px;
-    }
 
     /* ユーザーアイコン */
     .user-menu-wrap { position: relative; flex-shrink: 0; }
@@ -374,10 +325,7 @@
         .site-header { padding: 0 32px; gap: 16px; }
         .logo-text { display: block; font-size: 1rem; }
         .primary-nav { gap: 6px; }
-        .nav-divider { display: block; }
         .primary-nav-item { flex-direction: row; gap: 6px; font-size: 0.85rem; padding: 8px 12px; }
         .yatakari-btn { padding: 7px 14px; }
-        .desktop-nav-item { display: inline-flex; align-items: center; }
-        .hamburger { display: none; }
     }
 </style>

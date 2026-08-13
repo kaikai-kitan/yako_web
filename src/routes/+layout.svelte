@@ -7,6 +7,7 @@
 
 	import Header from '$lib/components/Header.svelte';
 	import PreFooter from '$lib/components/PreFooter.svelte';
+	import BottomNav from '$lib/components/BottomNav.svelte';
 	import { page } from '$app/stores';
 	import { session } from '$lib/auth.js';
 	import { supabase } from '$lib/supabase.js';
@@ -26,11 +27,19 @@
 		return () => subscription.unsubscribe();
 	});
 
-	// /map・/yatakari・/mypage系 はYATAKARIアプリとして別タブで開くためナビ・フッターを非表示
-	let hideShell = $derived(
-		$page.url.pathname === '/map' ||
-		$page.url.pathname.startsWith('/yatakari') ||
-		$page.url.pathname.startsWith('/mypage')
+	// YATAKARIアプリの範囲。トップ（事業サイト）のヘッダー/フッターは隠し、5タブのボトムナビを出す。
+	const APP_PREFIXES = ['/map', '/yatakari', '/mypage', '/directory', '/network', '/groups', '/shop', '/contact'];
+	let path = $derived($page.url.pathname);
+	let isApp = $derived(APP_PREFIXES.some((p) => path === p || path.startsWith(p + '/')));
+	let hideShell = $derived(isApp);
+	// 共有ボトムナビを出さない画面:
+	//  - /map（自前ナビ）, /yatakari（起動スプラッシュ）
+	//  - /network とグループ詳細（全画面3D＋独自の下部CTAと衝突するため）
+	let showBottomNav = $derived(
+		isApp
+		&& !(path === '/map' || path.startsWith('/yatakari'))
+		&& !path.startsWith('/network')
+		&& !(/^\/groups\/[^/]+$/.test(path) && path !== '/groups/join')
 	);
 </script>
 
@@ -50,7 +59,11 @@
 
 {#if !hideShell}<Header />{/if}
 
-{@render children?.()}
+<div class:app-body={showBottomNav}>
+	{@render children?.()}
+</div>
+
+{#if showBottomNav}<BottomNav />{/if}
 
 {#if !hideShell}<PreFooter />{/if}
 
@@ -66,6 +79,8 @@
 {/if}
 
 <style>
+	/* ボトムナビ分の余白（固定ナビに隠れないように） */
+	.app-body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0)); min-height: 100svh; box-sizing: border-box; }
 	footer {
 		width: 100%;
 		display: flex;
