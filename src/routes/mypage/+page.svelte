@@ -484,19 +484,19 @@
 
 		<!-- ===== ダッシュボード ===== -->
 		<section class="section dashboard-section">
-			<!-- 収益ダッシュボード（全員） -->
+			<!-- ダッシュボード（全員） -->
 			<a href="{base}/mypage/dashboard" class="dashboard-link revenue-link">
 				<div class="dl-text">
-					<strong>収益ダッシュボード</strong>
-					<span>売上集計・ロール別収益・売上推移</span>
+					<strong>ダッシュボード</strong>
+					<span>収益・売上推移／在庫・見込み利益</span>
 				</div>
 				<span class="dl-arrow">›</span>
 			</a>
-			<!-- 在庫管理（全員） -->
+			<!-- メニューと食材の紐付け（全員） -->
 			<a href="{base}/mypage/inventory" class="dashboard-link inventory-link">
 				<div class="dl-text">
-					<strong>在庫管理</strong>
-					<span>商品の必要数・現在数・不足資金を管理</span>
+					<strong>メニューと食材の紐付け</strong>
+					<span>メニュー別の食材・消耗品を登録（見込み利益の計算に使用）</span>
 				</div>
 				<span class="dl-arrow">›</span>
 			</a>
