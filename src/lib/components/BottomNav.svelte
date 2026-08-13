@@ -79,9 +79,9 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: flex-start;
+		justify-content: center;
 		gap: 4px;
-		min-height: 54px;
+		min-height: 56px;
 		padding: 8px 2px;
 		text-decoration: none;
 		color: var(--ink-3);

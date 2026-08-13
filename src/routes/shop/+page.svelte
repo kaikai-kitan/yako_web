@@ -576,7 +576,7 @@
 		cursor: pointer; padding: 0 2px; line-height: 1;
 	}
 
-	.shop-main { padding: 0 0 80px; max-width: 800px; margin: 0 auto; }
+	.shop-main { padding: 0 16px 80px; max-width: 800px; margin: 0 auto; }
 
 	.loading, .empty, .error-msg {
 		text-align: center; padding: 60px 20px; color: var(--ink-3); font-size: 0.9rem;

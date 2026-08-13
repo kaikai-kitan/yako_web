@@ -338,7 +338,7 @@ export async function getMyReservations(userId) {
 	const { data, error } = await supabase
 		.from('reservations')
 		.select(`
-			id, rental_space_id, start_datetime, end_datetime, planned_items, status, created_at,
+			id, rental_space_id, stall_id, start_datetime, end_datetime, planned_items, status, created_at,
 			rental_spaces ( name, address ),
 			stall_specs ( stall_name )
 		`)

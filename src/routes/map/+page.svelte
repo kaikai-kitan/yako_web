@@ -218,7 +218,6 @@
 				subdomains: 'abcd',
 				maxZoom: 19
 			}).addTo(mapInstance);
-			L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 			addExperimentOverlay(L, mapInstance);
 			updateMarkers(mapInstance);
 		} catch (e) {

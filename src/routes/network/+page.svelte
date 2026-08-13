@@ -418,12 +418,14 @@
 
 	/* スキャナ */
 	.scan-modal {
-		position: fixed; inset: 0; z-index: 50; background: rgba(38,32,25,0.72);
-		display: flex; align-items: center; justify-content: center; padding: 20px;
+		position: fixed; inset: 0; z-index: 1600; background: rgba(38,32,25,0.72);
+		display: flex; align-items: flex-start; justify-content: center;
+		padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0));
+		overflow-y: auto; -webkit-overflow-scrolling: touch;
 	}
 	.scan-card {
-		background: var(--surface); border-radius: var(--r-lg); padding: 26px; width: 100%; max-width: 360px;
-		text-align: center;
+		background: var(--surface); border-radius: var(--r-lg); padding: 22px; width: 100%; max-width: 360px;
+		margin: auto; text-align: center;
 	}
 	.scan-card h2 { font-family: "Zen Antique", serif; font-size: 1.05rem; letter-spacing: 0.08em; color: var(--ink); margin: 0 0 6px; }
 	.scan-hint { font-size: 0.8rem; color: var(--ink-3); margin: 0 0 14px; line-height: 1.6; }
