@@ -5,6 +5,17 @@
 	import { supabase } from '$lib/supabase.js';
 	import { cart, cartItems, cartCount, cartTotal } from '$lib/cart.js';
 	import Icon from '$lib/components/Icon.svelte';
+	import ShapeIcon from '$lib/components/ShapeIcon.svelte';
+
+	// 夜行人ネットワークのアイコン（形状・買い切り ¥500）
+	const YAKO_ICONS = [
+		{ key: 'star', label: '星' }, { key: 'heart', label: 'ハート' },
+		{ key: 'diamond', label: '菱形' }, { key: 'hexagon', label: '六角形' }
+	];
+	const SHAPE_PRICE = 500;
+	let accessToken = $state('');
+	let ownedShapes = $state([]);
+	let buyingShape = $state('');
 
 	let products = $state([]);
 	let isLoading = $state(true);
@@ -43,15 +54,32 @@
 
 		const userId = sessionRes.data?.session?.user?.id ?? null;
 		currentUserId = userId;
+		accessToken = sessionRes.data?.session?.access_token ?? '';
 		if (userId) {
-			const { data: favs } = await supabase
-				.from('favorites')
-				.select('product_id')
-				.eq('user_id', userId);
+			const [{ data: favs }, { data: prof }] = await Promise.all([
+				supabase.from('favorites').select('product_id').eq('user_id', userId),
+				supabase.from('user_profiles').select('owned_shapes').eq('user_id', userId).maybeSingle()
+			]);
 			favoriteIds = new Set((favs ?? []).map(f => f.product_id));
+			ownedShapes = Array.isArray(prof?.owned_shapes) ? prof.owned_shapes : [];
 		}
 		isLoading = false;
 	});
+
+	async function buyShape(key) {
+		if (!currentUserId) { goto(`${base}/auth?redirectTo=/shop`); return; }
+		checkoutError = ''; buyingShape = key;
+		try {
+			const res = await fetch('/api/shapes/checkout', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+				body: JSON.stringify({ shape: key })
+			});
+			const d = await res.json().catch(() => ({}));
+			if (!res.ok || !d.url) throw new Error(d.message ?? '購入手続きに失敗しました');
+			window.location.href = d.url;
+		} catch (e) { checkoutError = e.message; buyingShape = ''; }
+	}
 
 	async function toggleFavorite(e, productId) {
 		e.preventDefault();
@@ -279,6 +307,28 @@
 				</div>
 			{/if}
 
+			<!-- 夜行人ネットワークのアイコン（形状・買い切り） -->
+			<section class="section yako-icons">
+				<div class="section-header"><h2 class="section-title"><Icon name="share" size={19} /> 夜行人ネットワークのアイコン</h2></div>
+				<p class="yako-note">購入すると、夜行人ネットワーク（星図）のあなたのアイコンの形が変わります。購入後は自動で反映されます。</p>
+				<div class="yako-grid">
+					{#each YAKO_ICONS as s}
+						{@const owned = ownedShapes.includes(s.key)}
+						<div class="yako-card">
+							<span class="yako-preview"><ShapeIcon shape={s.key} size={40} /></span>
+							<span class="yako-label">{s.label}</span>
+							{#if owned}
+								<span class="yako-owned">所有済み</span>
+							{:else}
+								<button class="yako-buy" onclick={() => buyShape(s.key)} disabled={buyingShape === s.key}>
+									{buyingShape === s.key ? '…' : `¥${SHAPE_PRICE} で購入`}
+								</button>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			</section>
+
 			<!-- おすすめセクション -->
 			{#if recommendedProducts.length > 0}
 				<section class="section">
@@ -470,7 +520,7 @@
 
 	/* ヘッダー */
 	.shop-header {
-		position: sticky; top: 60px; z-index: 100;
+		position: sticky; top: 0; z-index: 100;
 		background: rgba(250,248,245,0.97);
 		backdrop-filter: blur(8px);
 		border-bottom: 1px solid var(--line);
@@ -584,6 +634,17 @@
 	}
 	.section-title { font-size: 0.95rem; font-weight: 700; color: var(--ink); margin: 0; display: inline-flex; align-items: center; gap: 7px; }
 	.section-title :global(.icon) { color: var(--accent); }
+
+	/* 夜行人ネットワークのアイコン */
+	.yako-note { font-size: 0.8rem; color: var(--ink-2); line-height: 1.6; margin: 6px 0 14px; }
+	.yako-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+	.yako-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px 10px 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+	.yako-preview { color: var(--accent); display: inline-flex; }
+	.yako-label { font-size: 0.82rem; font-weight: 700; color: var(--ink); }
+	.yako-owned { font-size: 0.72rem; font-weight: 700; color: #4a6a3a; background: rgba(95,122,82,0.12); border-radius: 20px; padding: 4px 12px; }
+	.yako-buy { font-size: 0.74rem; font-weight: 700; color: #fff; background: var(--accent); border: none; border-radius: 8px; padding: 7px 12px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+	.yako-buy:hover:not(:disabled) { background: var(--accent-deep); }
+	.yako-buy:disabled { opacity: 0.5; cursor: not-allowed; }
 
 	/* ソート */
 	.sort-select {

@@ -42,13 +42,15 @@ export async function POST({ request }) {
 		.eq('user_id', user.id)
 		.maybeSingle();
 	const owned = Array.isArray(data?.owned_shapes) ? data.owned_shapes : [];
-	if (!owned.includes(shape)) {
-		const { error: upErr } = await supabase
-			.from('user_profiles')
-			.update({ owned_shapes: [...owned, shape] })
-			.eq('user_id', user.id);
-		if (upErr) console.error('shape sync update error:', upErr);
-	}
+	// 購入後すぐネットワークへ反映されるよう icon_shape も自動適用
+	const patch = owned.includes(shape)
+		? { icon_shape: shape }
+		: { owned_shapes: [...owned, shape], icon_shape: shape };
+	const { error: upErr } = await supabase
+		.from('user_profiles')
+		.update(patch)
+		.eq('user_id', user.id);
+	if (upErr) console.error('shape sync update error:', upErr);
 
 	return json({ granted: true, shape });
 }

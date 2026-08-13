@@ -159,10 +159,13 @@ async function grantShape(supabase, userId, shape) {
 		.eq('user_id', userId)
 		.maybeSingle();
 	const owned = Array.isArray(data?.owned_shapes) ? data.owned_shapes : [];
-	if (owned.includes(shape)) return;
+	// 購入後すぐネットワークへ反映されるよう icon_shape も自動適用
+	const patch = owned.includes(shape)
+		? { icon_shape: shape }
+		: { owned_shapes: [...owned, shape], icon_shape: shape };
 	const { error } = await supabase
 		.from('user_profiles')
-		.update({ owned_shapes: [...owned, shape] })
+		.update(patch)
 		.eq('user_id', userId);
 	if (error) console.error('grant shape error:', error);
 }
