@@ -36,7 +36,7 @@
 	};
 	const DEFAULT_RING = '#8a94ab';
 
-	const BG = '#0b0e16'; // 夜の3D空間（深い藍色の闇）
+	const BG = '#fbfbf9'; // 白基調（床グリッドで3D空間を表現・視認性優先）
 	let GLOW = null;       // ネオン風グロー（放射状グラデ）テクスチャ。onMountで生成し使い回す
 
 	// つながり数 → アイコン倍率（依頼の例に沿った区分線形補間）
@@ -292,7 +292,7 @@
 			.showNavInfo(false)
 			.enableNodeDrag(false)
 			.nodeLabel((n) => (n.type === 'stall' ? `🏮 ${n.name}` : n.name))
-			.linkColor((l) => (l.origin === 'stall' ? '#6a5a34' : '#33405a'))
+			.linkColor((l) => (l.origin === 'stall' ? '#c9b183' : '#9aa1ae'))
 			.linkOpacity(0.42)
 			.linkWidth(0.5)
 			.nodeThreeObject((node) => {
@@ -300,21 +300,16 @@
 				const scale = BASE * (node.__mult ?? 1);
 
 				if (node.type === 'stall') {
-					// 屋台ハブは淡い金のグロー点＋ラベル
-					addGlow(THREE, group, scale * 1.6, '#e0b96a', 0.32);
 					const label = new SpriteText(`🏮 ${node.name}`);
-					label.color = '#e6c98a';
+					label.color = '#8a5a12';
 					label.textHeight = 6;
 					label.material.transparent = true;
 					group.add(label);
 					return group;
 				}
 
-				const ringColor = node.adActive ? '#e8b34d' : (ROLE_COLOR[node.roles?.[0]] ?? DEFAULT_RING);
+				const ringColor = node.adActive ? '#b5892e' : (ROLE_COLOR[node.roles?.[0]] ?? DEFAULT_RING);
 				const shape = node.shape || 'circle';
-				// 本体の背後に控えめなグロー（法人は少し強め）
-				node.__glowBase = node.adActive ? 0.5 : 0.4;
-			node.__glow = addGlow(THREE, group, scale * (node.adActive ? 2.1 : 1.85), ringColor, node.__glowBase);
 				// 法人（契約中）は限定の屋台アイコンを採用。写真は使わない。
 				const material = new THREE.SpriteMaterial({
 					map: node.adActive
@@ -339,7 +334,7 @@
 				}
 
 				const label = new SpriteText(node.name);
-				label.color = '#e7ddc9';
+				label.color = '#26201a';
 				label.material.transparent = true;
 				label.textHeight = Math.max(4, scale * 0.2);
 				label.position.set(0, -(scale / 2 + label.textHeight), 0);
@@ -369,32 +364,18 @@
 			camera3d = graph.camera();
 		} catch { /* noop */ }
 
-		// 立体感を出すフォグ（遠いノードが夜闇に溶ける＝奥行き知覚）
+		// 立体感を出すフォグ（遠いノードが白背景に溶ける＝奥行き知覚）
 		try {
-			if (scene3d) scene3d.fog = new THREE.Fog(BG, 320, 1500);
+			if (scene3d) scene3d.fog = new THREE.Fog(BG, 420, 1700);
 		} catch { /* noop */ }
 
-		// 星屑を撒いて「3D空間」であることを分かりやすく（回転で視差が出る）
+		// 床グリッドで「3D空間」であることを分かりやすく（白背景・視認性優先）
 		try {
 			if (scene3d) {
-				const N = 340;
-				const pos = new Float32Array(N * 3);
-				for (let i = 0; i < N; i++) {
-					// 球殻状にランダム配置（内側の空洞を空けてノードと重なりすぎないように）
-					const r = 520 + Math.random() * 900;
-					const th = Math.acos(2 * Math.random() - 1);
-					const ph = Math.random() * Math.PI * 2;
-					pos[i * 3]     = r * Math.sin(th) * Math.cos(ph);
-					pos[i * 3 + 1] = r * Math.sin(th) * Math.sin(ph);
-					pos[i * 3 + 2] = r * Math.cos(th);
-				}
-				const geo = new THREE.BufferGeometry();
-				geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-				const mat = new THREE.PointsMaterial({
-					color: 0x9fb0cf, size: 2.2, sizeAttenuation: true,
-					transparent: true, opacity: 0.55, depthWrite: false, fog: false
-				});
-				scene3d.add(new THREE.Points(geo, mat));
+				const grid = new THREE.GridHelper(2600, 52, 0xc4c4bd, 0xe0e0d8);
+				grid.position.y = -140; // クラスタの下に敷く床
+				if (grid.material) { grid.material.transparent = true; grid.material.opacity = 0.6; }
+				scene3d.add(grid);
 			}
 		} catch { /* noop */ }
 
@@ -522,7 +503,7 @@
 	.graph-host {
 		width: 100%;
 		min-height: 320px;
-		background: #0b0e16;
+		background: #fbfbf9;
 		touch-action: none;
 	}
 	.graph-host :global(canvas) {
