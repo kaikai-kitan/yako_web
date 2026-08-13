@@ -39,16 +39,17 @@
 	const BG = '#fbfbf9'; // 白基調（床グリッドで3D空間を表現・視認性優先）
 	let GLOW = null;       // ネオン風グロー（放射状グラデ）テクスチャ。onMountで生成し使い回す
 
-	// つながり数 → アイコン倍率（依頼の例に沿った区分線形補間）
-	const SIZE_STOPS = [[0, 1], [5, 1.5], [30, 3], [70, 5], [100, 8], [300, 20]];
+	// QRを交換した回数（＝つながり数）→ アイコン倍率（区分ごとの固定倍率）
+	//   0-5:1 / 6-15:1.5 / 16-50:3 / 51-300:5 / 301-1000:10
+	//   1001以上は 1000人増えるごとに +1（2000→11, 3000→12 …）
 	function sizeMultiplier(deg) {
-		if (!deg || deg <= 0) return 1;
-		for (let i = 1; i < SIZE_STOPS.length; i++) {
-			const [d0, m0] = SIZE_STOPS[i - 1];
-			const [d1, m1] = SIZE_STOPS[i];
-			if (deg <= d1) return m0 + ((deg - d0) / (d1 - d0)) * (m1 - m0);
-		}
-		return SIZE_STOPS[SIZE_STOPS.length - 1][1];
+		const d = deg || 0;
+		if (d <= 5) return 1;
+		if (d <= 15) return 1.5;
+		if (d <= 50) return 3;
+		if (d <= 300) return 5;
+		if (d <= 1000) return 10;
+		return 10 + Math.floor((d - 1000) / 1000);
 	}
 	const BASE = 18;
 
@@ -308,7 +309,8 @@
 					return group;
 				}
 
-				const ringColor = node.adActive ? '#b5892e' : (ROLE_COLOR[node.roles?.[0]] ?? DEFAULT_RING);
+				// ロール廃止: 法人（金）／夜行人（既定色）だけで区別
+				const ringColor = node.adActive ? '#b5892e' : DEFAULT_RING;
 				const shape = node.shape || 'circle';
 				// 法人（契約中）は限定の屋台アイコンを採用。写真は使わない。
 				const material = new THREE.SpriteMaterial({

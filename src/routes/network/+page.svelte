@@ -11,13 +11,7 @@
 	let graphData = $state(null);
 	let usingSeed = $state(false);
 	let selected = $state(null); // クリックされた人物ノード
-	let highlightRole = $state(null); // 凡例クリックで属性ハイライト
-
-	const ROLES = ['屋台営業者', '屋台オーナー', '土地オーナー', '流浪人', '法人'];
-
-	function toggleRole(r) {
-		highlightRole = highlightRole === r ? null : r;
-	}
+	let fabOpen = $state(false); // 「+」メニューの開閉
 
 	// QR スキャナ
 	let scanning = $state(false);
@@ -49,13 +43,6 @@
 		} catch { /* noop */ }
 	}
 
-	const ROLE_COLOR = {
-		'屋台営業者': '#b85c2b',
-		'屋台オーナー': '#b5892e',
-		'土地オーナー': '#5f7a52',
-		'流浪人': '#6b7688',
-		'法人': '#b5892e'
-	};
 
 	// 法人広告のアクセス計測（fire-and-forget）
 	function trackAd(node, kind) {
@@ -179,7 +166,7 @@
 
 <div class="net-wrap">
 	{#if graphData}
-		<NetworkGraph3D data={graphData} onNodeClick={handleNodeClick} height="100%" {highlightRole} />
+		<NetworkGraph3D data={graphData} onNodeClick={handleNodeClick} height="100%" />
 	{:else}
 		<div class="loading"><div class="spinner"></div></div>
 	{/if}
@@ -188,28 +175,28 @@
 	<div class="topbar">
 		<a href="{base}/directory" class="chip">‹ 夜行人図鑑</a>
 		<div class="legend">
-			{#each ROLES as r}
-				<button
-					class="lg"
-					class:active={highlightRole === r}
-					class:dimmed={highlightRole && highlightRole !== r}
-					onclick={() => toggleRole(r)}
-				>
-					<i style="background:{ROLE_COLOR[r]}"></i>{r}
-				</button>
-			{/each}
+			<span class="lg-static"><i style="background:#b5892e"></i>法人</span>
+			<span class="lg-static"><i style="background:#8a94ab"></i>夜行人</span>
 		</div>
 	</div>
-	{#if highlightRole}
-		<div class="hl-note">「{highlightRole}」をハイライト中 — もう一度タップで解除</div>
-	{/if}
 
 	{#if usingSeed}
 		<div class="seed-note">デモ表示中（登録が2人以上になると実データに切り替わります）</div>
 	{/if}
 
-	<!-- 繋がるボタン -->
-	<button class="connect-fab" onclick={startScan}>QRで繋がる</button>
+	<!-- 「+」メニュー（QRで繋がる / プライベートネットワーク作成） -->
+	{#if fabOpen}
+		<div class="fab-overlay" onclick={() => (fabOpen = false)} role="presentation"></div>
+		<div class="fab-menu" role="menu">
+			<button class="fab-item" role="menuitem" onclick={() => { fabOpen = false; startScan(); }}>
+				<Icon name="qr-code" size={18} /> QRコードで繋がる
+			</button>
+			<a class="fab-item" role="menuitem" href="{base}/groups" onclick={() => (fabOpen = false)}>
+				<Icon name="share" size={18} /> プライベートネットワークを作成
+			</a>
+		</div>
+	{/if}
+	<button class="connect-fab" class:open={fabOpen} onclick={() => (fabOpen = !fabOpen)} aria-label="メニュー" aria-haspopup="menu" aria-expanded={fabOpen}>＋</button>
 
 	<!-- 詳細パネル -->
 	{#if selected}
@@ -230,12 +217,8 @@
 				</div>
 			</div>
 
-			{#if selected.roles?.length}
-				<div class="roles">
-					{#each selected.roles as r}
-						<span class="role-chip" style="--dot:{ROLE_COLOR[r] ?? '#6b7688'}">{r}</span>
-					{/each}
-				</div>
+			{#if selected.adActive}
+				<div class="roles"><span class="role-chip corp">法人</span></div>
 			{/if}
 			{#if selected.status}<p class="detail-status">{selected.status}</p>{/if}
 			{#if selected.message && selected.message.replace(/[「」\s]/g, '')}<p class="detail-msg">{selected.message}</p>{/if}
@@ -331,22 +314,12 @@
 		white-space: nowrap; flex-shrink: 0;
 	}
 	.legend { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; pointer-events: auto; }
-	.lg {
-		display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: var(--ink-2);
+	.lg-static {
+		display: inline-flex; align-items: center; gap: 6px; font-size: 0.7rem; color: var(--ink-2);
 		background: rgba(255,253,247,0.92); box-shadow: var(--shadow-1);
-		padding: 6px 12px; border-radius: 100px; border: 1px solid var(--line);
-		cursor: pointer; font-family: inherit; transition: all 0.15s; letter-spacing: 0.04em;
+		padding: 6px 12px; border-radius: 100px; border: 1px solid var(--line); letter-spacing: 0.04em;
 	}
-	.lg i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-	.lg.active { border-color: var(--ink); background: #fff; font-weight: 700; }
-	.lg.dimmed { opacity: 0.4; }
-	.lg:hover { opacity: 1; }
-
-	.hl-note {
-		position: absolute; top: 58px; right: 14px; z-index: 6;
-		background: rgba(43,51,64,0.9); color: #efe7d8; font-size: 0.72rem;
-		padding: 6px 13px; border-radius: 100px; letter-spacing: 0.04em;
-	}
+	.lg-static i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 
 	.seed-note {
 		position: absolute; top: 58px; left: 50%; transform: translateX(-50%); z-index: 5;
@@ -354,14 +327,32 @@
 		padding: 6px 13px; border-radius: 100px; white-space: nowrap; letter-spacing: 0.03em;
 	}
 
+	/* 「+」FAB＋メニュー */
 	.connect-fab {
-		position: absolute; bottom: calc(22px + 64px + env(safe-area-inset-bottom, 0)); left: 50%; transform: translateX(-50%); z-index: 6;
-		background: var(--night); color: #f3ece0; border: none; border-radius: 100px;
-		padding: 13px 28px; font-family: "Zen Antique", serif; font-size: 0.9rem;
-		letter-spacing: 0.1em; cursor: pointer; box-shadow: var(--shadow-2);
-		white-space: nowrap;
+		position: absolute; right: 16px; z-index: 8;
+		bottom: calc(20px + 64px + env(safe-area-inset-bottom, 0));
+		width: 56px; height: 56px; border-radius: 50%;
+		background: var(--night); color: #f3ece0; border: none;
+		font-size: 1.7rem; line-height: 1; cursor: pointer; box-shadow: var(--shadow-2);
+		display: flex; align-items: center; justify-content: center;
+		transition: transform 0.2s, background 0.15s;
 	}
 	.connect-fab:hover { background: var(--night-2); }
+	.connect-fab.open { transform: rotate(45deg); }
+	.fab-overlay { position: absolute; inset: 0; z-index: 7; }
+	.fab-menu {
+		position: absolute; right: 16px; z-index: 9;
+		bottom: calc(86px + 64px + env(safe-area-inset-bottom, 0));
+		background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+		box-shadow: var(--shadow-2); padding: 6px; display: flex; flex-direction: column; min-width: 240px;
+	}
+	.fab-item {
+		display: flex; align-items: center; gap: 10px; padding: 13px 15px; border-radius: 10px;
+		font-size: 0.9rem; font-weight: 600; color: var(--ink); text-decoration: none;
+		background: none; border: none; cursor: pointer; font-family: inherit; text-align: left; width: 100%;
+	}
+	.fab-item:hover { background: var(--surface-sunk); }
+	.fab-item :global(.icon) { color: var(--accent); }
 
 	/* マイQR / 切り替え */
 	.my-qr-img {
@@ -408,6 +399,7 @@
 	.roles { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
 	.role-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.74rem; color: var(--ink-2); letter-spacing: 0.05em; }
 	.role-chip::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--dot, #6b7688); }
+	.role-chip.corp { --dot: #b5892e; color: #8a6a1e; font-weight: 700; }
 	.detail-status { font-size: 0.85rem; color: var(--ink-2); margin: 14px 0 0; letter-spacing: 0.03em; }
 	.detail-msg { font-size: 0.9rem; color: var(--ink-2); margin: 8px 0 0; line-height: 1.7; font-style: italic; }
 
