@@ -173,7 +173,6 @@
 
 	<!-- 上部バー -->
 	<div class="topbar">
-		<a href="{base}/directory" class="chip">‹ 夜行人図鑑</a>
 		<div class="legend">
 			<span class="lg-static"><i style="background:#b5892e"></i>法人</span>
 			<span class="lg-static"><i style="background:#8a94ab"></i>夜行人</span>
@@ -304,14 +303,6 @@
 		position: absolute; top: 14px; left: 14px; right: 14px; z-index: 5;
 		display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
 		pointer-events: none;
-	}
-	.chip {
-		pointer-events: auto;
-		background: rgba(255,253,247,0.92); color: var(--ink); text-decoration: none;
-		font-family: "Zen Antique", serif; font-size: 0.8rem; letter-spacing: 0.08em;
-		padding: 8px 15px; border-radius: 100px; border: 1px solid var(--line);
-		box-shadow: var(--shadow-1);
-		white-space: nowrap; flex-shrink: 0;
 	}
 	.legend { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; pointer-events: auto; }
 	.lg-static {

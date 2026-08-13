@@ -98,10 +98,10 @@
 	.bn-item:not(.active):hover { color: var(--ink-2); }
 	.bn-label { line-height: 1.2; text-align: center; word-break: keep-all; }
 
-	/* 「・・・」メニュー */
-	.more-overlay { position: fixed; inset: 0; z-index: 65; }
+	/* 「・・・」メニュー（マップの各種オーバーレイより前面に） */
+	.more-overlay { position: fixed; inset: 0; z-index: 1490; }
 	.more-menu {
-		position: fixed; z-index: 70; right: 8px;
+		position: fixed; z-index: 1500; right: 8px;
 		bottom: calc(60px + env(safe-area-inset-bottom, 0));
 		background: var(--surface); border: 1px solid var(--line);
 		border-radius: 14px; box-shadow: 0 6px 28px rgba(60,45,25,0.18);

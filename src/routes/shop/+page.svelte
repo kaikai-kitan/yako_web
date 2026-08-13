@@ -185,12 +185,6 @@
 <div class="shop-page">
 	<!-- ヘッダー -->
 	<header class="shop-header">
-		<a href="{base}/" class="back-link" aria-label="トップへ戻る">
-			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-				stroke-linecap="round" stroke-linejoin="round" class="back-icon">
-				<polyline points="15 18 9 12 15 6"/>
-			</svg>
-		</a>
 		<h1 class="shop-title">公式オンラインストア</h1>
 		<button class="cart-btn" onclick={() => (isCartOpen = true)} aria-label="カートを開く">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -204,13 +198,6 @@
 			{/if}
 		</button>
 	</header>
-
-	<!-- パンくずナビゲーション -->
-	<nav class="breadcrumb" aria-label="パンくず">
-		<a href="{base}/" class="breadcrumb-link">トップ</a>
-		<span class="breadcrumb-sep">/</span>
-		<span class="breadcrumb-current">公式オンラインストア</span>
-	</nav>
 
 	<!-- 検索バー -->
 	<div class="search-bar-wrap">
@@ -527,8 +514,6 @@
 		display: flex; align-items: center; justify-content: space-between;
 		padding: 12px 16px; gap: 8px;
 	}
-	.back-icon { width: 22px; height: 22px; stroke: var(--ink); display: block; }
-	.back-link { flex-shrink: 0; display: flex; align-items: center; }
 	.shop-title { font-size: 0.95rem; font-weight: 700; color: var(--ink); margin: 0; flex: 1; text-align: center; }
 	.cart-btn {
 		position: relative; background: none; border: none;
@@ -543,17 +528,6 @@
 		min-width: 18px; height: 18px;
 		display: flex; align-items: center; justify-content: center;
 	}
-
-	/* パンくず */
-	.breadcrumb {
-		display: flex; align-items: center; gap: 6px;
-		padding: 8px 16px; font-size: 0.78rem; color: var(--ink-3);
-		background: var(--surface-sunk); border-bottom: 1px solid var(--line);
-	}
-	.breadcrumb-link { color: var(--ink-2); text-decoration: none; }
-	.breadcrumb-link:hover { text-decoration: underline; }
-	.breadcrumb-sep { color: var(--line); }
-	.breadcrumb-current { color: var(--ink); font-weight: 600; }
 
 	/* お気に入りフィルター */
 	.fav-filter-btn {

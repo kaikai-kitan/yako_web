@@ -1640,6 +1640,7 @@
 							<button class="res-filter-btn" class:active={resStatusFilter === 'pending'} onclick={() => (resStatusFilter = 'pending')}>予約中</button>
 							<button class="res-filter-btn" class:active={resStatusFilter === 'active'} onclick={() => (resStatusFilter = 'active')}>利用中</button>
 							<button class="res-filter-btn" class:active={resStatusFilter === 'completed'} onclick={() => (resStatusFilter = 'completed')}>利用済み</button>
+							<button class="res-filter-btn" class:active={resStatusFilter === 'cancelled'} onclick={() => (resStatusFilter = 'cancelled')}>キャンセル済み</button>
 						</div>
 					</div>
 				</div>

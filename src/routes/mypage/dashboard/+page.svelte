@@ -5,7 +5,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { supabase } from '$lib/supabase.js';
-	import { getMyStalls, getMyMenuItems, addMenuItem, updateMenuItem, deleteMenuItem } from '$lib/db.js';
+	import { getMyStalls, getMyMenuItems, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage } from '$lib/db.js';
 	import { base } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
@@ -103,9 +103,11 @@
 	let totalProjectedRevenue = $derived(configuredMenus.reduce((s, m) => s + m.projectedRevenue, 0));
 
 	onMount(async () => {
-		const { data: { user } } = await supabase.auth.getUser();
-		if (!user) { goto(`${base}/`); return; }
+		const { data: { session } } = await supabase.auth.getSession();
+		if (!session) { goto(`${base}/`); return; }
+		const user = session.user;
 		userId = user.id;
+		accessToken = session.access_token;
 		await loadProfile(user.id);
 		await Promise.all([
 			loadRevenue(user.id), loadChart(user.id), loadMyStalls(user.id),
@@ -113,6 +115,7 @@
 			loadBank(user.id), loadYakonin(user.id)
 		]);
 		initProfileForm();
+		initAdForm();
 	});
 
 	async function loadMyStalls(uid) { try { myStalls = await getMyStalls(uid); } catch { myStalls = []; } }
@@ -329,41 +332,138 @@
 	// ── プロフィール（夜行人図鑑プロフィールに統合） ──
 	let yakonin = $state(null);
 	let pfName = $state(''), pfOneLiner = $state(''), pfBio = $state('');
+	let pfIconPreview = $state(''), pfIconFile = $state(null);
 	let savingProfile = $state(false);
 	let profileMsg = $state(''), profileErr = $state('');
 
 	async function loadYakonin(uid) {
-		const { data } = await supabase.from('yakonin_profiles').select('handle, one_liner, is_public').eq('user_id', uid).maybeSingle();
+		const { data } = await supabase.from('yakonin_profiles').select('handle, one_liner, is_public, avatar_path').eq('user_id', uid).maybeSingle();
 		yakonin = data;
 	}
 	function initProfileForm() {
 		pfName = profile?.name ?? yakonin?.handle ?? '';
 		pfOneLiner = yakonin?.one_liner ?? '';
 		pfBio = profile?.bio ?? '';
+		pfIconPreview = profile?.icon_path ?? yakonin?.avatar_path ?? '';
+	}
+	function onIconPick(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		pfIconFile = file;
+		pfIconPreview = URL.createObjectURL(file);
 	}
 	async function saveProfile() {
 		profileErr = ''; profileMsg = '';
 		if (!pfName.trim()) { profileErr = '名前を入力してください'; return; }
 		savingProfile = true;
 		try {
-			const { error: e1 } = await supabase.from('user_profiles').update({ name: pfName.trim(), bio: pfBio.trim() || null }).eq('user_id', userId);
+			let iconPath = profile?.icon_path ?? null;
+			if (pfIconFile) iconPath = await uploadImage(userId, pfIconFile, 'profile-images');
+
+			const { error: e1 } = await supabase.from('user_profiles').update({ name: pfName.trim(), bio: pfBio.trim() || null, icon_path: iconPath }).eq('user_id', userId);
 			if (e1) throw e1;
 			const { error: e2 } = await supabase.from('yakonin_profiles').upsert(
-				{ user_id: userId, handle: pfName.trim(), one_liner: pfOneLiner.trim() || null, is_public: true, updated_at: new Date().toISOString() },
+				{ user_id: userId, handle: pfName.trim(), one_liner: pfOneLiner.trim() || null, avatar_path: iconPath, is_public: true, updated_at: new Date().toISOString() },
 				{ onConflict: 'user_id' }
 			);
 			if (e2) throw e2;
-			profile = { ...profile, name: pfName.trim(), bio: pfBio.trim() || null };
-			yakonin = { ...(yakonin ?? {}), handle: pfName.trim(), one_liner: pfOneLiner.trim() || null, is_public: true };
+			profile = { ...profile, name: pfName.trim(), bio: pfBio.trim() || null, icon_path: iconPath };
+			yakonin = { ...(yakonin ?? {}), handle: pfName.trim(), one_liner: pfOneLiner.trim() || null, avatar_path: iconPath, is_public: true };
+			pfIconFile = null;
 			profileMsg = 'プロフィールを保存しました（夜行人図鑑に反映されます）';
 			setTimeout(() => (profileMsg = ''), 3000);
 		} catch (e) { profileErr = '保存に失敗しました: ' + e.message; } finally { savingProfile = false; }
 	}
+
+	// ── サブスクリプション（法人ダッシュボードを移植） ──
+	let accessToken = $state('');
+	let adHeadline = $state(''), adStoreUrl = $state(''), adRecruitUrl = $state('');
+	let adImagePreview = $state(''), adImageFile = $state(null);
+	let subBusy = $state(false), subMsg = $state(''), subErr = $state('');
+
+	function initAdForm() {
+		adHeadline = profile?.ad_headline ?? '';
+		adStoreUrl = profile?.ad_store_url ?? '';
+		adRecruitUrl = profile?.ad_recruit_url ?? '';
+		adImagePreview = profile?.ad_image_path ?? '';
+	}
+	function onAdImagePick(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		adImageFile = file;
+		adImagePreview = URL.createObjectURL(file);
+	}
+	async function saveAd() {
+		subErr = ''; subMsg = ''; subBusy = true;
+		try {
+			let imagePath = profile?.ad_image_path ?? '';
+			if (adImageFile) imagePath = await uploadImage(userId, adImageFile, 'profile-images');
+			const res = await fetch('/api/corporate/ad', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+				body: JSON.stringify({ headline: adHeadline, storeUrl: adStoreUrl, recruitUrl: adRecruitUrl, imagePath })
+			});
+			if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.message ?? '保存に失敗しました'); }
+			profile = { ...profile, ad_headline: adHeadline, ad_store_url: adStoreUrl, ad_recruit_url: adRecruitUrl, ad_image_path: imagePath };
+			adImageFile = null;
+			subMsg = '広告を保存しました。夜行人図鑑に反映されます。';
+			setTimeout(() => (subMsg = ''), 4000);
+		} catch (e) { subErr = e.message; } finally { subBusy = false; }
+	}
+	async function subscribe() {
+		subErr = ''; subBusy = true;
+		try {
+			const res = await fetch('/api/subscription/checkout', {
+				method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({})
+			});
+			const d = await res.json().catch(() => ({}));
+			if (!res.ok || !d.url) throw new Error(d.message ?? '決済ページの作成に失敗しました');
+			window.location.href = d.url;
+		} catch (e) { subErr = e.message; subBusy = false; }
+	}
+	async function openPortal() {
+		subErr = ''; subBusy = true;
+		try {
+			const res = await fetch('/api/subscription/portal', {
+				method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({})
+			});
+			const d = await res.json().catch(() => ({}));
+			if (!res.ok || !d.url) throw new Error(d.message ?? 'お支払い管理ページを開けませんでした');
+			window.location.href = d.url;
+		} catch (e) { subErr = e.message; subBusy = false; }
+	}
+	// 法人申請（未申請の個人からのアップグレード）
+	let corpName = $state(''), applyingCorp = $state(false);
+	async function applyCorporate() {
+		subErr = ''; if (!corpName.trim()) { subErr = '法人名（屋号）を入力してください'; return; }
+		applyingCorp = true;
+		try {
+			const res = await fetch('/api/corporate/apply', {
+				method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ corpName })
+			});
+			if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.message ?? '申請に失敗しました'); }
+			profile = { ...profile, account_type: 'corporate', corp_name: corpName.trim(), corp_status: 'pending' };
+			subMsg = '法人申請を送信しました。運営の審査をお待ちください。';
+		} catch (e) { subErr = e.message; } finally { applyingCorp = false; }
+	}
+
+	let ctr = $derived((() => {
+		const v = profile?.ad_view_count ?? 0, c = profile?.ad_click_count ?? 0;
+		if (!v) return '—';
+		return `${((c / v) * 100).toFixed(1)}%`;
+	})());
+	let isActiveSub = $derived(profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing');
+	let subStatusLabel = $derived(
+		profile?.subscription_status === 'active' ? '利用中'
+		: profile?.subscription_status === 'trialing' ? 'お試し中'
+		: profile?.subscription_status === 'past_due' ? 'お支払い確認中'
+		: profile?.subscription_status === 'canceled' ? '解約済み'
+		: '未申し込み'
+	);
 </script>
 
 <div class="page">
 	<header class="page-header">
-		<a href="{base}/mypage" class="back-link">‹ マイページ</a>
 		<h1 class="page-title">ダッシュボード</h1>
 	</header>
 
@@ -389,6 +489,18 @@
 			<p class="card-note">屋台と夜行人図鑑のプロフィールは共通です。ここで設定した内容が図鑑に反映されます。</p>
 			{#if profileMsg}<p class="ok-msg">{profileMsg}</p>{/if}
 			{#if profileErr}<p class="err-msg">{profileErr}</p>{/if}
+
+			<div class="avatar-field">
+				{#if pfIconPreview}
+					<img class="avatar-img" src={pfIconPreview.startsWith('blob:') || pfIconPreview.startsWith('http') ? pfIconPreview : base + pfIconPreview} alt="アイコン" />
+				{:else}
+					<span class="avatar-img placeholder">{pfName?.charAt(0) ?? '?'}</span>
+				{/if}
+				<div class="avatar-actions">
+					<label class="file-btn"><Icon name="image" size={15} /> アイコンを変更<input type="file" accept="image/*" onchange={onIconPick} hidden /></label>
+					<span class="avatar-note">夜行人ネットワークのアイコンにも反映されます</span>
+				</div>
+			</div>
 
 			<label class="f-field"><span class="f-label">名前</span>
 				<input class="inp" bind:value={pfName} maxlength="30" placeholder="表示名 / 夜行人ハンドル" />
@@ -735,18 +847,73 @@
 			<a href="{base}/mypage/add-stall" class="card-foot-link">屋台を追加・編集する ›</a>
 		</section>
 
-	<!-- ===== サブスクリプション ===== -->
+	<!-- ===== サブスクリプション（法人ダッシュボード） ===== -->
 	{:else if section === 'subscription'}
-		<section class="card">
-			<div class="card-head"><h2 class="card-title">サブスクリプション（法人プラン）</h2></div>
-			{#if profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing'}
-				<p class="card-note">法人プランをご利用中です。夜行人図鑑への広告掲載・法人バッジ・アクセス解析・イベントグループ作成が使えます。</p>
-				<a href="{base}/mypage/corporate" class="btn-primary block">法人ダッシュボードを開く</a>
-			{:else}
-				<p class="card-note">法人プラン（月額）にご契約いただくと、夜行人図鑑への広告掲載・法人バッジ・アクセス解析・イベントグループ作成が使えます。</p>
-				<a href="{base}/mypage#corp-plan" class="btn-primary block">法人プランを始める</a>
-			{/if}
-		</section>
+		{#if subErr}<p class="err-msg">{subErr}</p>{/if}
+		{#if subMsg}<p class="ok-msg">{subMsg}</p>{/if}
+
+		{#if profile?.corp_status === 'approved' || isActiveSub}
+			<!-- プラン状態 -->
+			<section class="card">
+				<h2 class="card-title">プランの状態</h2>
+				<div class="status-row">
+					<span class="status-chip" class:on={isActiveSub}>{subStatusLabel}</span>
+					<span class="status-note">{isActiveSub ? '夜行人図鑑に広告が掲載され、法人バッジが表示されています。' : '月額プランにお申し込みいただくと広告掲載が始まります。'}</span>
+				</div>
+				<div class="link-stack">
+					{#if isActiveSub}
+						<button class="btn-primary block" onclick={openPortal} disabled={subBusy}>お支払い・プランの管理（解約）</button>
+						<a class="link-strong" href="{base}/groups">イベントグループを作成・管理 ›</a>
+					{:else}
+						<button class="btn-primary block" onclick={subscribe} disabled={subBusy}>法人プランに申し込む（月額）</button>
+					{/if}
+				</div>
+			</section>
+
+			<!-- アクセス解析 -->
+			<section class="card">
+				<h2 class="card-title">アクセス解析</h2>
+				<p class="card-note">夜行人図鑑での広告の表示回数と、アイコンがクリックされた回数です。</p>
+				<div class="metric-row">
+					<div class="metric"><span class="metric-value">{(profile.ad_view_count ?? 0).toLocaleString()}</span><span class="metric-label">表示回数</span></div>
+					<div class="metric"><span class="metric-value">{(profile.ad_click_count ?? 0).toLocaleString()}</span><span class="metric-label">クリック回数</span></div>
+					<div class="metric"><span class="metric-value">{ctr}</span><span class="metric-label">クリック率</span></div>
+				</div>
+			</section>
+
+			<!-- 広告編集 -->
+			<section class="card">
+				<h2 class="card-title">広告の内容</h2>
+				<p class="card-note">図鑑であなたのアイコンをクリックした際に表示されます。契約中は放浪者として図鑑内を巡回します。</p>
+				<label class="f-field"><span class="f-label">キャッチコピー（全角30字まで）</span><input class="inp" bind:value={adHeadline} maxlength="60" placeholder="例: 京都の夜に、あたたかい一杯を。" /></label>
+				<label class="f-field"><span class="f-label">オンラインストアURL</span><input class="inp" type="url" bind:value={adStoreUrl} placeholder="https://…" /></label>
+				<label class="f-field"><span class="f-label">求人・採用URL</span><input class="inp" type="url" bind:value={adRecruitUrl} placeholder="https://…" /></label>
+				<div class="f-field">
+					<span class="f-label">広告画像（1枚）</span>
+					{#if adImagePreview}<img class="ad-preview" src={adImagePreview.startsWith('blob:') || adImagePreview.startsWith('http') ? adImagePreview : base + adImagePreview} alt="広告画像" />{/if}
+					<label class="file-btn"><Icon name="image" size={15} /> 画像を選ぶ<input type="file" accept="image/*" onchange={onAdImagePick} hidden /></label>
+				</div>
+				<div class="link-stack">
+					<button class="btn-primary block" onclick={saveAd} disabled={subBusy}>広告を保存</button>
+					<a class="link-strong" href="{base}/network">図鑑で確認する ›</a>
+				</div>
+			</section>
+
+		{:else if profile?.corp_status === 'pending'}
+			<section class="card">
+				<h2 class="card-title">法人プラン</h2>
+				<p class="card-note">法人申請を審査中です。運営の承認後にプランへお申し込みいただけます。</p>
+			</section>
+
+		{:else}
+			<section class="card">
+				<h2 class="card-title">法人プラン（サブスクリプション）</h2>
+				<p class="card-note">法人プラン（月額）で、夜行人図鑑への広告掲載・法人バッジ・アクセス解析・イベントグループ作成が使えます。まずは法人として申請してください（審査あり）。</p>
+				{#if profile?.corp_status === 'rejected'}<p class="err-msg">前回の申請は承認されませんでした。</p>{/if}
+				<label class="f-field"><span class="f-label">法人名 / 屋号</span><input class="inp" bind:value={corpName} placeholder="例: 株式会社 夜行社" /></label>
+				<button class="btn-primary block" onclick={applyCorporate} disabled={applyingCorp}>{applyingCorp ? '送信中…' : '法人として申請する'}</button>
+			</section>
+		{/if}
 
 	{:else}
 		<div class="empty-box">
@@ -760,8 +927,6 @@
 	.page { max-width: 820px; margin: 0 auto; padding: 22px 16px 80px; color: var(--ink); }
 
 	.page-header { margin-bottom: 16px; }
-	.back-link { font-size: 0.82rem; color: var(--ink-2); text-decoration: none; }
-	.back-link:hover { color: var(--accent); }
 	.page-title { font-size: 1.35rem; font-weight: 700; margin: 6px 0 0; }
 
 	/* セグメント */
@@ -907,10 +1072,29 @@
 
 	/* プロフィール */
 	.f-field { margin-bottom: 14px; }
+	.avatar-field { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+	.avatar-img { width: 68px; height: 68px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); flex-shrink: 0; }
+	.avatar-img.placeholder { display: inline-flex; align-items: center; justify-content: center; background: var(--surface-sunk); color: var(--ink-3); font-family: "Zen Antique", serif; font-size: 1.7rem; }
+	.avatar-actions { display: flex; flex-direction: column; gap: 6px; }
+	.file-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--ink); background: var(--surface-sunk); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; cursor: pointer; align-self: flex-start; }
+	.file-btn:hover { border-color: var(--accent); color: var(--accent); }
+	.file-btn :global(.icon) { color: var(--accent); }
+	.avatar-note { font-size: 0.7rem; color: var(--ink-3); }
 	.ta { resize: vertical; min-height: 68px; line-height: 1.6; }
 	.trust-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; padding: 12px 14px; background: var(--surface-sunk); border-radius: 10px; }
 	.trust-val { font-size: 1.4rem; font-weight: 800; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
 	.trust-note { font-size: 0.72rem; color: var(--ink-3); }
+
+	/* サブスク（法人ダッシュボード移植） */
+	.status-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+	.status-chip { font-size: 0.8rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; background: var(--surface-sunk); color: var(--ink-2); border: 1px solid var(--line); }
+	.status-chip.on { background: rgba(181,137,46,0.14); color: #8a6a1e; border-color: rgba(181,137,46,0.4); }
+	.status-note { font-size: 0.82rem; color: var(--ink-2); }
+	.metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+	.metric { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 8px; border-radius: 12px; background: var(--surface-sunk); border: 1px solid var(--line); }
+	.metric-value { font-size: 1.5rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+	.metric-label { font-size: 0.72rem; color: var(--ink-3); font-weight: 600; }
+	.ad-preview { display: block; width: 100%; max-height: 200px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); margin-bottom: 10px; }
 
 	/* EC / 汎用リンクスタック */
 	.link-stack { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
