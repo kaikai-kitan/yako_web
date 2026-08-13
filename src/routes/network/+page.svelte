@@ -355,7 +355,7 @@
 	}
 
 	.connect-fab {
-		position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 6;
+		position: absolute; bottom: calc(22px + 64px + env(safe-area-inset-bottom, 0)); left: 50%; transform: translateX(-50%); z-index: 6;
 		background: var(--night); color: #f3ece0; border: none; border-radius: 100px;
 		padding: 13px 28px; font-family: "Zen Antique", serif; font-size: 0.9rem;
 		letter-spacing: 0.1em; cursor: pointer; box-shadow: var(--shadow-2);
@@ -389,7 +389,7 @@
 
 	/* 詳細パネル */
 	.detail {
-		position: absolute; left: 14px; right: 14px; bottom: 82px; z-index: 7;
+		position: absolute; left: 14px; right: 14px; bottom: calc(82px + 64px + env(safe-area-inset-bottom, 0)); z-index: 7;
 		max-width: 420px; margin: 0 auto;
 		background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px;
 		box-shadow: var(--shadow-2);

@@ -34,13 +34,14 @@
 	let hideShell = $derived(isApp);
 	// 共有ボトムナビを出さない画面:
 	//  - /yatakari（起動スプラッシュ）
-	//  - /network とグループ詳細（全画面3D＋独自の下部CTAと衝突するため）
+	//  - グループ詳細（全画面3D＋独自の下部CTAと衝突するため）
 	let showBottomNav = $derived(
 		isApp
 		&& !path.startsWith('/yatakari')
-		&& !path.startsWith('/network')
 		&& !(/^\/groups\/[^/]+$/.test(path) && path !== '/groups/join')
 	);
+	// 全画面ページ（マップ・図鑑）は自前で下部要素を管理するため本文パディングは付けない
+	let padBody = $derived(showBottomNav && !(path === '/map' || path.startsWith('/network')));
 </script>
 
 <svelte:head>
@@ -59,7 +60,7 @@
 
 {#if !hideShell}<Header />{/if}
 
-<div class:app-body={showBottomNav}>
+<div class:app-body={padBody}>
 	{@render children?.()}
 </div>
 

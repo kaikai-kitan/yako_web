@@ -11,11 +11,11 @@
 	let path = $derived($page.url.pathname);
 
 	const tabs = [
-		{ label: 'マイページ',   icon: 'user',         href: `${base}/mypage`,    match: (p) => p.startsWith('/mypage') },
-		{ label: 'お問い合わせ', icon: 'mail',         href: `${base}/contact`,   match: (p) => p.startsWith('/contact') },
-		{ label: 'ストア',       icon: 'shopping-bag', href: `${base}/shop`,      match: (p) => p.startsWith('/shop') },
-		{ label: '夜行人図鑑',   icon: 'share',        href: `${base}/directory`, match: (p) => p.startsWith('/directory') || p.startsWith('/network') || p.startsWith('/groups') },
-		{ label: 'マップ',       icon: 'map',          href: `${base}/map`,       match: (p) => p.startsWith('/map') || p.startsWith('/yatakari') }
+		{ label: 'マイページ',       icon: 'user',         href: `${base}/mypage/dashboard`, match: (p) => p.startsWith('/mypage') },
+		{ label: 'お問い合わせ',     icon: 'mail',         href: `${base}/contact`,          match: (p) => p.startsWith('/contact') },
+		{ label: 'オンラインストア', icon: 'shopping-bag', href: `${base}/shop`,             match: (p) => p.startsWith('/shop') },
+		{ label: '夜行人図鑑',       icon: 'share',        href: `${base}/network`,          match: (p) => p.startsWith('/directory') || p.startsWith('/network') || p.startsWith('/groups') },
+		{ label: 'マップ',           icon: 'map',          href: `${base}/map`,              match: (p) => p.startsWith('/map') || p.startsWith('/yatakari') }
 	];
 </script>
 
@@ -46,19 +46,20 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: center;
-		gap: 3px;
-		padding: 9px 2px 8px;
+		justify-content: flex-start;
+		gap: 4px;
+		min-height: 54px;
+		padding: 8px 2px;
 		text-decoration: none;
 		color: var(--ink-3);
-		font-size: 0.66rem;
+		font-size: 0.62rem;
 		font-weight: 600;
-		letter-spacing: 0.01em;
+		letter-spacing: 0;
 		transition: color 0.15s;
 		-webkit-tap-highlight-color: transparent;
 	}
-	.bn-item :global(.icon) { color: currentColor; }
+	.bn-item :global(.icon) { color: currentColor; flex-shrink: 0; }
 	.bn-item.active { color: var(--accent); }
 	.bn-item:not(.active):hover { color: var(--ink-2); }
-	.bn-label { line-height: 1; white-space: nowrap; }
+	.bn-label { line-height: 1.2; text-align: center; word-break: keep-all; }
 </style>
