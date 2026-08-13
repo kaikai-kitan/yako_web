@@ -5,7 +5,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { supabase } from '$lib/supabase.js';
-	import { getMyStalls } from '$lib/db.js';
+	import { getMyStalls, getMyMenuItems, addMenuItem, updateMenuItem, deleteMenuItem } from '$lib/db.js';
 	import { base } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
@@ -108,7 +108,8 @@
 		await loadProfile(user.id);
 		await Promise.all([
 			loadRevenue(user.id), loadChart(user.id), loadMyStalls(user.id),
-			loadMenu(user.id), loadInv(user.id), loadIngredients(user.id)
+			loadMenu(user.id), loadInv(user.id), loadIngredients(user.id),
+			loadBank(user.id)
 		]);
 	});
 
@@ -166,8 +167,7 @@
 	}
 
 	async function loadMenu(uid) {
-		const { data } = await supabase.from('my_menu_items').select('id, name, price').eq('user_id', uid).order('display_order', { ascending: true });
-		menuItems = data ?? [];
+		try { menuItems = await getMyMenuItems(uid); } catch { menuItems = []; }
 	}
 	async function loadInv(uid) {
 		const { data } = await supabase.from('inventory').select('*').eq('user_id', uid).order('created_at', { ascending: true });
@@ -259,6 +259,70 @@
 		const { error } = await supabase.from('inventory').update({ current_qty: next }).eq('id', it.id).eq('user_id', userId);
 		if (!error) await loadInv(userId);
 	}
+
+	// ── 屋台: 口座設定 ──
+	let bankAccount = $state(null);
+	let bankForm = $state({ bank_name: '', branch_name: '', account_type: '普通', account_number: '', account_holder: '' });
+	let isSavingBank = $state(false);
+	let bankMsg = $state(''), bankErr = $state('');
+
+	async function loadBank(uid) {
+		const { data } = await supabase.from('operator_bank_accounts').select('*').eq('user_id', uid).maybeSingle();
+		bankAccount = data;
+		if (data) bankForm = {
+			bank_name: data.bank_name, branch_name: data.branch_name, account_type: data.account_type,
+			account_number: data.account_number, account_holder: data.account_holder
+		};
+	}
+	async function saveBank() {
+		bankMsg = ''; bankErr = '';
+		if (!bankForm.bank_name.trim() || !bankForm.account_number.trim() || !bankForm.account_holder.trim()) {
+			bankErr = '銀行名・口座番号・名義は必須です'; return;
+		}
+		isSavingBank = true;
+		const payload = { ...bankForm, user_id: userId };
+		const { error } = bankAccount
+			? await supabase.from('operator_bank_accounts').update(bankForm).eq('user_id', userId)
+			: await supabase.from('operator_bank_accounts').insert(payload);
+		isSavingBank = false;
+		if (error) bankErr = '保存に失敗しました: ' + error.message;
+		else { bankAccount = payload; bankMsg = '口座情報を保存しました'; setTimeout(() => (bankMsg = ''), 2500); }
+	}
+
+	// ── 屋台: マイメニュー ──
+	let showAddMenu = $state(false);
+	let mNewName = $state(''), mNewDesc = $state(''), mNewPrice = $state('');
+	let isAddingMenu = $state(false);
+	let editMenuId = $state(null);
+	let mEditName = $state(''), mEditDesc = $state(''), mEditPrice = $state('');
+	let isSavingMenu = $state(false);
+	let menuMsg = $state(''), menuErr = $state('');
+
+	function menuFlash(m) { menuMsg = m; setTimeout(() => (menuMsg = ''), 2500); }
+
+	async function addMenu() {
+		if (!mNewName.trim()) return;
+		isAddingMenu = true; menuErr = '';
+		try {
+			await addMenuItem(userId, { name: mNewName.trim(), description: mNewDesc.trim() || null, price: parseInt(mNewPrice) || 0, displayOrder: menuItems.length });
+			mNewName = ''; mNewDesc = ''; mNewPrice = ''; showAddMenu = false;
+			menuFlash('メニューを追加しました'); await loadMenu(userId);
+		} catch (e) { menuErr = '追加に失敗しました: ' + e.message; } finally { isAddingMenu = false; }
+	}
+	function startEditMenu(m) { editMenuId = m.id; mEditName = m.name; mEditDesc = m.description ?? ''; mEditPrice = String(m.price ?? 0); }
+	function cancelEditMenu() { editMenuId = null; }
+	async function saveMenu(id) {
+		isSavingMenu = true; menuErr = '';
+		try {
+			await updateMenuItem(id, { name: mEditName.trim(), description: mEditDesc.trim() || null, price: parseInt(mEditPrice) || 0 });
+			editMenuId = null; menuFlash('更新しました'); await loadMenu(userId);
+		} catch (e) { menuErr = '更新に失敗しました: ' + e.message; } finally { isSavingMenu = false; }
+	}
+	async function removeMenu(id) {
+		if (!confirm('このメニューを削除しますか？')) return;
+		try { await deleteMenuItem(id); menuFlash('削除しました'); await Promise.all([loadMenu(userId), loadIngredients(userId)]); }
+		catch (e) { menuErr = '削除に失敗しました: ' + e.message; }
+	}
 </script>
 
 <div class="page">
@@ -276,6 +340,11 @@
 			<Icon name="package" size={16} /> 在庫
 			{#if shortageItems > 0}<span class="seg-badge">{shortageItems}</span>{/if}
 		</button>
+		{#if hasShopRole}
+			<button class="seg-btn" class:active={section === 'yatai'} onclick={() => (section = 'yatai')}>
+				<Icon name="store" size={16} /> 屋台
+			</button>
+		{/if}
 	</div>
 
 	{#if isLoading}
@@ -385,7 +454,7 @@
 		{/if}
 
 	<!-- ===== 在庫 ===== -->
-	{:else}
+	{:else if section === 'inventory'}
 		{#if invMsg}<p class="ok-msg">{invMsg}</p>{/if}
 		{#if invErr}<p class="err-msg">{invErr}</p>{/if}
 
@@ -498,6 +567,78 @@
 					</table>
 				</div>
 			{/if}
+		</section>
+
+	<!-- ===== 屋台（出店者のみ） ===== -->
+	{:else if hasShopRole}
+		<section class="card">
+			<div class="card-head"><h2 class="card-title">口座設定</h2></div>
+			<p class="card-note">売上の精算に使用します。運営が精算時に確認します。</p>
+			{#if bankMsg}<p class="ok-msg">{bankMsg}</p>{/if}
+			{#if bankErr}<p class="err-msg">{bankErr}</p>{/if}
+			<div class="bank-form">
+				<label class="f-field"><span class="f-label">銀行名</span><input class="inp" bind:value={bankForm.bank_name} placeholder="〇〇銀行" /></label>
+				<label class="f-field"><span class="f-label">支店名</span><input class="inp" bind:value={bankForm.branch_name} placeholder="〇〇支店" /></label>
+				<label class="f-field"><span class="f-label">種別</span>
+					<select class="inp" bind:value={bankForm.account_type}>
+						<option value="普通">普通</option>
+						<option value="当座">当座</option>
+					</select>
+				</label>
+				<label class="f-field"><span class="f-label">口座番号</span><input class="inp" bind:value={bankForm.account_number} inputmode="numeric" placeholder="1234567" /></label>
+				<label class="f-field wide"><span class="f-label">口座名義（カナ）</span><input class="inp" bind:value={bankForm.account_holder} placeholder="ヤタイ タロウ" /></label>
+			</div>
+			<button class="btn-primary" onclick={saveBank} disabled={isSavingBank}>{isSavingBank ? '保存中…' : (bankAccount ? '口座情報を更新' : '口座情報を保存')}</button>
+		</section>
+
+		<section class="card">
+			<div class="card-head">
+				<h2 class="card-title">マイメニュー <span class="card-sub">{menuItems.length}品</span></h2>
+				<button class="mini-btn dark" onclick={() => (showAddMenu = !showAddMenu)}>＋ 追加</button>
+			</div>
+			{#if menuMsg}<p class="ok-msg">{menuMsg}</p>{/if}
+			{#if menuErr}<p class="err-msg">{menuErr}</p>{/if}
+
+			{#if showAddMenu}
+				<div class="menu-add">
+					<input class="inp" bind:value={mNewName} placeholder="メニュー名 *" />
+					<input class="inp" bind:value={mNewDesc} placeholder="説明（任意）" />
+					<input class="inp inp-num" type="number" bind:value={mNewPrice} placeholder="価格" min="0" />
+					<button class="btn-primary" onclick={addMenu} disabled={isAddingMenu || !mNewName.trim()}>{isAddingMenu ? '…' : '追加'}</button>
+					<button class="mini-btn" onclick={() => (showAddMenu = false)}>取消</button>
+				</div>
+			{/if}
+
+			{#if menuItems.length === 0}
+				<p class="empty-inline">メニューがありません。「＋ 追加」から登録できます。</p>
+			{:else}
+				<ul class="menu-list">
+					{#each menuItems as m (m.id)}
+						<li class="menu-row">
+							{#if editMenuId === m.id}
+								<div class="menu-edit">
+									<input class="inp" bind:value={mEditName} placeholder="メニュー名" />
+									<input class="inp" bind:value={mEditDesc} placeholder="説明" />
+									<input class="inp inp-num" type="number" bind:value={mEditPrice} min="0" />
+									<button class="mini-btn dark" onclick={() => saveMenu(m.id)} disabled={isSavingMenu}>{isSavingMenu ? '…' : '保存'}</button>
+									<button class="mini-btn" onclick={cancelEditMenu}>取消</button>
+								</div>
+							{:else}
+								<div class="menu-main">
+									<span class="menu-name">{m.name}</span>
+									{#if m.description}<span class="menu-desc">{m.description}</span>{/if}
+								</div>
+								<span class="menu-price">{fmt(m.price)}</span>
+								<span class="menu-act">
+									<button class="mini-btn" onclick={() => startEditMenu(m)}>編集</button>
+									<button class="mini-btn danger" onclick={() => removeMenu(m.id)}>削除</button>
+								</span>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			{/if}
+			<a href="{base}/mypage/inventory" class="card-foot-link">メニューと食材の紐付けを編集 ›</a>
 		</section>
 	{/if}
 </div>
@@ -642,8 +783,33 @@
 	.inp-inline { padding: 6px 8px; border: 1.5px solid var(--accent); border-radius: 6px; font-size: 0.84rem; width: 100%; box-sizing: border-box; font-family: inherit; }
 	.inp-inline.num { text-align: right; max-width: 84px; }
 	.empty-inline { font-size: 0.86rem; color: var(--ink-3); margin: 0; }
+	.card-note { font-size: 0.8rem; color: var(--ink-2); margin: 0 0 14px; line-height: 1.6; }
+
+	/* 屋台: 口座フォーム */
+	.bank-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+	.f-field { display: flex; flex-direction: column; gap: 5px; }
+	.f-field.wide { grid-column: 1 / -1; }
+	.f-label { font-size: 0.74rem; color: var(--ink-2); font-weight: 600; }
+	.bank-form .inp { width: 100%; box-sizing: border-box; }
+
+	/* 屋台: マイメニュー */
+	.menu-add { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; padding: 12px; background: var(--surface-sunk); border: 1px dashed var(--line-strong); border-radius: 12px; }
+	.menu-add .inp { flex: 1; min-width: 120px; }
+	.menu-add .inp-num { flex: 0 0 90px; min-width: 0; }
+	.menu-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+	.menu-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+	.menu-row:first-child { border-top: none; }
+	.menu-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+	.menu-name { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+	.menu-desc { font-size: 0.76rem; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.menu-price { font-size: 0.9rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+	.menu-act { display: flex; gap: 6px; flex-shrink: 0; }
+	.menu-edit { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%; }
+	.menu-edit .inp { flex: 1; min-width: 110px; }
+	.menu-edit .inp-num { flex: 0 0 84px; min-width: 0; }
 
 	@media (max-width: 480px) {
 		.metric-value { font-size: 2.1rem; }
+		.bank-form { grid-template-columns: 1fr; }
 	}
 </style>
