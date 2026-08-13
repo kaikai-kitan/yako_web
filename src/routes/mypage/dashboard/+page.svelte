@@ -15,7 +15,8 @@
 	let operatorData = $state(null);
 	let ownerData = $state(null);
 	let isLoading = $state(true);
-	let section = $state('revenue'); // 'revenue' | 'inventory'
+	// profile / revenue / menu / ec / inventory / bank / stalls / subscription
+	let section = $state('profile');
 
 	const now = new Date();
 	let selectedMonth = $state(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
@@ -109,8 +110,9 @@
 		await Promise.all([
 			loadRevenue(user.id), loadChart(user.id), loadMyStalls(user.id),
 			loadMenu(user.id), loadInv(user.id), loadIngredients(user.id),
-			loadBank(user.id)
+			loadBank(user.id), loadYakonin(user.id)
 		]);
+		initProfileForm();
 	});
 
 	async function loadMyStalls(uid) { try { myStalls = await getMyStalls(uid); } catch { myStalls = []; } }
@@ -323,6 +325,40 @@
 		try { await deleteMenuItem(id); menuFlash('削除しました'); await Promise.all([loadMenu(userId), loadIngredients(userId)]); }
 		catch (e) { menuErr = '削除に失敗しました: ' + e.message; }
 	}
+
+	// ── プロフィール（夜行人図鑑プロフィールに統合） ──
+	let yakonin = $state(null);
+	let pfName = $state(''), pfOneLiner = $state(''), pfBio = $state('');
+	let savingProfile = $state(false);
+	let profileMsg = $state(''), profileErr = $state('');
+
+	async function loadYakonin(uid) {
+		const { data } = await supabase.from('yakonin_profiles').select('handle, one_liner, is_public').eq('user_id', uid).maybeSingle();
+		yakonin = data;
+	}
+	function initProfileForm() {
+		pfName = profile?.name ?? yakonin?.handle ?? '';
+		pfOneLiner = yakonin?.one_liner ?? '';
+		pfBio = profile?.bio ?? '';
+	}
+	async function saveProfile() {
+		profileErr = ''; profileMsg = '';
+		if (!pfName.trim()) { profileErr = '名前を入力してください'; return; }
+		savingProfile = true;
+		try {
+			const { error: e1 } = await supabase.from('user_profiles').update({ name: pfName.trim(), bio: pfBio.trim() || null }).eq('user_id', userId);
+			if (e1) throw e1;
+			const { error: e2 } = await supabase.from('yakonin_profiles').upsert(
+				{ user_id: userId, handle: pfName.trim(), one_liner: pfOneLiner.trim() || null, is_public: true, updated_at: new Date().toISOString() },
+				{ onConflict: 'user_id' }
+			);
+			if (e2) throw e2;
+			profile = { ...profile, name: pfName.trim(), bio: pfBio.trim() || null };
+			yakonin = { ...(yakonin ?? {}), handle: pfName.trim(), one_liner: pfOneLiner.trim() || null, is_public: true };
+			profileMsg = 'プロフィールを保存しました（夜行人図鑑に反映されます）';
+			setTimeout(() => (profileMsg = ''), 3000);
+		} catch (e) { profileErr = '保存に失敗しました: ' + e.message; } finally { savingProfile = false; }
+	}
 </script>
 
 <div class="page">
@@ -331,24 +367,50 @@
 		<h1 class="page-title">ダッシュボード</h1>
 	</header>
 
-	<!-- セクション切替 -->
+	<!-- セクション切替（横スクロール） -->
 	<div class="seg">
-		<button class="seg-btn" class:active={section === 'revenue'} onclick={() => (section = 'revenue')}>
-			<Icon name="bar-chart" size={16} /> 収益
-		</button>
-		<button class="seg-btn" class:active={section === 'inventory'} onclick={() => (section = 'inventory')}>
-			<Icon name="package" size={16} /> 在庫
-			{#if shortageItems > 0}<span class="seg-badge">{shortageItems}</span>{/if}
-		</button>
-		{#if hasShopRole}
-			<button class="seg-btn" class:active={section === 'yatai'} onclick={() => (section = 'yatai')}>
-				<Icon name="store" size={16} /> 屋台
-			</button>
-		{/if}
+		<button class="seg-btn" class:active={section === 'profile'} onclick={() => (section = 'profile')}><Icon name="user" size={15} /> プロフィール</button>
+		<button class="seg-btn" class:active={section === 'revenue'} onclick={() => (section = 'revenue')}><Icon name="bar-chart" size={15} /> 収益</button>
+		{#if hasShopRole}<button class="seg-btn" class:active={section === 'menu'} onclick={() => (section = 'menu')}><Icon name="utensils-crossed" size={15} /> メニュー</button>{/if}
+		{#if hasShopRole}<button class="seg-btn" class:active={section === 'ec'} onclick={() => (section = 'ec')}><Icon name="shopping-bag" size={15} /> EC</button>{/if}
+		<button class="seg-btn" class:active={section === 'inventory'} onclick={() => (section = 'inventory')}><Icon name="package" size={15} /> 在庫{#if shortageItems > 0}<span class="seg-badge">{shortageItems}</span>{/if}</button>
+		{#if hasShopRole}<button class="seg-btn" class:active={section === 'bank'} onclick={() => (section = 'bank')}><Icon name="landmark" size={15} /> 口座</button>{/if}
+		{#if hasShopRole}<button class="seg-btn" class:active={section === 'stalls'} onclick={() => (section = 'stalls')}><Icon name="yatai" size={15} /> 屋台</button>{/if}
+		<button class="seg-btn" class:active={section === 'subscription'} onclick={() => (section = 'subscription')}><Icon name="badge-check" size={15} /> サブスクリプション</button>
 	</div>
 
 	{#if isLoading}
 		<div class="loading">読み込み中…</div>
+
+	<!-- ===== プロフィール（夜行人図鑑と統合） ===== -->
+	{:else if section === 'profile'}
+		<section class="card">
+			<div class="card-head"><h2 class="card-title">プロフィール</h2><span class="card-sub">夜行人図鑑に表示</span></div>
+			<p class="card-note">屋台と夜行人図鑑のプロフィールは共通です。ここで設定した内容が図鑑に反映されます。</p>
+			{#if profileMsg}<p class="ok-msg">{profileMsg}</p>{/if}
+			{#if profileErr}<p class="err-msg">{profileErr}</p>{/if}
+
+			<label class="f-field"><span class="f-label">名前</span>
+				<input class="inp" bind:value={pfName} maxlength="30" placeholder="表示名 / 夜行人ハンドル" />
+			</label>
+
+			<div class="trust-row">
+				<span class="f-label">信頼ポイント</span>
+				<span class="trust-val">{profile?.credit_score ?? 0}</span>
+				<span class="trust-note">屋台の利用・返却で増減します（自動）</span>
+			</div>
+
+			<label class="f-field"><span class="f-label">一言メッセージ</span>
+				<input class="inp" bind:value={pfOneLiner} maxlength="60" placeholder="例: 夜な夜な出没する屋台好き" />
+			</label>
+
+			<label class="f-field"><span class="f-label">店舗説明文</span>
+				<textarea class="inp ta" bind:value={pfBio} maxlength="300" rows="3" placeholder="お店・提供内容の紹介など"></textarea>
+			</label>
+
+			<button class="btn-primary" onclick={saveProfile} disabled={savingProfile}>{savingProfile ? '保存中…' : 'プロフィールを保存'}</button>
+			<a href="{base}/network" class="card-foot-link">夜行人ネットワークで見る ›</a>
+		</section>
 
 	<!-- ===== 収益 ===== -->
 	{:else if section === 'revenue'}
@@ -569,28 +631,8 @@
 			{/if}
 		</section>
 
-	<!-- ===== 屋台（出店者のみ） ===== -->
-	{:else if hasShopRole}
-		<section class="card">
-			<div class="card-head"><h2 class="card-title">口座設定</h2></div>
-			<p class="card-note">売上の精算に使用します。運営が精算時に確認します。</p>
-			{#if bankMsg}<p class="ok-msg">{bankMsg}</p>{/if}
-			{#if bankErr}<p class="err-msg">{bankErr}</p>{/if}
-			<div class="bank-form">
-				<label class="f-field"><span class="f-label">銀行名</span><input class="inp" bind:value={bankForm.bank_name} placeholder="〇〇銀行" /></label>
-				<label class="f-field"><span class="f-label">支店名</span><input class="inp" bind:value={bankForm.branch_name} placeholder="〇〇支店" /></label>
-				<label class="f-field"><span class="f-label">種別</span>
-					<select class="inp" bind:value={bankForm.account_type}>
-						<option value="普通">普通</option>
-						<option value="当座">当座</option>
-					</select>
-				</label>
-				<label class="f-field"><span class="f-label">口座番号</span><input class="inp" bind:value={bankForm.account_number} inputmode="numeric" placeholder="1234567" /></label>
-				<label class="f-field wide"><span class="f-label">口座名義（カナ）</span><input class="inp" bind:value={bankForm.account_holder} placeholder="ヤタイ タロウ" /></label>
-			</div>
-			<button class="btn-primary" onclick={saveBank} disabled={isSavingBank}>{isSavingBank ? '保存中…' : (bankAccount ? '口座情報を更新' : '口座情報を保存')}</button>
-		</section>
-
+	<!-- ===== メニュー（出店者） ===== -->
+	{:else if section === 'menu' && hasShopRole}
 		<section class="card">
 			<div class="card-head">
 				<h2 class="card-title">マイメニュー <span class="card-sub">{menuItems.length}品</span></h2>
@@ -640,6 +682,77 @@
 			{/if}
 			<a href="{base}/mypage/inventory" class="card-foot-link">メニューと食材の紐付けを編集 ›</a>
 		</section>
+
+	<!-- ===== EC（オンラインストア・出店者） ===== -->
+	{:else if section === 'ec' && hasShopRole}
+		<section class="card">
+			<div class="card-head"><h2 class="card-title">オンラインストア（EC）</h2></div>
+			<p class="card-note">屋台の商品をオンラインで販売できます。商品の登録・在庫・発送は出品者ページから管理します。</p>
+			<div class="link-stack">
+				<a href="{base}/mypage/operator/products" class="btn-primary block">商品を管理する</a>
+				<a href="{base}/shop" class="link-strong">公開中のストアを見る ›</a>
+			</div>
+		</section>
+
+	<!-- ===== 口座（出店者） ===== -->
+	{:else if section === 'bank' && hasShopRole}
+		<section class="card">
+			<div class="card-head"><h2 class="card-title">口座設定</h2></div>
+			<p class="card-note">売上の精算に使用します。運営が精算時に確認します。</p>
+			{#if bankMsg}<p class="ok-msg">{bankMsg}</p>{/if}
+			{#if bankErr}<p class="err-msg">{bankErr}</p>{/if}
+			<div class="bank-form">
+				<label class="f-field"><span class="f-label">銀行名</span><input class="inp" bind:value={bankForm.bank_name} placeholder="〇〇銀行" /></label>
+				<label class="f-field"><span class="f-label">支店名</span><input class="inp" bind:value={bankForm.branch_name} placeholder="〇〇支店" /></label>
+				<label class="f-field"><span class="f-label">種別</span>
+					<select class="inp" bind:value={bankForm.account_type}>
+						<option value="普通">普通</option>
+						<option value="当座">当座</option>
+					</select>
+				</label>
+				<label class="f-field"><span class="f-label">口座番号</span><input class="inp" bind:value={bankForm.account_number} inputmode="numeric" placeholder="1234567" /></label>
+				<label class="f-field wide"><span class="f-label">口座名義（カナ）</span><input class="inp" bind:value={bankForm.account_holder} placeholder="ヤタイ タロウ" /></label>
+			</div>
+			<button class="btn-primary" onclick={saveBank} disabled={isSavingBank}>{isSavingBank ? '保存中…' : (bankAccount ? '口座情報を更新' : '口座情報を保存')}</button>
+		</section>
+
+	<!-- ===== 屋台（出店者） ===== -->
+	{:else if section === 'stalls' && hasShopRole}
+		<section class="card">
+			<div class="card-head"><h2 class="card-title">マイ屋台 <span class="card-sub">{myStalls.length}台</span></h2></div>
+			{#if myStalls.length === 0}
+				<p class="empty-inline">登録された屋台がありません。</p>
+			{:else}
+				<ul class="stall-list">
+					{#each myStalls as st}
+						<li class="stall-row">
+							<span class="stall-name"><Icon name="yatai" size={16} /> {st.stall_name ?? '屋台'}</span>
+							<a href="{base}/yakonin/tag/{st.id}" class="mini-btn">接続タグ</a>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+			<a href="{base}/mypage/add-stall" class="card-foot-link">屋台を追加・編集する ›</a>
+		</section>
+
+	<!-- ===== サブスクリプション ===== -->
+	{:else if section === 'subscription'}
+		<section class="card">
+			<div class="card-head"><h2 class="card-title">サブスクリプション（法人プラン）</h2></div>
+			{#if profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing'}
+				<p class="card-note">法人プランをご利用中です。夜行人図鑑への広告掲載・法人バッジ・アクセス解析・イベントグループ作成が使えます。</p>
+				<a href="{base}/mypage/corporate" class="btn-primary block">法人ダッシュボードを開く</a>
+			{:else}
+				<p class="card-note">法人プラン（月額）にご契約いただくと、夜行人図鑑への広告掲載・法人バッジ・アクセス解析・イベントグループ作成が使えます。</p>
+				<a href="{base}/mypage#corp-plan" class="btn-primary block">法人プランを始める</a>
+			{/if}
+		</section>
+
+	{:else}
+		<div class="empty-box">
+			<p>このタブは屋台出店者としての登録後にご利用いただけます。</p>
+			<a href="{base}/mypage" class="link-strong">マイページで登録する ›</a>
+		</div>
 	{/if}
 </div>
 
@@ -652,8 +765,9 @@
 	.page-title { font-size: 1.35rem; font-weight: 700; margin: 6px 0 0; }
 
 	/* セグメント */
-	.seg { display: inline-flex; gap: 4px; background: var(--surface-sunk); border-radius: 11px; padding: 4px; margin-bottom: 20px; }
-	.seg-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border: none; background: transparent; border-radius: 8px; font-size: 0.86rem; font-weight: 600; color: var(--ink-2); cursor: pointer; font-family: inherit; }
+	.seg { display: flex; gap: 4px; background: var(--surface-sunk); border-radius: 11px; padding: 4px; margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+	.seg::-webkit-scrollbar { display: none; }
+	.seg-btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 13px; border: none; background: transparent; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: var(--ink-2); cursor: pointer; font-family: inherit; white-space: nowrap; flex: 0 0 auto; }
 	.seg-btn :global(.icon) { color: currentColor; }
 	.seg-btn.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 	.seg-badge { background: var(--accent-deep); color: #fff; font-size: 0.66rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; }
@@ -790,6 +904,24 @@
 	.f-field { display: flex; flex-direction: column; gap: 5px; }
 	.f-field.wide { grid-column: 1 / -1; }
 	.f-label { font-size: 0.74rem; color: var(--ink-2); font-weight: 600; }
+
+	/* プロフィール */
+	.f-field { margin-bottom: 14px; }
+	.ta { resize: vertical; min-height: 68px; line-height: 1.6; }
+	.trust-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; padding: 12px 14px; background: var(--surface-sunk); border-radius: 10px; }
+	.trust-val { font-size: 1.4rem; font-weight: 800; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
+	.trust-note { font-size: 0.72rem; color: var(--ink-3); }
+
+	/* EC / 汎用リンクスタック */
+	.link-stack { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+	.btn-primary.block { display: block; width: 100%; box-sizing: border-box; text-align: center; text-decoration: none; }
+
+	/* 屋台一覧 */
+	.stall-list { list-style: none; margin: 0 0 4px; padding: 0; display: flex; flex-direction: column; }
+	.stall-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+	.stall-row:first-child { border-top: none; }
+	.stall-name { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+	.stall-name :global(.icon) { color: var(--accent); }
 	.bank-form .inp { width: 100%; box-sizing: border-box; }
 
 	/* 屋台: マイメニュー */
