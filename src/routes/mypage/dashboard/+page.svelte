@@ -8,6 +8,7 @@
 	import { getMyStalls } from '$lib/db.js';
 	import { base } from '$app/paths';
 	import { goto } from '$app/navigation';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let userId = $state(null);
 	let profile = $state(null);
@@ -16,24 +17,23 @@
 	let isLoading = $state(true);
 
 	const now = new Date();
-	let selectedMonth = $state(
-		`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-	);
+	let selectedMonth = $state(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
 
 	// 収益データ
 	let revenueByType = $state({ yatai_usage: 0, yatai_rental: 0, land_rental: 0 });
 	let shopRevenue = $state(0);
+	let orderCount = $state(0);
 	let chartData = $state([]); // [{month, label, total}]
 
-	// ロール判定（profile + related tables）
+	let inventoryAlert = $state(0);
+	let myStalls = $state([]);
+
+	// ロール判定
 	let hasShopRole = $derived(!!operatorData || !!profile?.is_shop_operator);
 	let hasLandRole = $derived(!!ownerData || !!profile?.is_land_owner);
-	let hasYataiOwnerRole = $derived(
-		!!profile?.is_yatai_owner || profile?.user_type === '屋台提供者'
-	);
-	let hasYataiUserRole = $derived(
-		!!profile?.is_yatai_user || ['利用者', '購入者'].includes(profile?.user_type)
-	);
+	let hasYataiOwnerRole = $derived(!!profile?.is_yatai_owner || profile?.user_type === '屋台提供者');
+	let hasYataiUserRole = $derived(!!profile?.is_yatai_user || ['利用者', '購入者'].includes(profile?.user_type));
+	let hasAnyRole = $derived(hasYataiUserRole || hasYataiOwnerRole || hasLandRole || hasShopRole);
 
 	let totalRevenue = $derived(
 		(revenueByType.yatai_usage ?? 0) +
@@ -42,20 +42,32 @@
 		shopRevenue
 	);
 
-	// 在庫警告バッジ
-	let inventoryAlert = $state(0);
+	// ── 収益内訳（ロール固定色。dataviz既定カテゴリカルの上位4色を各ロールに固定割当） ──
+	const ROLE_META = {
+		yatai_usage:  { label: '屋台利用者', desc: '屋台販売売上',         color: '#2a78d6' },
+		yatai_rental: { label: '屋台主',     desc: '屋台貸し出し収益',     color: '#eb6834' },
+		land_rental:  { label: '土地主',     desc: '土地利用収益',         color: '#1baf7a' },
+		shop:         { label: 'ショップ',   desc: 'オンラインストア売上', color: '#eda100' }
+	};
+	let breakdown = $derived([
+		hasYataiUserRole  && { ...ROLE_META.yatai_usage,  amount: revenueByType.yatai_usage ?? 0 },
+		hasYataiOwnerRole && { ...ROLE_META.yatai_rental, amount: revenueByType.yatai_rental ?? 0 },
+		hasLandRole       && { ...ROLE_META.land_rental,  amount: revenueByType.land_rental ?? 0 },
+		hasShopRole       && { ...ROLE_META.shop,         amount: shopRevenue }
+	].filter(Boolean));
 
-	// 自分の屋台（夜行人ネットワークの接続タグ発行用）
-	let myStalls = $state([]);
+	// 前月比（推移データから）
+	let deltaPct = $derived.by(() => {
+		const idx = chartData.findIndex((d) => d.month === selectedMonth);
+		if (idx <= 0) return null;
+		const cur = chartData[idx].total, prev = chartData[idx - 1].total;
+		if (prev <= 0) return null;
+		return Math.round(((cur - prev) / prev) * 100);
+	});
 
 	onMount(async () => {
-		const {
-			data: { user }
-		} = await supabase.auth.getUser();
-		if (!user) {
-			goto(`${base}/`);
-			return;
-		}
+		const { data: { user } } = await supabase.auth.getUser();
+		if (!user) { goto(`${base}/`); return; }
 		userId = user.id;
 		await loadProfile(user.id);
 		await Promise.all([
@@ -67,11 +79,7 @@
 	});
 
 	async function loadMyStalls(uid) {
-		try {
-			myStalls = await getMyStalls(uid);
-		} catch {
-			myStalls = [];
-		}
+		try { myStalls = await getMyStalls(uid); } catch { myStalls = []; }
 	}
 
 	async function loadProfile(uid) {
@@ -97,19 +105,11 @@
 		const { start, end } = monthRange(selectedMonth);
 
 		const [logsRes, ordersRes] = await Promise.all([
-			supabase
-				.from('revenue_logs')
-				.select('revenue_type, amount')
-				.eq('user_id', uid)
-				.gte('occurred_at', start)
-				.lt('occurred_at', end),
+			supabase.from('revenue_logs').select('revenue_type, amount')
+				.eq('user_id', uid).gte('occurred_at', start).lt('occurred_at', end),
 			operatorData
-				? supabase
-						.from('shop_orders')
-						.select('total_amount')
-						.eq('operator_id', uid)
-						.gte('created_at', start)
-						.lt('created_at', end)
+				? supabase.from('shop_orders').select('total_amount')
+						.eq('operator_id', uid).gte('created_at', start).lt('created_at', end)
 				: Promise.resolve({ data: [] })
 		]);
 
@@ -118,508 +118,325 @@
 			if (log.revenue_type in byType) byType[log.revenue_type] += log.amount;
 		}
 		revenueByType = byType;
-		shopRevenue = (ordersRes.data ?? []).reduce((s, o) => s + (o.total_amount ?? 0), 0);
-
+		const orders = ordersRes.data ?? [];
+		shopRevenue = orders.reduce((s, o) => s + (o.total_amount ?? 0), 0);
+		orderCount = orders.length;
 		isLoading = false;
 	}
 
 	async function loadChart(uid) {
-		// 直近6ヶ月のデータを取得
 		const months = Array.from({ length: 6 }, (_, i) => {
-			const d = new Date();
-			d.setDate(1);
-			d.setMonth(d.getMonth() - (5 - i));
+			const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - (5 - i));
 			return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 		});
-
 		const sixMonthsAgo = `${months[0]}-01T00:00:00Z`;
 
 		const [allLogsRes, allOrdersRes] = await Promise.all([
-			supabase
-				.from('revenue_logs')
-				.select('amount, occurred_at')
-				.eq('user_id', uid)
-				.gte('occurred_at', sixMonthsAgo),
+			supabase.from('revenue_logs').select('amount, occurred_at').eq('user_id', uid).gte('occurred_at', sixMonthsAgo),
 			operatorData
-				? supabase
-						.from('shop_orders')
-						.select('total_amount, created_at')
-						.eq('operator_id', uid)
-						.gte('created_at', sixMonthsAgo)
+				? supabase.from('shop_orders').select('total_amount, created_at').eq('operator_id', uid).gte('created_at', sixMonthsAgo)
 				: Promise.resolve({ data: [] })
 		]);
 
 		const totals = Object.fromEntries(months.map((m) => [m, 0]));
+		for (const log of allLogsRes.data ?? []) { const m = log.occurred_at.slice(0, 7); if (m in totals) totals[m] += log.amount; }
+		for (const o of allOrdersRes.data ?? []) { const m = o.created_at.slice(0, 7); if (m in totals) totals[m] += o.total_amount ?? 0; }
 
-		for (const log of allLogsRes.data ?? []) {
-			const m = log.occurred_at.slice(0, 7);
-			if (m in totals) totals[m] += log.amount;
-		}
-		for (const o of allOrdersRes.data ?? []) {
-			const m = o.created_at.slice(0, 7);
-			if (m in totals) totals[m] += o.total_amount ?? 0;
-		}
-
-		chartData = months.map((m) => ({
-			month: m,
-			label: `${parseInt(m.slice(5))}月`,
-			total: totals[m]
-		}));
+		chartData = months.map((m) => ({ month: m, label: `${parseInt(m.slice(5))}月`, total: totals[m] }));
 	}
 
 	async function loadInventoryAlert(uid) {
-		const { data } = await supabase
-			.from('inventory')
-			.select('required_qty, current_qty')
-			.eq('user_id', uid);
+		const { data } = await supabase.from('inventory').select('required_qty, current_qty').eq('user_id', uid);
 		inventoryAlert = (data ?? []).filter((i) => i.required_qty > i.current_qty).length;
 	}
 
 	$effect(() => {
-		const m = selectedMonth;
+		selectedMonth;
 		if (userId && operatorData !== undefined) loadRevenue(userId);
 	});
 
-	function fmt(n) {
-		return `¥${(n ?? 0).toLocaleString()}`;
+	function fmt(n) { return `¥${(n ?? 0).toLocaleString()}`; }
+	function fmtShort(n) {
+		if (n >= 1_000_000) return `¥${(n / 1_000_000).toFixed(n % 1_000_000 ? 1 : 0)}M`;
+		if (n >= 1000) return `¥${Math.round(n / 1000)}K`;
+		return `¥${n}`;
 	}
+
+	// ── 折れ線/エリアチャートの座標計算 ──
+	const CW = 620, CH = 210, padL = 46, padR = 16, padT = 16, padB = 34;
+	const plotW = CW - padL - padR, plotH = CH - padT - padB;
+	function niceMax(v) {
+		if (v <= 0) return 1;
+		const p = Math.pow(10, Math.floor(Math.log10(v)));
+		const n = v / p; const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+		return step * p;
+	}
+	let axisMax = $derived(niceMax(Math.max(...chartData.map((d) => d.total), 1)));
+	let pts = $derived(chartData.map((d, i) => ({
+		...d, i,
+		x: padL + (chartData.length === 1 ? plotW / 2 : (i * plotW) / (chartData.length - 1)),
+		y: padT + plotH - (d.total / axisMax) * plotH
+	})));
+	let linePath = $derived(pts.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' '));
+	let areaPath = $derived(pts.length ? `${linePath} L ${pts.at(-1).x.toFixed(1)} ${(padT + plotH).toFixed(1)} L ${pts[0].x.toFixed(1)} ${(padT + plotH).toFixed(1)} Z` : '');
+	let gridLines = $derived([0, 0.5, 1].map((g) => ({ v: axisMax * g, y: padT + plotH - g * plotH })));
+
+	// ホバー
+	let hoverIdx = $state(null);
+	let chartEl = $state();
+	function onChartMove(e) {
+		if (!chartEl || pts.length === 0) return;
+		const rect = chartEl.getBoundingClientRect();
+		const xVb = (e.clientX - rect.left) * (CW / rect.width);
+		const step = chartData.length > 1 ? plotW / (chartData.length - 1) : plotW;
+		let idx = Math.round((xVb - padL) / step);
+		hoverIdx = Math.max(0, Math.min(chartData.length - 1, idx));
+	}
+	function onChartLeave() { hoverIdx = null; }
+	let hover = $derived(hoverIdx != null ? pts[hoverIdx] : null);
 </script>
 
 <div class="page">
-	<div class="page-header">
+	<header class="page-header">
 		<a href="{base}/mypage" class="back-link">‹ マイページ</a>
-		<h1 class="page-title">収益ダッシュボード</h1>
-	</div>
-
-	<!-- 月選択 -->
-	<div class="filter-bar">
-		<label class="month-label">
-			<span>表示月</span>
-			<input type="month" bind:value={selectedMonth} class="month-input" />
-		</label>
-		<a href="{base}/mypage/inventory" class="inventory-link">
-			在庫管理
-			{#if inventoryAlert > 0}
-				<span class="alert-badge">{inventoryAlert}</span>
-			{/if}
-		</a>
-	</div>
+		<div class="header-row">
+			<h1 class="page-title">収益ダッシュボード</h1>
+			<div class="controls">
+				<input type="month" bind:value={selectedMonth} class="month-input" aria-label="表示月" />
+				<a href="{base}/mypage/inventory" class="chip-link">
+					<Icon name="package" size={15} /> 在庫
+					{#if inventoryAlert > 0}<span class="alert-badge">{inventoryAlert}</span>{/if}
+				</a>
+			</div>
+		</div>
+	</header>
 
 	{#if isLoading}
-		<div class="loading">読み込み中...</div>
+		<div class="loading">読み込み中…</div>
+	{:else if !hasAnyRole}
+		<div class="no-role">
+			<p>収益を表示するためのロールが設定されていません。</p>
+			<a href="{base}/mypage" class="no-role-link">マイページでロールを追加する ›</a>
+		</div>
 	{:else}
-		<!-- 総利益カード -->
-		<div class="total-card">
-			<div class="total-label">{selectedMonth} 総利益</div>
-			<div class="total-value">{fmt(totalRevenue)}</div>
-			<div class="total-sub">すべてのロールの合計収益</div>
-		</div>
-
-		<!-- ロール別カード -->
-		<div class="role-grid">
-			{#if hasYataiUserRole}
-				<div class="role-card yatai-user">
-					<div class="role-header">
-						<div>
-							<div class="role-name">屋台利用者</div>
-							<div class="role-desc">屋台販売売上</div>
-						</div>
-					</div>
-					<div class="role-amount">{fmt(revenueByType.yatai_usage)}</div>
-					<div class="role-bar">
-						<div
-							class="bar-fill yatai-user-fill"
-							style="width: {totalRevenue > 0 ? Math.round((revenueByType.yatai_usage / totalRevenue) * 100) : 0}%"
-						></div>
-					</div>
+		<!-- 分析サマリー（総利益＋前月比＋推移） -->
+		<section class="analytics">
+			<div class="analytics-head">
+				<div>
+					<p class="metric-label">総利益</p>
+					<p class="metric-value">{fmt(totalRevenue)}</p>
+					<p class="metric-sub">
+						<span class="metric-month">{selectedMonth}</span>
+						{#if deltaPct != null}
+							<span class="delta" class:up={deltaPct >= 0} class:down={deltaPct < 0}>
+								{deltaPct >= 0 ? '▲' : '▼'} {Math.abs(deltaPct)}% <span class="delta-note">前月比</span>
+							</span>
+						{/if}
+					</p>
 				</div>
-			{/if}
-
-			{#if hasYataiOwnerRole}
-				<div class="role-card yatai-owner">
-					<div class="role-header">
-						<div>
-							<div class="role-name">屋台主</div>
-							<div class="role-desc">屋台貸し出し収益</div>
-						</div>
-					</div>
-					<div class="role-amount">{fmt(revenueByType.yatai_rental)}</div>
-					<div class="role-bar">
-						<div
-							class="bar-fill yatai-owner-fill"
-							style="width: {totalRevenue > 0 ? Math.round((revenueByType.yatai_rental / totalRevenue) * 100) : 0}%"
-						></div>
-					</div>
-				</div>
-			{/if}
-
-			{#if hasLandRole}
-				<div class="role-card land-owner">
-					<div class="role-header">
-						<div>
-							<div class="role-name">土地主</div>
-							<div class="role-desc">土地利用収益</div>
-						</div>
-					</div>
-					<div class="role-amount">{fmt(revenueByType.land_rental)}</div>
-					<div class="role-bar">
-						<div
-							class="bar-fill land-fill"
-							style="width: {totalRevenue > 0 ? Math.round((revenueByType.land_rental / totalRevenue) * 100) : 0}%"
-						></div>
-					</div>
-				</div>
-			{/if}
-
-			{#if hasShopRole}
-				<div class="role-card shop-op">
-					<div class="role-header">
-						<div>
-							<div class="role-name">ショップ運営者</div>
-							<div class="role-desc">オンラインストア売上</div>
-						</div>
-					</div>
-					<div class="role-amount">{fmt(shopRevenue)}</div>
-					<div class="role-bar">
-						<div
-							class="bar-fill shop-fill"
-							style="width: {totalRevenue > 0 ? Math.round((shopRevenue / totalRevenue) * 100) : 0}%"
-						></div>
-					</div>
-					<a href="{base}/mypage/operator" class="role-link">詳細・精算管理 ›</a>
-				</div>
-			{/if}
-		</div>
-
-		{#if !hasYataiUserRole && !hasYataiOwnerRole && !hasLandRole && !hasShopRole}
-			<div class="no-role">
-				<p>収益を表示するためのロールが設定されていません。</p>
-				<a href="{base}/mypage" class="no-role-link">マイページでロールを追加する ›</a>
 			</div>
-		{/if}
 
-		<!-- 6ヶ月売上推移チャート -->
-		{#if chartData.length > 0}
-			{@const maxVal = Math.max(...chartData.map((d) => d.total), 1)}
-			<div class="chart-section">
-				<h2 class="section-title">売上推移（直近6ヶ月）</h2>
-				<div class="chart-wrap">
-					<svg
-						class="chart-svg"
-						viewBox="0 0 {chartData.length * 72} 140"
-						preserveAspectRatio="xMidYMid meet"
-					>
-						{#each chartData as point, i}
-							{@const barH = Math.max(Math.round((point.total / maxVal) * 100), point.total > 0 ? 4 : 0)}
-							{@const isCurrentMonth = point.month === selectedMonth}
-							<rect
-								x={i * 72 + 10}
-								y={100 - barH}
-								width="52"
-								height={barH}
-								fill={isCurrentMonth ? 'var(--accent)' : '#e8c97a'}
-								rx="5"
-							/>
-							{#if point.total > 0}
-								<text
-									x={i * 72 + 36}
-									y={94 - barH}
-									text-anchor="middle"
-									font-size="9"
-									fill="var(--ink)"
-								>
-									{point.total >= 1000
-										? `¥${Math.round(point.total / 1000)}K`
-										: `¥${point.total}`}
-								</text>
-							{/if}
-							<text
-								x={i * 72 + 36}
-								y="116"
-								text-anchor="middle"
-								font-size="11"
-								fill={isCurrentMonth ? 'var(--accent)' : 'var(--ink-2)'}
-								font-weight={isCurrentMonth ? '700' : '400'}
-							>
-								{point.label}
-							</text>
+			<figure class="chart" role="group" aria-label="直近6ヶ月の総利益の推移">
+				<figcaption class="chart-cap">総利益の推移（直近6ヶ月）</figcaption>
+				<div class="chart-holder">
+					<svg bind:this={chartEl} viewBox="0 0 {CW} {CH}" class="chart-svg" preserveAspectRatio="none"
+						onpointermove={onChartMove} onpointerleave={onChartLeave} role="presentation">
+						<defs>
+							<linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+								<stop offset="0%" stop-color="var(--accent)" stop-opacity="0.22" />
+								<stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
+							</linearGradient>
+						</defs>
+						<!-- grid -->
+						{#each gridLines as g}
+							<line x1={padL} x2={CW - padR} y1={g.y} y2={g.y} class="grid" />
+							<text x={padL - 8} y={g.y + 3} text-anchor="end" class="axis-y">{fmtShort(g.v)}</text>
+						{/each}
+						<!-- area + line -->
+						<path d={areaPath} fill="url(#area-grad)" />
+						<path d={linePath} class="line" />
+						<!-- crosshair -->
+						{#if hover}
+							<line x1={hover.x} x2={hover.x} y1={padT} y2={padT + plotH} class="crosshair" />
+						{/if}
+						<!-- points -->
+						{#each pts as p}
+							<circle cx={p.x} cy={p.y} r={hoverIdx === p.i ? 5 : (p.i === pts.length - 1 ? 4 : 3)}
+								class="dot" class:emph={p.i === pts.length - 1 || hoverIdx === p.i} />
+						{/each}
+						<!-- x labels -->
+						{#each pts as p}
+							<text x={p.x} y={CH - 12} text-anchor="middle" class="axis-x" class:cur={p.month === selectedMonth}>{p.label}</text>
 						{/each}
 					</svg>
+					{#if hover}
+						<div class="tooltip" style="left: {(hover.x / CW) * 100}%; top: {(hover.y / CH) * 100}%">
+							<span class="tt-month">{hover.month.replace('-', '年')}月</span>
+							<span class="tt-val">{fmt(hover.total)}</span>
+						</div>
+					{/if}
 				</div>
-			</div>
+			</figure>
+		</section>
+
+		<!-- 補助指標（該当ロールのみ） -->
+		{#if hasShopRole}
+			<section class="kpis">
+				<div class="kpi">
+					<span class="kpi-label">ショップ売上</span>
+					<span class="kpi-value">{fmt(shopRevenue)}</span>
+				</div>
+				<div class="kpi">
+					<span class="kpi-label">注文数</span>
+					<span class="kpi-value">{orderCount}<span class="kpi-unit">件</span></span>
+				</div>
+				<div class="kpi">
+					<span class="kpi-label">平均注文額</span>
+					<span class="kpi-value">{fmt(orderCount > 0 ? Math.round(shopRevenue / orderCount) : 0)}</span>
+				</div>
+				<div class="kpi" class:warn={inventoryAlert > 0}>
+					<span class="kpi-label">在庫アラート</span>
+					<span class="kpi-value">{inventoryAlert}<span class="kpi-unit">件</span></span>
+				</div>
+			</section>
 		{/if}
+
+		<!-- 収益の内訳 -->
+		<section class="card">
+			<div class="card-head">
+				<h2 class="card-title">収益の内訳</h2>
+				<span class="card-sub">{selectedMonth}</span>
+			</div>
+			<ul class="bd-list">
+				{#each breakdown as b}
+					{@const share = totalRevenue > 0 ? (b.amount / totalRevenue) * 100 : 0}
+					<li class="bd-row">
+						<span class="bd-chip" style="background:{b.color}"></span>
+						<div class="bd-main">
+							<div class="bd-top">
+								<span class="bd-name">{b.label}</span>
+								<span class="bd-amount">{fmt(b.amount)}</span>
+							</div>
+							<div class="bd-bar"><div class="bd-fill" style="width:{share}%; background:{b.color}"></div></div>
+							<div class="bd-meta"><span class="bd-desc">{b.desc}</span><span class="bd-share">{share.toFixed(0)}%</span></div>
+						</div>
+					</li>
+				{/each}
+			</ul>
+			{#if hasShopRole}
+				<a href="{base}/mypage/operator" class="card-foot-link">ショップの詳細・精算管理 ›</a>
+			{/if}
+		</section>
 
 		<!-- 夜行人ネットワーク接続タグ -->
 		{#if myStalls.length > 0}
-			<div class="network-section">
-				<h2 class="section-title">夜行人ネットワーク 接続タグ</h2>
-				<p class="network-lead">
-					屋台に QR / NFC タグを設置すると、来場者がスマホをかざすだけで<a href="{base}/network">夜行人ネットワーク</a>につながります。
-				</p>
-				<div class="stall-tag-list">
+			<section class="card">
+				<div class="card-head">
+					<h2 class="card-title">夜行人ネットワーク 接続タグ</h2>
+				</div>
+				<p class="tag-lead">屋台に QR / NFC タグを設置すると、来場者がスマホをかざすだけで<a href="{base}/network">夜行人ネットワーク</a>につながります。</p>
+				<div class="tag-list">
 					{#each myStalls as stall}
-						<a href="{base}/yakonin/tag/{stall.id}" class="stall-tag-row">
-							<span class="stall-tag-name">{stall.stall_name ?? '屋台'}</span>
-							<span class="stall-tag-cta">接続タグを発行 ›</span>
+						<a href="{base}/yakonin/tag/{stall.id}" class="tag-row">
+							<span class="tag-name"><Icon name="qr-code" size={16} /> {stall.stall_name ?? '屋台'}</span>
+							<span class="tag-cta">接続タグを発行 ›</span>
 						</a>
 					{/each}
 				</div>
-			</div>
+			</section>
 		{/if}
 	{/if}
 </div>
 
 <style>
-	.page {
-		max-width: 720px;
-		margin: 0 auto;
-		padding: 24px 16px 80px;
-		color: var(--ink);
-	}
-	.page-header {
-		margin-bottom: 20px;
-	}
-	.back-link {
-		font-size: 0.85rem;
-		color: var(--ink-2);
-		text-decoration: none;
-	}
-	.back-link:hover {
-		color: var(--accent);
-	}
-	.page-title {
-		font-size: 1.3rem;
-		font-weight: 700;
-		margin: 6px 0 0;
-	}
-	.filter-bar {
-		display: flex;
-		align-items: center;
-		gap: 16px;
-		flex-wrap: wrap;
-		margin-bottom: 24px;
-	}
-	.month-label {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		font-size: 0.88rem;
-		color: var(--ink-2);
-	}
-	.month-input {
-		padding: 6px 10px;
-		border: 1px solid #ddd;
-		border-radius: 8px;
-		font-size: 0.88rem;
-	}
-	.inventory-link {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		padding: 7px 14px;
-		background: var(--surface-sunk);
-		border: 1px solid var(--line);
-		border-radius: 10px;
-		font-size: 0.85rem;
-		color: var(--ink);
-		text-decoration: none;
-		margin-left: auto;
-	}
-	.inventory-link:hover {
-		border-color: var(--accent);
-		color: var(--accent);
-	}
-	.alert-badge {
-		background: var(--accent-deep);
-		color: #fff;
-		font-size: 0.72rem;
-		font-weight: 700;
-		padding: 1px 6px;
-		border-radius: 999px;
-	}
-	.loading {
-		text-align: center;
-		padding: 60px;
-		color: var(--ink-2);
-	}
+	.page { max-width: 760px; margin: 0 auto; padding: 22px 16px 80px; color: var(--ink); }
 
-	/* 総利益 */
-	.total-card {
-		background: var(--ink);
-		color: #fff;
-		border-radius: 18px;
-		padding: 28px 24px;
-		margin-bottom: 24px;
-		text-align: center;
-	}
-	.total-label {
-		font-size: 0.85rem;
-		color: #b5a99e;
-		margin-bottom: 8px;
-	}
-	.total-value {
-		font-size: 2.4rem;
-		font-weight: 800;
-		letter-spacing: -0.5px;
-		color: #e8c97a;
-	}
-	.total-sub {
-		font-size: 0.75rem;
-		color: var(--ink-2);
-		margin-top: 6px;
-	}
+	/* ── ヘッダー ── */
+	.page-header { margin-bottom: 20px; }
+	.back-link { font-size: 0.82rem; color: var(--ink-2); text-decoration: none; }
+	.back-link:hover { color: var(--accent); }
+	.header-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+	.page-title { font-size: 1.35rem; font-weight: 700; margin: 0; letter-spacing: 0.01em; }
+	.controls { display: flex; align-items: center; gap: 10px; }
+	.month-input { padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 9px; font-size: 0.85rem; font-family: inherit; background: var(--surface); color: var(--ink); }
+	.month-input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+	.chip-link { display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 9px; font-size: 0.82rem; color: var(--ink); text-decoration: none; }
+	.chip-link:hover { border-color: var(--accent); color: var(--accent); }
+	.alert-badge { background: var(--accent-deep); color: #fff; font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; }
 
-	/* ロールカード */
-	.role-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-		gap: 14px;
-		margin-bottom: 32px;
-	}
-	.role-card {
-		background: #fff;
-		border: 1.5px solid var(--line);
-		border-radius: 14px;
-		padding: 18px 20px;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-	.role-header {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-	.role-icon {
-		font-size: 1.6rem;
-	}
-	.role-name {
-		font-size: 0.9rem;
-		font-weight: 700;
-	}
-	.role-desc {
-		font-size: 0.75rem;
-		color: var(--ink-2);
-	}
-	.role-amount {
-		font-size: 1.6rem;
-		font-weight: 800;
-	}
-	.role-bar {
-		height: 6px;
-		background: var(--surface-sunk);
-		border-radius: 3px;
-		overflow: hidden;
-	}
-	.bar-fill {
-		height: 100%;
-		border-radius: 3px;
-		transition: width 0.4s ease;
-		min-width: 0;
-	}
-	.yatai-user-fill { background: #3b82f6; }
-	.yatai-owner-fill { background: #f59e0b; }
-	.land-fill { background: #22c55e; }
-	.shop-fill { background: var(--accent); }
+	.loading { text-align: center; padding: 60px; color: var(--ink-2); }
+	.no-role { text-align: center; padding: 48px 20px; color: var(--ink-2); font-size: 0.9rem; }
+	.no-role-link { display: inline-block; margin-top: 12px; color: var(--accent); text-decoration: none; font-weight: 600; }
 
-	.yatai-user { border-color: #bfdbfe; }
-	.yatai-owner { border-color: #fde68a; }
-	.land-owner { border-color: #bbf7d0; }
-	.shop-op { border-color: #fed7aa; }
+	/* ── 分析サマリー ── */
+	.analytics { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 22px 22px 8px; box-shadow: var(--shadow-1); margin-bottom: 16px; }
+	.metric-label { font-size: 0.8rem; color: var(--ink-2); margin: 0 0 4px; letter-spacing: 0.02em; }
+	.metric-value { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin: 0; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.05; }
+	.metric-sub { display: flex; align-items: center; gap: 12px; margin: 8px 0 0; font-size: 0.82rem; color: var(--ink-3); }
+	.metric-month { font-variant-numeric: tabular-nums; }
+	.delta { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-variant-numeric: tabular-nums; }
+	.delta.up { color: #1a8a4f; }
+	.delta.down { color: var(--accent-deep); }
+	.delta-note { color: var(--ink-3); font-weight: 500; margin-left: 2px; }
 
-	.role-link {
-		font-size: 0.78rem;
-		color: var(--accent);
-		text-decoration: none;
-		align-self: flex-end;
-	}
-	.role-link:hover { text-decoration: underline; }
+	.chart { margin: 18px 0 0; }
+	.chart-cap { font-size: 0.76rem; color: var(--ink-3); margin: 0 0 6px; }
+	.chart-holder { position: relative; width: 100%; }
+	.chart-svg { display: block; width: 100%; height: auto; touch-action: none; }
+	.grid { stroke: var(--line); stroke-width: 1; }
+	.axis-y { fill: var(--ink-3); font-size: 10px; font-family: inherit; }
+	.axis-x { fill: var(--ink-3); font-size: 11px; font-family: inherit; }
+	.axis-x.cur { fill: var(--accent); font-weight: 700; }
+	.line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+	.dot { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+	.dot.emph { fill: var(--accent); }
+	.crosshair { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.5; }
+	.tooltip { position: absolute; transform: translate(-50%, -125%); background: var(--ink); color: #fff; border-radius: 8px; padding: 6px 10px; font-size: 0.74rem; white-space: nowrap; pointer-events: none; display: flex; flex-direction: column; gap: 1px; box-shadow: var(--shadow-2); }
+	.tt-month { color: #cdbfae; font-size: 0.66rem; }
+	.tt-val { font-weight: 700; font-variant-numeric: tabular-nums; }
 
-	.no-role {
-		text-align: center;
-		padding: 40px 20px;
-		color: var(--ink-2);
-		font-size: 0.9rem;
-	}
-	.no-role-link {
-		display: inline-block;
-		margin-top: 12px;
-		color: var(--accent);
-		text-decoration: none;
-		font-weight: 600;
-	}
+	/* ── 補助指標 ── */
+	.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+	.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+	.kpi-label { font-size: 0.74rem; color: var(--ink-2); }
+	.kpi-value { font-size: 1.35rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+	.kpi-unit { font-size: 0.78rem; font-weight: 600; color: var(--ink-3); margin-left: 2px; }
+	.kpi.warn { border-color: #f0c98a; background: #fdf6e9; }
+	.kpi.warn .kpi-value { color: var(--warn, #b07d1e); }
 
-	/* チャート */
-	.chart-section {
-		margin-top: 8px;
-	}
-	.section-title {
-		font-size: 0.95rem;
-		font-weight: 700;
-		margin: 0 0 14px;
-		padding-bottom: 6px;
-		border-bottom: 1px solid var(--line);
-	}
-	.chart-wrap {
-		background: var(--surface-sunk);
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		padding: 16px 8px 8px;
-		overflow-x: auto;
-	}
-	.chart-svg {
-		display: block;
-		width: 100%;
-		min-width: 360px;
-		height: auto;
-	}
+	/* ── カード共通 ── */
+	.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; box-shadow: var(--shadow-1); margin-bottom: 16px; }
+	.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+	.card-title { font-size: 1rem; font-weight: 700; margin: 0; }
+	.card-sub { font-size: 0.74rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+	.card-foot-link { display: inline-block; margin-top: 12px; font-size: 0.8rem; color: var(--accent); text-decoration: none; font-weight: 600; }
+	.card-foot-link:hover { text-decoration: underline; }
 
-	/* 夜行人ネットワーク接続タグ */
-	.network-section {
-		margin-top: 32px;
-	}
-	.network-lead {
-		font-size: 0.85rem;
-		color: var(--ink-2);
-		line-height: 1.6;
-		margin: 0 0 14px;
-	}
-	.network-lead a {
-		color: var(--accent);
-		text-decoration: none;
-	}
-	.network-lead a:hover {
-		text-decoration: underline;
-	}
-	.stall-tag-list {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-	.stall-tag-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 14px 18px;
-		background: #fff;
-		border: 1.5px solid var(--line);
-		border-radius: 12px;
-		text-decoration: none;
-		transition: border-color 0.15s;
-	}
-	.stall-tag-row:hover {
-		border-color: var(--accent);
-	}
-	.stall-tag-name {
-		font-size: 0.92rem;
-		font-weight: 700;
-		color: var(--ink);
-	}
-	.stall-tag-cta {
-		font-size: 0.8rem;
-		font-weight: 700;
-		color: var(--accent);
-		white-space: nowrap;
+	/* ── 内訳リスト ── */
+	.bd-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+	.bd-row { display: flex; gap: 12px; align-items: flex-start; }
+	.bd-chip { flex-shrink: 0; width: 12px; height: 12px; border-radius: 4px; margin-top: 3px; }
+	.bd-main { flex: 1; min-width: 0; }
+	.bd-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+	.bd-name { font-size: 0.88rem; font-weight: 600; color: var(--ink); }
+	.bd-amount { font-size: 0.95rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+	.bd-bar { height: 7px; background: var(--surface-sunk); border-radius: 4px; overflow: hidden; }
+	.bd-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+	.bd-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 5px; }
+	.bd-desc { font-size: 0.72rem; color: var(--ink-3); }
+	.bd-share { font-size: 0.72rem; color: var(--ink-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+	/* ── 接続タグ ── */
+	.tag-lead { font-size: 0.83rem; color: var(--ink-2); line-height: 1.6; margin: 0 0 14px; }
+	.tag-lead a { color: var(--accent); text-decoration: none; }
+	.tag-lead a:hover { text-decoration: underline; }
+	.tag-list { display: flex; flex-direction: column; gap: 10px; }
+	.tag-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 16px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 12px; text-decoration: none; transition: border-color 0.15s; }
+	.tag-row:hover { border-color: var(--accent); }
+	.tag-name { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 700; color: var(--ink); }
+	.tag-cta { font-size: 0.8rem; font-weight: 700; color: var(--accent); white-space: nowrap; }
+
+	@media (max-width: 480px) {
+		.metric-value { font-size: 2.1rem; }
 	}
 </style>
