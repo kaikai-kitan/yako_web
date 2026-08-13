@@ -250,7 +250,7 @@
 
 <div class="page">
 	<div class="page-header">
-		<a href="{base}/mypage" class="back-link">‹ マイページ</a>
+		<a href="{base}/mypage/dashboard" class="back-link">‹ マイページ</a>
 		<h1 class="page-title"><Icon name="package" size={22} /> 在庫管理</h1>
 	</div>
 

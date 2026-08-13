@@ -17,7 +17,7 @@
 	let isLoading = $state(true);
 	let msg = $state('');
 	let errMsg = $state('');
-	let backHref = $state(`${base}/mypage`);
+	let backHref = $state(`${base}/mypage/dashboard`);
 	let backLabel = $state('マイページ');
 
 	// 追加フォーム

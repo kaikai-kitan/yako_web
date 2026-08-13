@@ -5,6 +5,7 @@
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase.js';
 	import { createStallSpec, getMyProfile, uploadImage } from '$lib/db.js';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let mapContainer = $state();
 	let isLoading = $state(true);
@@ -35,7 +36,7 @@
 		// 屋台提供者権限チェック
 		const profile = await getMyProfile(userId);
 		if (!profile?.operators) {
-			goto(`${base}/mypage`);
+			goto(`${base}/mypage/dashboard`);
 			return;
 		}
 
@@ -46,15 +47,32 @@
 	let mapRef = null;
 	let leafletRef = null;
 
+	// 貸し借りマップ（/map）と同じ見た目のピン
+	const PICKER_PIN_HTML = `
+		<div class="pin-bubble">
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+		</div>
+		<div class="pin-tip"></div>`;
+
+	function makePickerIcon(L) {
+		return L.divIcon({ className: 'picker-pin', html: PICKER_PIN_HTML, iconSize: [44, 54], iconAnchor: [22, 54] });
+	}
+
 	async function initMap() {
 		try {
 			const L = (await import('leaflet')).default;
 			leafletRef = L;
-			const map = L.map(mapContainer, { center: [35.009, 135.772], zoom: 15 });
+			// /map と同じ CARTO ライトタイル・ズームコントロール無しの見た目に統一
+			const map = L.map(mapContainer, {
+				center: [35.009, 135.772],
+				zoom: 15,
+				zoomControl: false,
+				attributionControl: false
+			});
 			mapRef = map;
-			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
-				maxZoom: 19,
+			L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+				subdomains: 'abcd',
+				maxZoom: 19
 			}).addTo(map);
 
 			map.on('click', (e) => {
@@ -69,7 +87,7 @@
 		lat = parseFloat(newLat.toFixed(6));
 		lng = parseFloat(newLng.toFixed(6));
 		if (pickerMarker) pickerMarker.remove();
-		pickerMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
+		pickerMarker = L.marker([lat, lng], { icon: makePickerIcon(L), draggable: true }).addTo(map);
 		pickerMarker.on('dragend', (e) => {
 			const pos = e.target.getLatLng();
 			lat = parseFloat(pos.lat.toFixed(6));
@@ -128,7 +146,7 @@
 				photo_path: photoPath
 			});
 			successMessage = '屋台を登録しました！';
-			setTimeout(() => goto(`${base}/mypage`), 1500);
+			setTimeout(() => goto(`${base}/mypage/dashboard`), 1500);
 		} catch (e) {
 			errorMessage = '登録に失敗しました: ' + e.message;
 		} finally {
@@ -139,7 +157,7 @@
 
 <div class="page">
 	<div class="page-header">
-		<a href="{base}/mypage" class="back-link">← マイページ</a>
+		<a href="{base}/mypage/dashboard" class="back-link">← マイページ</a>
 		<h2>屋台を登録</h2>
 	</div>
 
@@ -150,13 +168,14 @@
 		<div class="map-section">
 			<div class="map-instruction-row">
 				<p class="map-instruction">
-					🏮 地図をタップして屋台の現在地を指定（ピンはドラッグで移動可）
+					<span class="inline-ic"><Icon name="map-pin" size={15} /></span>
+					地図をタップして屋台の現在地を指定（ピンはドラッグで移動可）
 					{#if lat !== null}
 						<span class="coords">({lat}, {lng})</span>
 					{/if}
 				</p>
 				<button type="button" class="gps-btn" onclick={useCurrentLocation} disabled={isLocating}>
-					{isLocating ? '取得中…' : '📍 現在地を取得'}
+					<Icon name="map-pin" size={14} /> {isLocating ? '取得中…' : '現在地を取得'}
 				</button>
 			</div>
 			<div class="map-container" bind:this={mapContainer}></div>
@@ -168,7 +187,7 @@
 				<p class="error-msg">{errorMessage}</p>
 			{/if}
 			{#if successMessage}
-				<p class="success-msg">✓ {successMessage}</p>
+				<p class="success-msg"><Icon name="check" size={15} /> {successMessage}</p>
 			{/if}
 
 			<!-- 写真アップロード -->
@@ -178,7 +197,7 @@
 					<img src={photoPreview} alt="屋台写真" class="photo-preview" />
 				{:else}
 					<label class="photo-upload-label" for="stall-photo">
-						<div class="photo-placeholder">📷 写真を追加</div>
+						<div class="photo-placeholder"><Icon name="camera" size={20} /> 写真を追加</div>
 					</label>
 				{/if}
 				<input id="stall-photo" type="file" accept="image/*" class="hidden-file" onchange={onPhotoChange} />
@@ -210,7 +229,7 @@
 			</label>
 
 			<button type="submit" class="submit-btn" disabled={isSaving || lat === null}>
-				{isSaving ? '登録中…' : '🏮 屋台を登録する'}
+				{isSaving ? '登録中…' : '屋台を登録する'}
 			</button>
 		</form>
 	{/if}
@@ -245,8 +264,12 @@
 		flex-wrap: wrap;
 	}
 	.map-instruction { font-size: 0.85rem; color: var(--ink-2); margin: 0; flex: 1; }
+	.inline-ic { color: var(--accent); vertical-align: -2px; }
 	.gps-btn {
 		flex-shrink: 0;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 		padding: 7px 14px;
 		background: #fff;
 		border: 1.5px solid var(--accent);
@@ -271,6 +294,19 @@
 		border: 2px solid var(--line-strong);
 	}
 
+	/* 位置ピック用ピン（/map と同じデザイン。Leaflet 挿入のため :global） */
+	:global(.picker-pin) { background: none; border: none; }
+	:global(.picker-pin .pin-bubble) {
+		width: 38px; height: 38px; border-radius: 50% 50% 50% 0;
+		transform: rotate(-45deg);
+		background: var(--accent); color: #fff;
+		display: flex; align-items: center; justify-content: center;
+		box-shadow: 0 3px 8px rgba(60, 45, 25, 0.35);
+		margin: 0 auto;
+	}
+	:global(.picker-pin .pin-bubble svg) { width: 20px; height: 20px; transform: rotate(45deg); }
+	:global(.picker-pin .pin-tip) { display: none; }
+
 	.form { display: flex; flex-direction: column; gap: 4px; }
 
 	.error-msg {
@@ -279,6 +315,7 @@
 	}
 
 	.success-msg {
+		display: flex; align-items: center; gap: 6px;
 		background: rgba(95, 122, 82, 0.08); color: var(--ink-2);
 		border-radius: 8px; padding: 10px 14px; font-size: 0.85rem;
 	}

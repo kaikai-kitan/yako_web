@@ -1114,7 +1114,7 @@
 									<span class="pu-label">この屋台を利用した夜行人</span>
 									<div class="pu-list">
 										{#each stallDetail.pastUsers as u}
-											<a class="pu-item" href="{base}/directory" title={u.handle}>
+											<a class="pu-item" href="{base}/network" title={u.handle}>
 												{#if u.avatar}
 													<img class="pu-ava" src={u.avatar.startsWith('http') ? u.avatar : base + u.avatar} alt={u.handle} />
 												{:else}

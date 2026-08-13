@@ -295,34 +295,48 @@
 		else { bankAccount = payload; bankMsg = '口座情報を保存しました'; setTimeout(() => (bankMsg = ''), 2500); }
 	}
 
-	// ── 屋台: マイメニュー ──
-	let showAddMenu = $state(false);
-	let mNewName = $state(''), mNewDesc = $state(''), mNewPrice = $state('');
-	let isAddingMenu = $state(false);
-	let editMenuId = $state(null);
-	let mEditName = $state(''), mEditDesc = $state(''), mEditPrice = $state('');
+	// ── 屋台: マイメニュー（写真つき・モーダル編集） ──
+	let menuModalOpen = $state(false);
+	let menuEdit = $state(null); // { id?, name, description, price, photo_path, photoFile }
+	let menuPhotoPreview = $state('');
 	let isSavingMenu = $state(false);
 	let menuMsg = $state(''), menuErr = $state('');
 
 	function menuFlash(m) { menuMsg = m; setTimeout(() => (menuMsg = ''), 2500); }
 
-	async function addMenu() {
-		if (!mNewName.trim()) return;
-		isAddingMenu = true; menuErr = '';
-		try {
-			await addMenuItem(userId, { name: mNewName.trim(), description: mNewDesc.trim() || null, price: parseInt(mNewPrice) || 0, displayOrder: menuItems.length });
-			mNewName = ''; mNewDesc = ''; mNewPrice = ''; showAddMenu = false;
-			menuFlash('メニューを追加しました'); await loadMenu(userId);
-		} catch (e) { menuErr = '追加に失敗しました: ' + e.message; } finally { isAddingMenu = false; }
+	function openAddMenu() {
+		menuEdit = { name: '', description: '', price: '', photo_path: '', photoFile: null };
+		menuPhotoPreview = ''; menuErr = ''; menuModalOpen = true;
 	}
-	function startEditMenu(m) { editMenuId = m.id; mEditName = m.name; mEditDesc = m.description ?? ''; mEditPrice = String(m.price ?? 0); }
-	function cancelEditMenu() { editMenuId = null; }
-	async function saveMenu(id) {
+	function openEditMenu(m) {
+		menuEdit = { ...m, photoFile: null };
+		menuPhotoPreview = m.photo_path ?? ''; menuErr = ''; menuModalOpen = true;
+	}
+	function onMenuPhotoChange(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		menuEdit = { ...menuEdit, photoFile: file };
+		menuPhotoPreview = URL.createObjectURL(file);
+	}
+	async function saveMenuModal() {
+		if (!menuEdit?.name?.trim()) { menuErr = '商品名を入力してください'; return; }
 		isSavingMenu = true; menuErr = '';
 		try {
-			await updateMenuItem(id, { name: mEditName.trim(), description: mEditDesc.trim() || null, price: parseInt(mEditPrice) || 0 });
-			editMenuId = null; menuFlash('更新しました'); await loadMenu(userId);
-		} catch (e) { menuErr = '更新に失敗しました: ' + e.message; } finally { isSavingMenu = false; }
+			let photoPath = menuEdit.photo_path ?? null;
+			if (menuEdit.photoFile) photoPath = await uploadImage(userId, menuEdit.photoFile, 'menu-item-images');
+			const payload = {
+				name: menuEdit.name.trim(),
+				description: menuEdit.description?.trim() || null,
+				price: parseInt(String(menuEdit.price)) || 0,
+				photoPath,
+				displayOrder: menuEdit.display_order ?? menuItems.length
+			};
+			if (menuEdit.id) await updateMenuItem(menuEdit.id, payload);
+			else await addMenuItem(userId, payload);
+			menuModalOpen = false;
+			menuFlash(menuEdit.id ? '更新しました' : 'メニューを追加しました');
+			await loadMenu(userId);
+		} catch (e) { menuErr = '保存に失敗しました: ' + e.message; } finally { isSavingMenu = false; }
 	}
 	async function removeMenu(id) {
 		if (!confirm('このメニューを削除しますか？')) return;
@@ -793,20 +807,11 @@
 		<section class="card">
 			<div class="card-head">
 				<h2 class="card-title">マイメニュー <span class="card-sub">{menuItems.length}品</span></h2>
-				<button class="mini-btn dark" onclick={() => (showAddMenu = !showAddMenu)}>＋ 追加</button>
+				<button class="mini-btn dark" onclick={openAddMenu}>＋ 追加</button>
 			</div>
+			<p class="card-note">普段の営業で提供する商品を登録すると、予約時に呼び出せます</p>
 			{#if menuMsg}<p class="ok-msg">{menuMsg}</p>{/if}
 			{#if menuErr}<p class="err-msg">{menuErr}</p>{/if}
-
-			{#if showAddMenu}
-				<div class="menu-add">
-					<input class="inp" bind:value={mNewName} placeholder="メニュー名 *" />
-					<input class="inp" bind:value={mNewDesc} placeholder="説明（任意）" />
-					<input class="inp inp-num" type="number" bind:value={mNewPrice} placeholder="価格" min="0" />
-					<button class="btn-primary" onclick={addMenu} disabled={isAddingMenu || !mNewName.trim()}>{isAddingMenu ? '…' : '追加'}</button>
-					<button class="mini-btn" onclick={() => (showAddMenu = false)}>取消</button>
-				</div>
-			{/if}
 
 			{#if menuItems.length === 0}
 				<p class="empty-inline">メニューがありません。「＋ 追加」から登録できます。</p>
@@ -814,25 +819,20 @@
 				<ul class="menu-list">
 					{#each menuItems as m (m.id)}
 						<li class="menu-row">
-							{#if editMenuId === m.id}
-								<div class="menu-edit">
-									<input class="inp" bind:value={mEditName} placeholder="メニュー名" />
-									<input class="inp" bind:value={mEditDesc} placeholder="説明" />
-									<input class="inp inp-num" type="number" bind:value={mEditPrice} min="0" />
-									<button class="mini-btn dark" onclick={() => saveMenu(m.id)} disabled={isSavingMenu}>{isSavingMenu ? '…' : '保存'}</button>
-									<button class="mini-btn" onclick={cancelEditMenu}>取消</button>
-								</div>
+							{#if m.photo_path}
+								<img src={m.photo_path} alt={m.name} class="menu-thumb" />
 							{:else}
-								<div class="menu-main">
-									<span class="menu-name">{m.name}</span>
-									{#if m.description}<span class="menu-desc">{m.description}</span>{/if}
-								</div>
-								<span class="menu-price">{fmt(m.price)}</span>
-								<span class="menu-act">
-									<button class="mini-btn" onclick={() => startEditMenu(m)}>編集</button>
-									<button class="mini-btn danger" onclick={() => removeMenu(m.id)}>削除</button>
-								</span>
+								<div class="menu-thumb no-photo"><Icon name="utensils-crossed" size={20} /></div>
 							{/if}
+							<div class="menu-main">
+								<span class="menu-name">{m.name}</span>
+								{#if m.description}<span class="menu-desc">{m.description}</span>{/if}
+								<span class="menu-price">{fmt(m.price)}</span>
+							</div>
+							<span class="menu-act">
+								<button class="mini-btn" onclick={() => openEditMenu(m)}>編集</button>
+								<button class="mini-btn danger" onclick={() => removeMenu(m.id)}>削除</button>
+							</span>
 						</li>
 					{/each}
 				</ul>
@@ -967,6 +967,56 @@
 		</div>
 	{/if}
 </div>
+
+<!-- ===== マイメニュー 追加/編集モーダル ===== -->
+{#if menuModalOpen && menuEdit}
+	<div
+		class="modal-overlay"
+		onclick={(e) => e.target === e.currentTarget && (menuModalOpen = false)}
+		onkeydown={(e) => e.key === 'Escape' && (menuModalOpen = false)}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div class="modal-card">
+			<h3 class="modal-title">{menuEdit.id ? 'メニューを編集' : 'メニューを追加'}</h3>
+
+			{#if menuErr}<p class="err-msg">{menuErr}</p>{/if}
+
+			<!-- 商品写真 -->
+			<div class="photo-upload-row">
+				<label class="photo-upload-label" for="menu-photo-upload">
+					{#if menuPhotoPreview}
+						<img src={menuPhotoPreview} alt="商品写真" class="photo-preview" />
+					{:else}
+						<div class="photo-placeholder"><Icon name="camera" size={20} /> 写真を追加</div>
+					{/if}
+				</label>
+				<input id="menu-photo-upload" type="file" accept="image/*" class="hidden-file" onchange={onMenuPhotoChange} />
+			</div>
+
+			<label class="field-label">
+				商品名 <span class="req">*</span>
+				<input type="text" bind:value={menuEdit.name} class="field-input" placeholder="例: クラフトビール" />
+			</label>
+
+			<label class="field-label">
+				商品説明
+				<textarea bind:value={menuEdit.description} class="field-input textarea" rows="2" placeholder="例: 地元醸造所のIPAビール"></textarea>
+			</label>
+
+			<label class="field-label">
+				料金（円）
+				<input type="number" bind:value={menuEdit.price} class="field-input" placeholder="800" min="0" />
+			</label>
+
+			<div class="modal-btns">
+				<button class="cancel-btn" onclick={() => (menuModalOpen = false)}>キャンセル</button>
+				<button class="btn-primary" onclick={saveMenuModal} disabled={isSavingMenu}>{isSavingMenu ? '保存中…' : '保存する'}</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.page { max-width: 820px; margin: 0 auto; padding: 22px 16px 80px; color: var(--ink); }
@@ -1163,20 +1213,34 @@
 	.bank-form .inp { width: 100%; box-sizing: border-box; }
 
 	/* 屋台: マイメニュー */
-	.menu-add { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; padding: 12px; background: var(--surface-sunk); border: 1px dashed var(--line-strong); border-radius: 12px; }
-	.menu-add .inp { flex: 1; min-width: 120px; }
-	.menu-add .inp-num { flex: 0 0 90px; min-width: 0; }
 	.menu-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 	.menu-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
 	.menu-row:first-child { border-top: none; }
+	.menu-thumb { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+	.menu-thumb.no-photo { background: var(--surface-sunk); display: flex; align-items: center; justify-content: center; color: var(--ink-3); }
 	.menu-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 	.menu-name { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
 	.menu-desc { font-size: 0.76rem; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	.menu-price { font-size: 0.9rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
 	.menu-act { display: flex; gap: 6px; flex-shrink: 0; }
-	.menu-edit { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%; }
-	.menu-edit .inp { flex: 1; min-width: 110px; }
-	.menu-edit .inp-num { flex: 0 0 84px; min-width: 0; }
+
+	/* メニュー編集モーダル */
+	.modal-overlay { position: fixed; inset: 0; z-index: 1600; background: rgba(30, 22, 14, 0.5); display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+	.modal-card { background: var(--surface); border-radius: 18px; padding: 22px 20px; width: 100%; max-width: 420px; margin: auto; box-shadow: 0 12px 40px rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 12px; }
+	.modal-title { font-size: 1.1rem; font-weight: 700; color: var(--ink); margin: 0; }
+	.photo-upload-row { display: flex; justify-content: center; }
+	.photo-upload-label { cursor: pointer; }
+	.photo-preview { width: 130px; height: 150px; object-fit: cover; border-radius: 12px; border: 1.5px solid var(--line-strong); display: block; }
+	.photo-placeholder { width: 130px; height: 150px; background: var(--surface-sunk); border: 2px dashed var(--line-strong); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 0.85rem; color: var(--ink-3); }
+	.field-label { display: block; font-size: 0.82rem; color: var(--ink-2); }
+	.req { color: var(--accent-deep); }
+	.field-input { display: block; width: 100%; margin-top: 5px; padding: 10px 12px; border: 1.5px solid var(--line-strong); border-radius: 8px; font-size: 0.95rem; font-family: inherit; box-sizing: border-box; background: var(--surface); color: var(--ink); }
+	.field-input:focus { outline: none; border-color: var(--accent); }
+	.textarea { resize: vertical; min-height: 70px; }
+	.modal-btns { display: flex; gap: 10px; margin-top: 6px; }
+	.modal-btns .btn-primary { flex: 1; }
+	.cancel-btn { flex: 1; padding: 11px; background: var(--surface-sunk); border: 1px solid var(--line-strong); color: var(--ink-2); border-radius: 9px; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+	.cancel-btn:hover { background: var(--line); }
 
 	@media (max-width: 480px) {
 		.metric-value { font-size: 2.1rem; }
