@@ -333,14 +333,12 @@
 		<p class="section-desc">京都・鴨川の夜に灯してきた屋台の記録</p>
 	</div>
 
-	<div class="works-scroll">
-		<div class="works-track">
-			{#each company.gallery as image}
-				<div class="works-item">
-					<img src="{base + image}" alt="活動実績" loading="lazy" decoding="async" />
-				</div>
-			{/each}
-		</div>
+	<div class="works-grid">
+		{#each company.gallery as image}
+			<div class="works-cell">
+				<img src="{base + image}" alt="活動実績" loading="lazy" decoding="async" />
+			</div>
+		{/each}
 	</div>
 
 	<div class="works-cta-wrap">
@@ -350,24 +348,35 @@
 </section>
 
 <style>
-	/* ===== 活動実績 ===== */
+	/* ===== 活動実績（モザイクグリッド） ===== */
 	.works-section { padding: 3rem 0 4rem; }
-	.works-scroll {
-		width: 100vw; margin-left: calc(50% - 50vw); margin-top: 1.6rem;
-		overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+	.works-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		grid-auto-rows: 200px;
+		grid-auto-flow: dense;
+		gap: 12px;
+		max-width: 1000px;
+		margin: 1.6rem auto 0;
+		padding: 0 20px;
+		box-sizing: border-box;
 	}
-	.works-scroll::-webkit-scrollbar { display: none; }
-	.works-track {
-		display: flex; gap: 12px; width: max-content;
-		padding: 0 max(20px, calc(50% - 320px)) 6px;
-		scroll-snap-type: x mandatory;
+	.works-cell {
+		overflow: hidden; border-radius: 12px;
+		background: var(--surface-sunk); box-shadow: var(--shadow-1);
 	}
-	.works-item {
-		flex-shrink: 0; width: min(70vw, 260px); aspect-ratio: 4 / 3;
-		scroll-snap-align: center; border-radius: 12px; overflow: hidden;
-		box-shadow: var(--shadow-1); background: var(--surface-sunk);
+	.works-cell img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
+	.works-cell:hover img { transform: scale(1.04); }
+	/* 縦長の見せ札（左の大きな1枚＋中盤の1枚）。7枚を3×3に隙間なく敷き詰める */
+	.works-cell:nth-child(1),
+	.works-cell:nth-child(5) { grid-row: span 2; }
+
+	@media (max-width: 640px) {
+		.works-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 150px; gap: 8px; padding: 0 16px; }
+		/* モバイルは先頭のみ縦長にして 2 列で隙間なく敷く */
+		.works-cell:nth-child(5) { grid-row: span 1; }
 	}
-	.works-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 	.works-cta-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 2rem; }
 	.works-link { font-size: 0.9rem; color: var(--accent-deep); text-decoration: none; border-bottom: 1px solid var(--accent); padding-bottom: 2px; letter-spacing: 0.04em; }
 	.works-link:hover { color: var(--accent); }
