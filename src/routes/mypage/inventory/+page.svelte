@@ -7,6 +7,7 @@
 	import { supabase } from '$lib/supabase.js';
 	import { base } from '$app/paths';
 	import { goto } from '$app/navigation';
+	import { uploadImage } from '$lib/db.js';
 	import Icon from '$lib/components/Icon.svelte';
 
 	let userId = $state(null);
@@ -210,28 +211,46 @@
 	let newMenuName = $state('');
 	let newMenuDesc = $state('');
 	let newMenuPrice = $state('');
+	let newMenuPhotoFile = $state(null);
+	let newMenuPhotoPreview = $state('');
 	let isAddingMenu = $state(false);
+
+	function onNewMenuPhoto(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		newMenuPhotoFile = file;
+		newMenuPhotoPreview = URL.createObjectURL(file);
+	}
+	function resetAddMenu() {
+		newMenuName = ''; newMenuDesc = ''; newMenuPrice = '';
+		newMenuPhotoFile = null; newMenuPhotoPreview = '';
+	}
 
 	async function addMenuItem() {
 		if (!newMenuName.trim()) return;
 		isAddingMenu = true;
 		errMsg = '';
-		const { error } = await supabase.from('my_menu_items').insert({
-			user_id: userId,
-			name: newMenuName.trim(),
-			description: newMenuDesc.trim() || null,
-			price: parseInt(newMenuPrice) || 0,
-			display_order: menuItems.length
-		});
-		if (error) {
-			errMsg = 'メニュー追加失敗: ' + error.message;
-		} else {
-			newMenuName = ''; newMenuDesc = ''; newMenuPrice = '';
+		try {
+			let photoPath = null;
+			if (newMenuPhotoFile) photoPath = await uploadImage(userId, newMenuPhotoFile, 'menu-item-images');
+			const { error } = await supabase.from('my_menu_items').insert({
+				user_id: userId,
+				name: newMenuName.trim(),
+				description: newMenuDesc.trim() || null,
+				price: parseInt(newMenuPrice) || 0,
+				photo_path: photoPath,
+				display_order: menuItems.length
+			});
+			if (error) throw error;
+			resetAddMenu();
 			showAddMenuForm = false;
 			flash('メニューを追加しました');
 			await loadMenu();
+		} catch (e) {
+			errMsg = 'メニュー追加失敗: ' + e.message;
+		} finally {
+			isAddingMenu = false;
 		}
-		isAddingMenu = false;
 	}
 
 	async function deleteMenuItem(id) {
@@ -285,6 +304,19 @@
 		{#if showAddMenuForm}
 			<div class="add-menu-form">
 				<h3 class="add-menu-title">新しいメニューを追加</h3>
+
+				<!-- メニュー画像 -->
+				<div class="add-menu-photo-row">
+					<label class="add-menu-photo-label" for="new-menu-photo">
+						{#if newMenuPhotoPreview}
+							<img src={newMenuPhotoPreview} alt="メニュー画像" class="add-menu-photo-preview" />
+						{:else}
+							<span class="add-menu-photo-ph"><Icon name="camera" size={20} /> 画像を追加</span>
+						{/if}
+					</label>
+					<input id="new-menu-photo" type="file" accept="image/*" class="hidden-file" onchange={onNewMenuPhoto} />
+				</div>
+
 				<div class="add-menu-fields">
 					<input type="text" bind:value={newMenuName} placeholder="メニュー名 *" class="add-menu-input" />
 					<input type="text" bind:value={newMenuDesc} placeholder="説明（任意）" class="add-menu-input" />
@@ -294,7 +326,7 @@
 					<button class="btn-confirm-menu" onclick={addMenuItem} disabled={isAddingMenu || !newMenuName.trim()}>
 						{isAddingMenu ? '追加中…' : '追加する'}
 					</button>
-					<button class="btn-cancel-ing" onclick={() => (showAddMenuForm = false)}>取消</button>
+					<button class="btn-cancel-ing" onclick={() => { showAddMenuForm = false; resetAddMenu(); }}>取消</button>
 				</div>
 			</div>
 		{/if}
@@ -962,6 +994,11 @@
 		color: var(--ink);
 		margin: 0 0 12px;
 	}
+	.add-menu-photo-row { display: flex; justify-content: center; margin-bottom: 12px; }
+	.add-menu-photo-label { cursor: pointer; }
+	.add-menu-photo-preview { width: 120px; height: 96px; object-fit: cover; border-radius: 10px; border: 1.5px solid var(--line-strong); display: block; }
+	.add-menu-photo-ph { width: 160px; height: 96px; background: var(--surface); border: 2px dashed var(--line-strong); border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.82rem; color: var(--ink-3); }
+	.hidden-file { display: none; }
 	.add-menu-fields {
 		display: flex;
 		flex-direction: column;

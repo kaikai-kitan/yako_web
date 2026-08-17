@@ -7,12 +7,40 @@
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import { session } from '$lib/auth.js';
 	import { signOut } from '$lib/db.js';
 	import Icon from '$lib/components/Icon.svelte';
 
 	let path = $derived($page.url.pathname);
 	let moreOpen = $state(false);
+
+	// iOS Safari 等でアドレスバー（下部ツールバー）が開くと position:fixed;bottom:0 は
+	// レイアウトビューポート下端＝ツールバーの裏に潜り込み、バーが見切れる。
+	// visualViewport から「可視領域の下に隠れている量」を算出し、その分だけ持ち上げて
+	// 常に可視領域の最下部へ貼り付ける。未対応環境では 0（＝通常の bottom:0）。
+	onMount(() => {
+		const vv = window.visualViewport;
+		if (!vv) return;
+		let raf = 0;
+		const apply = () => {
+			raf = 0;
+			const layoutH = document.documentElement.clientHeight;
+			const hidden = layoutH - (vv.height + vv.offsetTop);
+			const offset = hidden > 1 ? Math.round(hidden) : 0;
+			document.documentElement.style.setProperty('--bn-offset', offset + 'px');
+		};
+		const schedule = () => { if (!raf) raf = requestAnimationFrame(apply); };
+		apply();
+		vv.addEventListener('resize', schedule);
+		vv.addEventListener('scroll', schedule);
+		return () => {
+			vv.removeEventListener('resize', schedule);
+			vv.removeEventListener('scroll', schedule);
+			if (raf) cancelAnimationFrame(raf);
+			document.documentElement.style.removeProperty('--bn-offset');
+		};
+	});
 
 	const tabs = [
 		{ label: 'マップ',           icon: 'map',          href: `${base}/map`,              match: (p) => p.startsWith('/map') || p.startsWith('/yatakari') },
@@ -77,10 +105,9 @@
 		/* ホームインジケータ分の余白（viewport-fit=cover で有効化） */
 		padding-bottom: env(safe-area-inset-bottom, 0);
 		box-shadow: 0 -2px 16px rgba(60, 45, 25, 0.06);
-		/* 独立した合成レイヤーに載せ、iOS の固定要素消失バグを回避 */
-		transform: translateZ(0);
-		-webkit-transform: translateZ(0);
-		will-change: transform;
+		/* iOS でのアドレスバー開閉に追従して常に可視領域の最下部へ貼り付ける
+		   （JS が visualViewport から算出。未対応環境では 0） */
+		bottom: var(--bn-offset, 0px);
 	}
 	@supports ((-webkit-backdrop-filter: blur(10px)) or (backdrop-filter: blur(10px))) {
 		.bottom-nav {

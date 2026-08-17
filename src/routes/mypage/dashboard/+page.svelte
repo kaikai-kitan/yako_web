@@ -5,7 +5,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { supabase } from '$lib/supabase.js';
-	import { getMyStalls, getMyMenuItems, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage, setIconShape } from '$lib/db.js';
+	import { getMyStalls, getMyMenuItems, addMenuItem, updateMenuItem, deleteMenuItem, uploadImage, setIconShape, createOperatorProfile } from '$lib/db.js';
 	import { base } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
@@ -120,6 +120,26 @@
 	});
 
 	async function loadMyStalls(uid) { try { myStalls = await getMyStalls(uid); } catch { myStalls = []; } }
+
+	// ── 屋台人（屋台営業者）になる ──
+	let showBecomeOperator = $state(false);
+	let becomeBizName = $state('');
+	let becomingOperator = $state(false);
+	let becomeErr = $state('');
+	async function becomeOperator() {
+		if (!becomeBizName.trim()) { becomeErr = '屋号を入力してください'; return; }
+		becomingOperator = true; becomeErr = '';
+		try {
+			await createOperatorProfile(userId, { businessName: becomeBizName.trim(), phoneNumber: '' });
+			await supabase.from('user_profiles')
+				.update({ is_yataijin: true, is_shop_operator: true, yataijin_registered_at: new Date().toISOString() })
+				.eq('user_id', userId);
+			await loadProfile(userId);
+			showBecomeOperator = false; becomeBizName = '';
+			section = 'stalls';
+		} catch (e) { becomeErr = '登録に失敗しました: ' + e.message; }
+		finally { becomingOperator = false; }
+	}
 
 	async function loadProfile(uid) {
 		const [profileRes, opRes, ownerRes] = await Promise.all([
@@ -346,6 +366,7 @@
 
 	// ── プロフィール（夜行人図鑑プロフィールに統合） ──
 	let yakonin = $state(null);
+	let connectionCount = $state(0);
 	let pfName = $state(''), pfOneLiner = $state(''), pfBio = $state('');
 	let pfIconPreview = $state(''), pfIconFile = $state(null);
 	let savingProfile = $state(false);
@@ -354,6 +375,14 @@
 	async function loadYakonin(uid) {
 		const { data } = await supabase.from('yakonin_profiles').select('handle, one_liner, is_public, avatar_path').eq('user_id', uid).maybeSingle();
 		yakonin = data;
+		// QRコードで繋がった人数（yakonin_edges の自分に接続する辺の数）
+		try {
+			const { count } = await supabase
+				.from('yakonin_edges')
+				.select('*', { count: 'exact', head: true })
+				.or(`user_a.eq.${uid},user_b.eq.${uid}`);
+			connectionCount = count ?? 0;
+		} catch { connectionCount = 0; }
 	}
 	function initProfileForm() {
 		pfName = profile?.name ?? yakonin?.handle ?? '';
@@ -518,6 +547,16 @@
 		<section class="card">
 			<div class="card-head"><h2 class="card-title">プロフィール</h2><span class="card-sub">夜行人図鑑に表示</span></div>
 			<p class="card-note">屋台と夜行人図鑑のプロフィールは共通です。ここで設定した内容が図鑑に反映されます。</p>
+
+			<a href="{base}/network" class="connect-stat">
+				<span class="connect-ic"><Icon name="share" size={18} /></span>
+				<span class="connect-body">
+					<span class="connect-label">QRコードで繋がった仲間</span>
+					<span class="connect-num">{connectionCount}<span class="connect-unit">人</span></span>
+				</span>
+				<span class="connect-arrow">›</span>
+			</a>
+
 			{#if profileMsg}<p class="ok-msg">{profileMsg}</p>{/if}
 			{#if profileErr}<p class="err-msg">{profileErr}</p>{/if}
 
@@ -963,8 +1002,31 @@
 	{:else}
 		<div class="empty-box">
 			<p>このタブは屋台出店者としての登録後にご利用いただけます。</p>
-			<a href="{base}/mypage" class="link-strong">マイページで登録する ›</a>
+			<button class="link-strong link-btn" onclick={() => (showBecomeOperator = true)}>屋台人になる ›</button>
 		</div>
+	{/if}
+
+	<!-- 屋台人になる（未登録者向け・下部に常設） -->
+	{#if !hasShopRole}
+		<section class="card become-card">
+			<div class="become-head">
+				<span class="become-ic"><Icon name="store" size={22} /></span>
+				<div>
+					<h2 class="card-title">屋台人になる</h2>
+					<p class="become-sub">屋号を登録すると、屋台のレンタル・メニュー/EC・在庫・収益の管理ができるようになります。</p>
+				</div>
+			</div>
+			{#if showBecomeOperator}
+				{#if becomeErr}<p class="err-msg">{becomeErr}</p>{/if}
+				<label class="f-field"><span class="f-label">屋号</span><input class="inp" bind:value={becomeBizName} placeholder="例: 微小夜行電灯" /></label>
+				<div class="become-actions">
+					<button class="btn-primary" onclick={becomeOperator} disabled={becomingOperator || !becomeBizName.trim()}>{becomingOperator ? '登録中…' : '屋台人になる'}</button>
+					<button class="mini-btn" onclick={() => { showBecomeOperator = false; becomeErr = ''; }}>取消</button>
+				</div>
+			{:else}
+				<button class="btn-primary block" onclick={() => (showBecomeOperator = true)}>屋台人になる →</button>
+			{/if}
+		</section>
 	{/if}
 </div>
 
@@ -1034,6 +1096,14 @@
 
 	.loading { text-align: center; padding: 60px; color: var(--ink-2); }
 	.empty-box { text-align: center; padding: 48px 20px; color: var(--ink-2); font-size: 0.9rem; }
+	.link-btn { background: none; border: none; cursor: pointer; font-family: inherit; }
+
+	/* 屋台人になる */
+	.become-card { margin-top: 18px; border: 1px solid var(--line); }
+	.become-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
+	.become-ic { flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; background: var(--accent-tint); color: var(--accent-deep); display: inline-flex; align-items: center; justify-content: center; }
+	.become-sub { font-size: 0.8rem; color: var(--ink-2); line-height: 1.6; margin: 4px 0 0; }
+	.become-actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
 	.link-strong { display: inline-block; margin-top: 10px; color: var(--accent); text-decoration: none; font-weight: 600; }
 	.ok-msg { font-size: 0.84rem; color: #1a8a4f; margin: 0 0 12px; }
 	.err-msg { font-size: 0.84rem; color: var(--accent-deep); margin: 0 0 12px; }
@@ -1158,6 +1228,16 @@
 	.inp-inline.num { text-align: right; max-width: 84px; }
 	.empty-inline { font-size: 0.86rem; color: var(--ink-3); margin: 0; }
 	.card-note { font-size: 0.8rem; color: var(--ink-2); margin: 0 0 14px; line-height: 1.6; }
+
+	/* QRで繋がった人数 */
+	.connect-stat { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 16px; background: var(--surface-sunk); border: 1px solid var(--line); border-radius: var(--r-md); text-decoration: none; transition: border-color 0.15s; }
+	.connect-stat:hover { border-color: var(--accent); }
+	.connect-ic { flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px; background: var(--accent-tint); color: var(--accent-deep); display: inline-flex; align-items: center; justify-content: center; }
+	.connect-body { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+	.connect-label { font-size: 0.78rem; color: var(--ink-2); }
+	.connect-num { font-size: 1.35rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.1; }
+	.connect-unit { font-size: 0.8rem; font-weight: 600; color: var(--ink-2); margin-left: 2px; }
+	.connect-arrow { flex-shrink: 0; color: var(--ink-3); font-size: 1.2rem; }
 
 	/* 屋台: 口座フォーム */
 	.bank-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
