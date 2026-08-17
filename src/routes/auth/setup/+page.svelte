@@ -1,30 +1,21 @@
-<!-- 認証完了後のオンボーディング（基本情報＋任意設定を一括で） -->
+<!-- 認証完了後のオンボーディング：夜行人ネットワーク登録（ユーザー名・一言・アイコン）を最短で -->
 <script>
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase.js';
-	import { createUserProfile, createOperatorProfile, getMyProfile } from '$lib/db.js';
+	import { createUserProfile, updateUserProfile, uploadImage, getMyProfile } from '$lib/db.js';
 
 	let userId = $state('');
 	let isLoading = $state(true);
 	let isSaving = $state(false);
 	let errorMessage = $state('');
 
-	// アカウント種別（個人 / 法人）
-	let accountType = $state('individual');
-	let corpName = $state('');
-
-	// 基本情報（必須）
-	let name = $state('');
-
-	// 任意: 屋台営業アカウント
-	let wantOperator = $state(false);
-	let businessName = $state('');
-
-	// 任意: 夜行人ネットワーク（図鑑）
-	let wantYakonin = $state(false);
-	let handle = $state('');
+	// 夜行人ネットワーク登録フォーム（最短3項目）
+	let username = $state('');   // 表示名＝図鑑のニックネーム
+	let oneLiner = $state('');   // 一言コメント（任意）
+	let iconFile = $state(null); // アイコン画像（任意）
+	let iconPreview = $state('');
 
 	onMount(async () => {
 		const { data } = await supabase.auth.getSession();
@@ -37,51 +28,41 @@
 		isLoading = false;
 	});
 
-	async function finish(skipOptional) {
+	function onIconChange(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		iconFile = file;
+		iconPreview = URL.createObjectURL(file);
+	}
+
+	async function finish() {
 		errorMessage = '';
-		if (!name.trim()) { errorMessage = 'お名前（表示名）を入力してください'; return; }
-
-		// 法人アカウント: 名前＋法人名で審査待ちにする
-		if (accountType === 'corporate') {
-			if (!corpName.trim()) { errorMessage = '法人名（屋号）を入力してください'; return; }
-			isSaving = true;
-			try {
-				await createUserProfile(userId, '購入者', name.trim());
-				const { error } = await supabase
-					.from('user_profiles')
-					.update({ account_type: 'corporate', corp_name: corpName.trim(), corp_status: 'pending' })
-					.eq('user_id', userId);
-				if (error) throw error;
-				goto(`${base}/mypage/dashboard`);
-			} catch (e) {
-				errorMessage = `設定に失敗しました: ${e.message}`;
-				isSaving = false;
-			}
-			return;
-		}
-
-		const doOperator = !skipOptional && wantOperator;
-		const doYakonin  = !skipOptional && wantYakonin;
-		if (doOperator && !businessName.trim()) { errorMessage = '屋号を入力してください'; return; }
-		if (doYakonin && !handle.trim()) { errorMessage = 'ニックネームを入力してください'; return; }
+		if (!username.trim()) { errorMessage = 'ユーザー名を入力してください'; return; }
 
 		isSaving = true;
 		try {
-			// 1) 基本プロフィール（お名前）
-			await createUserProfile(userId, '購入者', name.trim());
+			// 1) 基本プロフィール（表示名）
+			await createUserProfile(userId, '購入者', username.trim());
 
-			// 2) 任意: 屋台営業アカウント（電話番号は後でマイページから設定）
-			if (doOperator) {
-				await createOperatorProfile(userId, { businessName: businessName.trim(), phoneNumber: '' });
+			// 2) アイコン（任意）
+			let iconPath = null;
+			if (iconFile) {
+				iconPath = await uploadImage(userId, iconFile, 'profile-images');
+				await updateUserProfile(userId, { iconPath });
 			}
 
-			// 3) 任意: 夜行人図鑑プロフィール
-			if (doYakonin) {
-				await supabase.from('yakonin_profiles').upsert(
-					{ user_id: userId, handle: handle.trim(), is_public: true, updated_at: new Date().toISOString() },
-					{ onConflict: 'user_id' }
-				);
-			}
+			// 3) 夜行人ネットワーク（図鑑）に公開登録
+			await supabase.from('yakonin_profiles').upsert(
+				{
+					user_id: userId,
+					handle: username.trim(),
+					one_liner: oneLiner.trim() || null,
+					avatar_path: iconPath,
+					is_public: true,
+					updated_at: new Date().toISOString()
+				},
+				{ onConflict: 'user_id' }
+			);
 
 			goto(`${base}/mypage/dashboard`);
 		} catch (e) {
@@ -97,90 +78,45 @@
 	<div class="onboard-card">
 		<img src="{base}/images/icon.png" alt="微小夜行電灯" class="logo-img" />
 		<div class="verified"><span class="check">✓</span> メール認証が完了しました</div>
-		<h1 class="title">続けて、各種設定を行いましょう</h1>
-		<p class="subtitle">お名前を登録すれば準備完了です。<br />屋台営業・夜行人ネットワークはあとからでも設定できます。</p>
+		<h1 class="title">夜行人ネットワークに登録しましょう</h1>
+		<p class="subtitle">QRコードで人とつながる図鑑に載ります。<br />屋台の営業やオンラインストアは、あとからマイページで設定できます。</p>
 
 		{#if isLoading}
 			<p class="muted">読み込み中…</p>
 		{:else}
 			{#if errorMessage}<p class="error-msg">{errorMessage}</p>{/if}
 
-			<!-- アカウント種別 -->
-			<div class="section">
-				<span class="section-label">アカウント種別 <span class="req">必須</span></span>
-				<div class="type-toggle">
-					<button type="button" class="type-btn" class:on={accountType === 'individual'} onclick={() => (accountType = 'individual')}>
-						<strong>個人</strong>
-						<small>屋台の利用・夜行人ネットワーク</small>
-					</button>
-					<button type="button" class="type-btn" class:on={accountType === 'corporate'} onclick={() => (accountType = 'corporate')}>
-						<strong>法人</strong>
-						<small>広告掲載・法人プラン（要審査）</small>
-					</button>
-				</div>
-			</div>
-
-			<!-- 基本情報 -->
-			<div class="section">
-				<span class="section-label">基本情報 <span class="req">必須</span></span>
-				<label class="field-label">
-					お名前 / 表示名
-					<input type="text" bind:value={name} class="field-input" placeholder="山田 太郎" />
-					<span class="field-note">後からマイページで変更できます。</span>
+			<!-- アイコン（任意） -->
+			<div class="icon-section">
+				<label class="icon-label" for="setup-icon">
+					{#if iconPreview}
+						<img src={iconPreview} alt="アイコン" class="icon-preview" />
+					{:else}
+						<span class="icon-placeholder">
+							<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+						</span>
+					{/if}
+					<span class="icon-edit">タップして設定</span>
 				</label>
-				{#if accountType === 'corporate'}
-					<label class="field-label">
-						法人名 / 屋号
-						<input type="text" bind:value={corpName} class="field-input" placeholder="例: 株式会社 夜行社" />
-						<span class="field-note">運営の審査後、法人プラン・広告掲載が利用できます。</span>
-					</label>
-				{/if}
+				<input id="setup-icon" type="file" accept="image/*" class="hidden-file" onchange={onIconChange} />
 			</div>
 
-			{#if accountType === 'individual'}
-			<!-- 任意: 屋台営業（個人のみ） -->
-			<div class="opt-card" class:on={wantOperator}>
-				<label class="opt-head">
-					<input type="checkbox" bind:checked={wantOperator} />
-					<span>
-						<strong>屋台を営業する</strong>
-						<small>屋号を登録して、屋台のレンタル・出店ができます</small>
-					</span>
-				</label>
-				{#if wantOperator}
-					<label class="field-label nested">
-						屋号
-						<input type="text" bind:value={businessName} class="field-input" placeholder="例: 微小夜行電灯" />
-					</label>
-				{/if}
-			</div>
+			<!-- ユーザー名（必須） -->
+			<label class="field-label">
+				ユーザー名 <span class="req">必須</span>
+				<input type="text" bind:value={username} class="field-input" maxlength="20" placeholder="例: ヤタイ タロウ" />
+				<span class="field-note">夜行人ネットワークに表示される名前です。</span>
+			</label>
 
-			<!-- 任意: 夜行人ネットワーク -->
-			<div class="opt-card" class:on={wantYakonin}>
-				<label class="opt-head">
-					<input type="checkbox" bind:checked={wantYakonin} />
-					<span>
-						<strong>夜行人ネットワークに参加する</strong>
-						<small>3Dネットワーク（図鑑）に載せるニックネームを設定します</small>
-					</span>
-				</label>
-				{#if wantYakonin}
-					<label class="field-label nested">
-						ニックネーム
-						<input type="text" bind:value={handle} class="field-input" maxlength="20" placeholder="例: ヤタイ タロウ" />
-					</label>
-				{/if}
-			</div>
-			{/if}
+			<!-- 一言コメント（任意） -->
+			<label class="field-label">
+				一言コメント
+				<input type="text" bind:value={oneLiner} class="field-input" maxlength="40" placeholder="例: 鴨川でコーヒー屋台やってます" />
+			</label>
 
-			<button class="primary-btn" onclick={() => finish(false)} disabled={isSaving}>
-				{isSaving ? '設定中…' : (accountType === 'corporate' ? '法人として申請する →' : '設定して始める →')}
+			<button class="primary-btn" onclick={finish} disabled={isSaving}>
+				{isSaving ? '登録中…' : '登録して始める →'}
 			</button>
-			{#if accountType === 'individual'}
-				<button class="skip-btn" onclick={() => finish(true)} disabled={isSaving}>
-					基本設定だけで始める（あとで設定する）
-				</button>
-			{/if}
 		{/if}
 	</div>
 </div>
@@ -233,32 +169,31 @@
 		margin-bottom: 16px; text-align: left;
 	}
 
-	.section { text-align: left; margin-bottom: 18px; }
-	.section-label {
-		display: block; font-size: 0.72rem; font-weight: 600;
-		letter-spacing: 0.08em; color: var(--ink-3);
-		text-transform: uppercase; margin-bottom: 10px;
+	/* アイコン */
+	.icon-section { display: flex; justify-content: center; margin-bottom: 22px; }
+	.icon-label {
+		display: inline-flex; flex-direction: column; align-items: center; gap: 8px;
+		cursor: pointer;
 	}
-	.req { color: var(--accent); font-size: 0.62rem; margin-left: 4px; letter-spacing: 0; }
-
-	.type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-	.type-btn {
-		display: flex; flex-direction: column; gap: 3px; text-align: left;
-		padding: 12px 14px; border: 1.5px solid var(--line); border-radius: var(--r-md);
-		background: var(--paper); color: var(--ink-2); font-family: inherit; cursor: pointer;
-		transition: border-color 0.15s, background 0.15s, color 0.15s;
+	.icon-preview {
+		width: 88px; height: 88px; border-radius: 50%; object-fit: cover;
+		border: 2px solid var(--accent);
 	}
-	.type-btn:hover { border-color: var(--accent); }
-	.type-btn.on { border-color: var(--accent); background: var(--accent-tint); color: var(--ink); }
-	.type-btn strong { font-size: 0.92rem; color: var(--ink); }
-	.type-btn small { font-size: 0.7rem; color: var(--ink-2); line-height: 1.4; }
+	.icon-placeholder {
+		width: 88px; height: 88px; border-radius: 50%;
+		background: var(--surface-sunk); border: 2px dashed var(--line-strong);
+		color: var(--ink-3);
+		display: flex; align-items: center; justify-content: center;
+	}
+	.icon-edit { font-size: 0.74rem; color: var(--ink-2); }
+	.hidden-file { display: none; }
 
 	.field-label {
 		display: block; text-align: left;
 		font-size: 0.85rem; font-weight: 500; color: var(--ink-2);
-		margin-bottom: 14px;
+		margin-bottom: 16px;
 	}
-	.field-label.nested { margin: 12px 0 2px; }
+	.req { color: var(--accent); font-size: 0.62rem; margin-left: 4px; letter-spacing: 0; }
 	.field-input {
 		display: block; width: 100%; margin-top: 6px;
 		padding: 11px 13px; border: 1px solid var(--line-strong);
@@ -273,25 +208,6 @@
 	.field-input::placeholder { color: var(--ink-3); }
 	.field-note { display: block; font-size: 0.72rem; color: var(--ink-3); margin-top: 5px; font-weight: 400; }
 
-	.opt-card {
-		text-align: left;
-		border: 1px solid var(--line);
-		border-radius: var(--r-lg);
-		padding: 14px 16px;
-		margin-bottom: 12px;
-		background: var(--paper);
-		transition: border-color 0.15s, background 0.15s;
-	}
-	.opt-card.on { border-color: var(--accent); background: var(--accent-tint); }
-	.opt-head {
-		display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
-	}
-	.opt-head input[type="checkbox"] {
-		margin-top: 2px; width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--accent); cursor: pointer;
-	}
-	.opt-head strong { display: block; font-size: 0.9rem; color: var(--ink); }
-	.opt-head small { display: block; font-size: 0.75rem; color: var(--ink-2); margin-top: 2px; line-height: 1.4; }
-
 	.primary-btn {
 		width: 100%; margin-top: 8px; padding: 13px;
 		background: var(--accent); color: #fff; border: none;
@@ -303,14 +219,4 @@
 	.primary-btn:hover:not(:disabled) { background: var(--accent-deep); }
 	.primary-btn:active:not(:disabled) { transform: translateY(1px); }
 	.primary-btn:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
-
-	.skip-btn {
-		width: 100%; margin-top: 10px; padding: 8px;
-		background: none; border: none; color: var(--ink-2);
-		font-size: 0.85rem; font-family: inherit; cursor: pointer;
-		text-decoration: underline; text-decoration-color: var(--line-strong);
-		text-underline-offset: 3px;
-	}
-	.skip-btn:hover:not(:disabled) { color: var(--accent); text-decoration-color: var(--accent); }
-	.skip-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

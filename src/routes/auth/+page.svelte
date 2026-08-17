@@ -9,6 +9,7 @@
 	let mode = $state('signin'); // 'signin' | 'signup' | 'reset'
 	let email = $state('');
 	let password = $state('');
+	let showPassword = $state(false);
 	let agreedToTerms = $state(false);
 	let errorMessage = $state('');
 	let successMessage = $state('');
@@ -143,14 +144,29 @@
 			{#if mode !== 'reset'}
 				<label class="field-label">
 					パスワード
-					<input
-						type="password"
-						bind:value={password}
-						class="field-input"
-						placeholder="6文字以上"
-						minlength="6"
-						required
-					/>
+					<div class="pw-wrap">
+						<input
+							type={showPassword ? 'text' : 'password'}
+							bind:value={password}
+							class="field-input pw-input"
+							placeholder="6文字以上"
+							minlength="6"
+							required
+						/>
+						<button
+							type="button"
+							class="pw-toggle"
+							onclick={() => (showPassword = !showPassword)}
+							aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
+							aria-pressed={showPassword}
+						>
+							{#if showPassword}
+								<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+							{:else}
+								<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+							{/if}
+						</button>
+					</div>
 				</label>
 			{/if}
 
@@ -316,6 +332,20 @@
 	.field-input::placeholder {
 		color: var(--ink-3);
 	}
+
+	/* パスワード表示切替 */
+	.pw-wrap { position: relative; }
+	.pw-input { padding-right: 44px; }
+	.pw-toggle {
+		position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+		display: flex; align-items: center; justify-content: center;
+		width: 34px; height: 34px; padding: 0;
+		background: none; border: none; cursor: pointer;
+		color: var(--ink-3); border-radius: 8px;
+		transition: color 0.15s, background 0.15s;
+	}
+	.pw-toggle:hover { color: var(--ink-2); background: var(--surface-sunk); }
+	.pw-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 	.terms-check {
 		display: flex;

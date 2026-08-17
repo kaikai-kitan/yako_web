@@ -105,7 +105,7 @@
 
 	onMount(async () => {
 		const { data: { session } } = await supabase.auth.getSession();
-		if (!session) { goto(`${base}/`); return; }
+		if (!session) { goto(`${base}/auth?redirectTo=${base}/mypage/dashboard`); return; }
 		const user = session.user;
 		userId = user.id;
 		accessToken = session.access_token;
