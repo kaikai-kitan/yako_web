@@ -69,11 +69,25 @@
 		z-index: 60;
 		display: grid;
 		grid-template-columns: repeat(5, 1fr);
-		background: rgba(255, 253, 247, 0.97);
-		backdrop-filter: blur(10px);
+		/* 不透明背景を基本にする。iOS Safari では position:fixed + backdrop-filter で
+		   バーが消える/点滅する不具合があるため、半透明+ブラーは非対応時に隠れないよう
+		   下の @supports だけで適用する */
+		background: #fffdf7;
 		border-top: 1px solid var(--line);
+		/* ホームインジケータ分の余白（viewport-fit=cover で有効化） */
 		padding-bottom: env(safe-area-inset-bottom, 0);
 		box-shadow: 0 -2px 16px rgba(60, 45, 25, 0.06);
+		/* 独立した合成レイヤーに載せ、iOS の固定要素消失バグを回避 */
+		transform: translateZ(0);
+		-webkit-transform: translateZ(0);
+		will-change: transform;
+	}
+	@supports ((-webkit-backdrop-filter: blur(10px)) or (backdrop-filter: blur(10px))) {
+		.bottom-nav {
+			background: rgba(255, 253, 247, 0.9);
+			-webkit-backdrop-filter: blur(10px);
+			backdrop-filter: blur(10px);
+		}
 	}
 	.bn-item {
 		display: flex;

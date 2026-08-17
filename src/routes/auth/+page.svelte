@@ -15,10 +15,10 @@
 	let isLoading = $state(false);
 
 	// ?redirectTo= はクライアント側でのみ読む（プリレンダリング対策）
-	let redirectTo = $state(`${base}/mypage`);
+	let redirectTo = $state(`${base}/mypage/dashboard`);
 
 	onMount(async () => {
-		redirectTo = new URLSearchParams(window.location.search).get('redirectTo') ?? `${base}/mypage`;
+		redirectTo = new URLSearchParams(window.location.search).get('redirectTo') ?? `${base}/mypage/dashboard`;
 		const { data } = await supabase.auth.getSession();
 		if (data.session) {
 			goto(redirectTo);

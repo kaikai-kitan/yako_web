@@ -33,7 +33,7 @@
 
 		// すでにプロフィールがあれば設定済みなのでマイページへ
 		const profile = await getMyProfile(userId);
-		if (profile) { goto(`${base}/mypage`); return; }
+		if (profile) { goto(`${base}/mypage/dashboard`); return; }
 		isLoading = false;
 	});
 
@@ -52,7 +52,7 @@
 					.update({ account_type: 'corporate', corp_name: corpName.trim(), corp_status: 'pending' })
 					.eq('user_id', userId);
 				if (error) throw error;
-				goto(`${base}/mypage`);
+				goto(`${base}/mypage/dashboard`);
 			} catch (e) {
 				errorMessage = `設定に失敗しました: ${e.message}`;
 				isSaving = false;
@@ -83,7 +83,7 @@
 				);
 			}
 
-			goto(`${base}/mypage`);
+			goto(`${base}/mypage/dashboard`);
 		} catch (e) {
 			errorMessage = `設定に失敗しました: ${e.message}`;
 			isSaving = false;
