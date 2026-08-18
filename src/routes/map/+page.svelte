@@ -106,6 +106,19 @@
 	// 予約フォーム 品目リスト（構造化: { name, price }[]）
 	let reservationItems = $state([{ name: '', price: '' }]);
 
+	// 予約時に選ぶ使用用途（貸し出し人が設定した用途から選択）
+	const USE_CASES_ALL = ['飲食', 'ワークショップ', '小売り', '展示', 'シェア', '空間'];
+	let reservationUseCases = $state([]);
+	function toggleReservationUseCase(u) {
+		reservationUseCases = reservationUseCases.includes(u)
+			? reservationUseCases.filter((x) => x !== u)
+			: [...reservationUseCases, u];
+	}
+	// 選択肢：対象屋台に設定があればそれを、なければ全ラベル
+	let reserveUseCaseOptions = $derived(
+		stallDetail?.useCases?.length ? stallDetail.useCases : USE_CASES_ALL
+	);
+
 	// マイメニュー（登録済み商品一覧）
 	let myMenuItems = $state([]);
 
@@ -443,6 +456,7 @@
 			endDate: '', endTime: '22:00'
 		};
 		reservationItems = [{ name: '', price: '' }];
+		reservationUseCases = [];
 		reservationError = '';
 		reservationSuccess = false;
 		agreedToNoshow = false;
@@ -462,6 +476,7 @@
 			endDate: '', endTime: '22:00'
 		};
 		reservationItems = [{ name: '', price: '' }];
+		reservationUseCases = [];
 		reservationError = '';
 		reservationSuccess = false;
 		agreedToNoshow = false;
@@ -481,6 +496,7 @@
 			endDate: '', endTime: '22:00'
 		};
 		reservationItems = [{ name: '', price: '' }];
+		reservationUseCases = [];
 		reservationError = '';
 		reservationSuccess = false;
 		agreedToNoshow = false;
@@ -562,7 +578,8 @@
 				startDatetime, endDatetime,
 				plannedItems: plannedItemsJson,
 				lockedSpaceFee,
-				lockedStallFee
+				lockedStallFee,
+				selectedUseCases: reservationUseCases
 			});
 
 			// Stripe 与信確保セッションを作成（Auth & Capture フロー）
@@ -890,6 +907,14 @@
 		});
 	}
 
+	// 営業終了時刻をコンパクトに（M月D日 HH:MM）
+	function formatUntil(isoString) {
+		if (!isoString) return '';
+		return new Date(isoString).toLocaleString('ja-JP', {
+			month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
+		});
+	}
+
 	function formatPlannedItems(text) {
 		if (!text) return '';
 		try {
@@ -1085,6 +1110,16 @@
 							{#if selectedStall.specs}<p class="specs">{selectedStall.specs}</p>{/if}
 							<p class="price">¥{(selectedStall.price ?? 0).toLocaleString()} / 日</p>
 
+							<!-- 使用可能な用途（貸し出し人が設定） -->
+							{#if stallDetail?.useCases?.length}
+								<div class="uc-block">
+									<span class="uc-label">使用可能な用途</span>
+									<div class="uc-chips">
+										{#each stallDetail.useCases as u}<span class="uc-chip">{u}</span>{/each}
+									</div>
+								</div>
+							{/if}
+
 							<!-- できること（屋台人のみ表示） -->
 							{#if isYataijin && stallDetail?.capabilities}
 								{@const c = stallDetail.capabilities}
@@ -1105,9 +1140,28 @@
 										{#if stallDetail.rentedBy.image}<img class="renter-ava" src={stallDetail.rentedBy.image} alt="" />{/if}
 										<div class="renter-body">
 											<span class="renter-name">{stallDetail.rentedBy.name}</span>
-											{#if stallDetail.rentedBy.items?.length}<span class="renter-items">{stallDetail.rentedBy.items.join('・')}</span>{/if}
+											{#if stallDetail.rentedBy.until}<span class="renter-until">営業時間: 〜{formatUntil(stallDetail.rentedBy.until)}</span>{/if}
 										</div>
 									</div>
+									{#if stallDetail.rentedBy.useCases?.length}
+										<div class="uc-chips renter-uc">
+											{#each stallDetail.rentedBy.useCases as u}<span class="uc-chip">{u}</span>{/each}
+										</div>
+									{/if}
+									{#if stallDetail.rentedBy.menu?.length}
+										<div class="renter-menu">
+											<span class="renter-menu-label">提供中のメニュー</span>
+											<ul class="renter-menu-list">
+												{#each stallDetail.rentedBy.menu as m}
+													<li class="renter-menu-item">
+														{#if m.photo}<img class="rm-thumb" src={m.photo.startsWith('http') ? m.photo : base + m.photo} alt="" />{/if}
+														<span class="rm-name">{m.name}</span>
+														{#if m.price > 0}<span class="rm-price">¥{m.price.toLocaleString()}</span>{/if}
+													</li>
+												{/each}
+											</ul>
+										</div>
+									{/if}
 								</div>
 							{:else if stallDetail?.pastUsers?.length}
 								<div class="past-users">
@@ -1349,6 +1403,18 @@
 							<div class="date-row">
 								<input type="date" bind:value={reservationForm.endDate} class="form-input" />
 								<input type="time" bind:value={reservationForm.endTime} class="form-input time-input" />
+							</div>
+						</div>
+
+						<!-- 使用用途（貸し出し人が設定した用途から選択） -->
+						<div class="form-section">
+							<span class="form-label">使用する用途（複数選択可）</span>
+							<div class="uc-select">
+								{#each reserveUseCaseOptions as u}
+									<button type="button" class="uc-select-chip" class:on={reservationUseCases.includes(u)} onclick={() => toggleReservationUseCase(u)}>
+										{#if reservationUseCases.includes(u)}<Icon name="check" size={13} />{/if}{u}
+									</button>
+								{/each}
 							</div>
 						</div>
 
@@ -2257,6 +2323,12 @@
 	.cap { display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 700; color: #8a6a1e; background: rgba(181,137,46,0.14); border: 1px solid rgba(181,137,46,0.35); border-radius: 20px; padding: 3px 9px; }
 	.cap :global(.icon) { color: currentColor; }
 
+	/* 使用可能な用途ラベル */
+	.uc-block { margin: 10px 0 2px; }
+	.uc-label { font-size: 0.7rem; font-weight: 700; color: var(--ink-3); letter-spacing: 0.04em; }
+	.uc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+	.uc-chip { font-size: 0.74rem; font-weight: 600; color: var(--accent-deep); background: var(--accent-tint); border: 1px solid var(--line-strong); border-radius: 20px; padding: 3px 10px; }
+
 	/* 貸出中の借主 */
 	.renter { margin: 10px 0 2px; padding: 10px 12px; border-radius: 12px; background: var(--surface-sunk); border: 1px solid var(--line); }
 	.renter-label { font-size: 0.7rem; font-weight: 700; color: var(--accent-deep); }
@@ -2264,7 +2336,20 @@
 	.renter-ava { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 	.renter-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 	.renter-name { font-size: 0.9rem; font-weight: 700; color: var(--ink); }
-	.renter-items { font-size: 0.76rem; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.renter-until { font-size: 0.74rem; color: var(--ink-2); }
+	.renter-uc { margin-top: 8px; }
+	.renter-menu { margin-top: 10px; }
+	.renter-menu-label { font-size: 0.7rem; font-weight: 700; color: var(--ink-3); }
+	.renter-menu-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+	.renter-menu-item { display: flex; align-items: center; gap: 8px; }
+	.rm-thumb { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
+	.rm-name { flex: 1; font-size: 0.8rem; color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.rm-price { font-size: 0.8rem; font-weight: 700; color: var(--accent-deep); white-space: nowrap; }
+
+	/* 予約フォームの用途選択チップ */
+	.uc-select { display: flex; flex-wrap: wrap; gap: 8px; }
+	.uc-select-chip { display: inline-flex; align-items: center; gap: 4px; padding: 8px 14px; border-radius: 100px; border: 1.5px solid var(--line-strong); background: #fff; color: var(--ink-2); font-size: 0.85rem; font-family: inherit; cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; }
+	.uc-select-chip.on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-deep); font-weight: 600; }
 
 	/* 過去利用者 */
 	.past-users { margin: 10px 0 2px; }

@@ -652,7 +652,7 @@ export async function getMonthlyRevenue(userId) {
 /** 予約を作成（屋台のダブルブッキングチェック付き） */
 export async function createReservation(
 	userId,
-	{ rentalSpaceId, stallId, startDatetime, endDatetime, plannedItems, lockedSpaceFee, lockedStallFee }
+	{ rentalSpaceId, stallId, startDatetime, endDatetime, plannedItems, lockedSpaceFee, lockedStallFee, selectedUseCases }
 ) {
 	requireSupabase();
 	// 屋台がすでに他の予約と重複していないか確認
@@ -667,7 +667,7 @@ export async function createReservation(
 			throw new Error('この屋台はすでに予約が入っています。別の屋台をお選びください。');
 		}
 	}
-	const { data, error } = await supabase.from('reservations').insert({
+	const base = {
 		user_id: userId,
 		rental_space_id: rentalSpaceId || null,
 		stall_id: stallId || null,
@@ -676,7 +676,16 @@ export async function createReservation(
 		planned_items: plannedItems || null,
 		locked_space_fee: lockedSpaceFee ?? 0,
 		locked_stall_fee: lockedStallFee ?? 0
-	}).select('id').single();
+	};
+	const withUseCases = Array.isArray(selectedUseCases) && selectedUseCases.length > 0
+		? { ...base, selected_use_cases: selectedUseCases }
+		: base;
+
+	let { data, error } = await supabase.from('reservations').insert(withUseCases).select('id').single();
+	// v24（selected_use_cases 列）未適用環境では列なしで再試行
+	if (error && /selected_use_cases/.test(error.message ?? '')) {
+		({ data, error } = await supabase.from('reservations').insert(base).select('id').single());
+	}
 	if (error) throw error;
 	return data.id;
 }

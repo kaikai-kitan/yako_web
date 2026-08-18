@@ -14,27 +14,55 @@ export async function GET({ params, setHeaders }) {
 
 	// 能力フラグ（v23未適用でもフォールバック）
 	let capabilities = null;
+	// 使用可能用途ラベル（v24。屋台貸し出し人が設定）
+	let useCases = [];
 	{
 		const r = await supabase
 			.from('stall_specs')
-			.select('can_cook_onsite, can_retail, can_workshop')
+			.select('can_cook_onsite, can_retail, can_workshop, use_cases')
 			.eq('id', stallId)
 			.maybeSingle();
 		if (!r.error && r.data) {
 			capabilities = { cook: r.data.can_cook_onsite === true, retail: r.data.can_retail === true, workshop: r.data.can_workshop === true };
+			if (Array.isArray(r.data.use_cases)) useCases = r.data.use_cases;
+		} else {
+			// v24 未適用（use_cases 列なし）でも can_* から最低限フォールバック
+			const r2 = await supabase
+				.from('stall_specs')
+				.select('can_cook_onsite, can_retail, can_workshop')
+				.eq('id', stallId)
+				.maybeSingle();
+			if (!r2.error && r2.data) {
+				capabilities = { cook: r2.data.can_cook_onsite === true, retail: r2.data.can_retail === true, workshop: r2.data.can_workshop === true };
+			}
 		}
 	}
 
 	// 貸出中判定（active な予約があれば借主の店を返す）
 	let rentedBy = null;
 	{
-		const { data: active } = await supabase
-			.from('reservations')
-			.select('user_id, planned_items, start_datetime, end_datetime')
-			.eq('stall_id', stallId)
-			.eq('status', 'active')
-			.order('start_datetime', { ascending: false })
-			.limit(1);
+		// selected_use_cases は v24 未適用だと列が無いためフォールバックで2段構え
+		let active = null;
+		{
+			const q = await supabase
+				.from('reservations')
+				.select('user_id, planned_items, start_datetime, end_datetime, selected_use_cases')
+				.eq('stall_id', stallId)
+				.eq('status', 'active')
+				.order('start_datetime', { ascending: false })
+				.limit(1);
+			if (!q.error) active = q.data;
+			else {
+				const q2 = await supabase
+					.from('reservations')
+					.select('user_id, planned_items, start_datetime, end_datetime')
+					.eq('stall_id', stallId)
+					.eq('status', 'active')
+					.order('start_datetime', { ascending: false })
+					.limit(1);
+				active = q2.data;
+			}
+		}
 		const res = active?.[0];
 		if (res?.user_id) {
 			const [{ data: op }, { data: up }] = await Promise.all([
@@ -46,6 +74,8 @@ export async function GET({ params, setHeaders }) {
 				image: up?.icon_path || null,
 				bio: up?.bio || '',
 				items: summarizeItems(res.planned_items),
+				menu: menuFromItems(res.planned_items),
+				useCases: Array.isArray(res.selected_use_cases) ? res.selected_use_cases : [],
 				until: res.end_datetime || null
 			};
 		}
@@ -82,7 +112,7 @@ export async function GET({ params, setHeaders }) {
 	}
 
 	setHeaders({ 'cache-control': 'public, max-age=20' });
-	return json({ capabilities, rentedBy, pastUsers });
+	return json({ capabilities, useCases, rentedBy, pastUsers });
 }
 
 // planned_items（JSON配列 or 文字列配列）→ 名前だけの短い配列
@@ -91,6 +121,22 @@ function summarizeItems(items) {
 		const arr = typeof items === 'string' ? JSON.parse(items) : items;
 		if (!Array.isArray(arr)) return [];
 		return arr.map((i) => (typeof i === 'string' ? i : i?.name)).filter(Boolean).slice(0, 6);
+	} catch {
+		return [];
+	}
+}
+
+// planned_items → 表示用メニュー配列（name / price / photo）
+function menuFromItems(items) {
+	try {
+		const arr = typeof items === 'string' ? JSON.parse(items) : items;
+		if (!Array.isArray(arr)) return [];
+		return arr
+			.map((i) => (typeof i === 'string'
+				? { name: i, price: 0, photo: '' }
+				: { name: i?.name ?? '', price: Number(i?.price) || 0, photo: i?.photoUrl || i?.photo || '' }))
+			.filter((i) => i.name)
+			.slice(0, 12);
 	} catch {
 		return [];
 	}

@@ -15,6 +15,13 @@
 	let userId = $state('');
 	let pickerMarker = null;
 
+	// 使用可能用途（屋台貸し出し人が設定 → 予約時に表示）
+	const USE_CASES = ['飲食', 'ワークショップ', '小売り', '展示', 'シェア', '空間'];
+	let useCases = $state([]);
+	function toggleUseCase(u) {
+		useCases = useCases.includes(u) ? useCases.filter((x) => x !== u) : [...useCases, u];
+	}
+
 	// フォームデータ
 	let stallName = $state('');
 	let stallAddress = $state('');
@@ -141,6 +148,7 @@
 				address: stallAddress.trim() || null,
 				specs: specs.trim() || null,
 				rental_fee: rentalFee ? parseInt(rentalFee) : 0,
+				use_cases: useCases,
 				lat,
 				lng,
 				photo_path: photoPath
@@ -222,6 +230,18 @@
 					placeholder="例: 幅1.8m / 電源あり / 提灯付き / 最大3名で運営可"
 				></textarea>
 			</label>
+
+			<div class="field-label">
+				使用可能な用途（複数選択可）
+				<div class="usecase-chips">
+					{#each USE_CASES as u}
+						<button type="button" class="usecase-chip" class:on={useCases.includes(u)} onclick={() => toggleUseCase(u)}>
+							{#if useCases.includes(u)}<Icon name="check" size={13} />{/if}{u}
+						</button>
+					{/each}
+				</div>
+				<span class="field-hint">借り手が予約時に確認でき、用途を選んで借りられます。</span>
+			</div>
 
 			<label class="field-label">
 				レンタル料金（円 / 日）
@@ -333,6 +353,19 @@
 
 	.field-input:focus { outline: none; border-color: var(--accent); }
 	.textarea { resize: vertical; min-height: 80px; }
+
+	/* 使用可能用途チップ */
+	.usecase-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+	.usecase-chip {
+		display: inline-flex; align-items: center; gap: 4px;
+		padding: 8px 14px; border-radius: 100px;
+		border: 1.5px solid var(--line-strong); background: var(--surface);
+		color: var(--ink-2); font-size: 0.85rem; font-family: inherit; cursor: pointer;
+		transition: border-color 0.15s, background 0.15s, color 0.15s;
+	}
+	.usecase-chip:hover { border-color: var(--accent); }
+	.usecase-chip.on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-deep); font-weight: 600; }
+	.field-hint { display: block; font-size: 0.72rem; color: var(--ink-3); margin-top: 8px; }
 
 	.submit-btn {
 		width: 100%; padding: 14px;
