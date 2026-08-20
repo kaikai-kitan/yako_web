@@ -312,7 +312,7 @@
 				// ロール廃止: 法人（金）／夜行人（既定色）だけで区別
 				const ringColor = node.adActive ? '#b5892e' : DEFAULT_RING;
 				const shape = node.shape || 'circle';
-				// 法人（契約中）は限定の屋台アイコンを採用。写真は使わない。
+				// 初期テクスチャ（アイコン未設定時のプレースホルダ）。node.img があれば下で写真に差し替え。
 				const material = new THREE.SpriteMaterial({
 					map: node.adActive
 						? yataiTexture(THREE, ringColor)
@@ -325,7 +325,7 @@
 				node.__sprite = sprite;
 				node.__group = group;
 
-				if (!node.adActive && node.img) {
+				if (node.img) {
 					const image = new Image();
 					image.crossOrigin = 'Anonymous';
 					image.onload = () => {

@@ -528,40 +528,42 @@
 		} catch (e) { subErr = e.message; } finally { applyingCorp = false; }
 	}
 
-	let ctr = $derived((() => {
-		const v = profile?.ad_view_count ?? 0, c = profile?.ad_click_count ?? 0;
-		if (!v) return '—';
-		return `${((c / v) * 100).toFixed(1)}%`;
-	})());
-
 	// ── 広告アクセス解析（時系列・v25） ──
-	let adStats = $state(null); // { month, year, monthly: [{label, view, click, reach}] } | null
+	let adStats = $state(null); // { total, month, year, monthly: [...] } | null
 	async function loadAdStats(uid) {
-		const now = new Date();
-		const since = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+		// 全期間のイベントを取得して累計・今月・今年・月次を一括集計
 		const { data, error } = await supabase
 			.from('ad_events')
 			.select('kind, occurred_at')
-			.eq('user_id', uid)
-			.gte('occurred_at', since.toISOString());
-		if (error) { adStats = null; return; } // v25 未適用 → 累計のみ表示
+			.eq('user_id', uid);
+		if (error) { adStats = null; return; } // v25 未適用 → 累計カウンタのみ表示
+		const now = new Date();
 		const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 		const curYm = ym(now), curYear = now.getFullYear();
 		const months = Array.from({ length: 12 }, (_, i) => ym(new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)));
 		const blank = () => ({ view: 0, click: 0, reach: 0 });
 		const monthMap = Object.fromEntries(months.map((m) => [m, blank()]));
-		const month = blank(), year = blank();
+		const total = blank(), month = blank(), year = blank();
 		for (const e of data ?? []) {
+			if (!(e.kind in total)) continue;
 			const d = new Date(e.occurred_at), m = ym(d);
-			if (monthMap[m] && e.kind in monthMap[m]) monthMap[m][e.kind]++;
-			if (m === curYm && e.kind in month) month[e.kind]++;
-			if (d.getFullYear() === curYear && e.kind in year) year[e.kind]++;
+			total[e.kind]++;
+			if (monthMap[m]) monthMap[m][e.kind]++;
+			if (m === curYm) month[e.kind]++;
+			if (d.getFullYear() === curYear) year[e.kind]++;
 		}
 		adStats = {
-			month, year,
+			total, month, year,
 			monthly: months.map((m) => ({ label: `${parseInt(m.slice(5))}月`, ...monthMap[m] }))
 		};
 	}
+	// 累計値：ad_events があればそれを、無ければ従来カウンタ（後方互換）
+	let adTotals = $derived(adStats?.total ?? {
+		view: profile?.ad_view_count ?? 0,
+		click: profile?.ad_click_count ?? 0,
+		reach: profile?.ad_reach_count ?? 0
+	});
+	let adCtr = $derived(adTotals.view ? `${((adTotals.click / adTotals.view) * 100).toFixed(1)}%` : '—');
 	let isActiveSub = $derived(profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing');
 	let subStatusLabel = $derived(
 		profile?.subscription_status === 'active' ? '利用中'
@@ -1012,12 +1014,12 @@
 					<strong>サイト到達</strong>＝広告のリンクから外部サイトへ実際に遷移した回数です。
 				</p>
 				<div class="metric-row">
-					<div class="metric"><span class="metric-value">{(profile.ad_view_count ?? 0).toLocaleString()}</span><span class="metric-label">表示（累計）</span></div>
-					<div class="metric"><span class="metric-value">{(profile.ad_click_count ?? 0).toLocaleString()}</span><span class="metric-label">クリック（累計）</span></div>
-					<div class="metric"><span class="metric-value">{(profile.ad_reach_count ?? 0).toLocaleString()}</span><span class="metric-label">サイト到達（累計）</span></div>
+					<div class="metric"><span class="metric-value">{adTotals.view.toLocaleString()}</span><span class="metric-label">表示（累計）</span></div>
+					<div class="metric"><span class="metric-value">{adTotals.click.toLocaleString()}</span><span class="metric-label">クリック（累計）</span></div>
+					<div class="metric"><span class="metric-value">{adTotals.reach.toLocaleString()}</span><span class="metric-label">サイト到達（累計）</span></div>
 				</div>
 				<div class="metric-row ctr-row">
-					<div class="metric small"><span class="metric-value">{ctr}</span><span class="metric-label">クリック率</span></div>
+					<div class="metric small"><span class="metric-value">{adCtr}</span><span class="metric-label">クリック率</span></div>
 				</div>
 
 				{#if adStats}
