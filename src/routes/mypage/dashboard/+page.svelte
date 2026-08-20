@@ -113,7 +113,7 @@
 		await Promise.all([
 			loadRevenue(user.id), loadChart(user.id), loadMyStalls(user.id),
 			loadMenu(user.id), loadInv(user.id), loadIngredients(user.id),
-			loadBank(user.id), loadYakonin(user.id)
+			loadBank(user.id), loadYakonin(user.id), loadAdStats(user.id)
 		]);
 		initProfileForm();
 		initAdForm();
@@ -439,6 +439,7 @@
 	let accessToken = $state('');
 	let adHeadline = $state(''), adStoreUrl = $state(''), adRecruitUrl = $state('');
 	let adImagePreview = $state(''), adImageFile = $state(null);
+	let adIconPreview = $state(''), adIconFile = $state(null);
 	let subBusy = $state(false), subMsg = $state(''), subErr = $state('');
 
 	function initAdForm() {
@@ -446,6 +447,8 @@
 		adStoreUrl = profile?.ad_store_url ?? '';
 		adRecruitUrl = profile?.ad_recruit_url ?? '';
 		adImagePreview = profile?.ad_image_path ?? '';
+		// 図鑑（ノード）アイコン＝ user_profiles.icon_path
+		adIconPreview = profile?.icon_path ?? yakonin?.avatar_path ?? '';
 	}
 	function onAdImagePick(e) {
 		const file = e.target.files?.[0];
@@ -453,19 +456,37 @@
 		adImageFile = file;
 		adImagePreview = URL.createObjectURL(file);
 	}
+	function onAdIconPick(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		adIconFile = file;
+		adIconPreview = URL.createObjectURL(file);
+	}
 	async function saveAd() {
 		subErr = ''; subMsg = ''; subBusy = true;
 		try {
 			let imagePath = profile?.ad_image_path ?? '';
 			if (adImageFile) imagePath = await uploadImage(userId, adImageFile, 'profile-images');
+
+			// 広告者アイコン＝夜行人図鑑のアイコン（icon_path / avatar_path）に反映
+			let iconPath = profile?.icon_path ?? '';
+			if (adIconFile) {
+				iconPath = await uploadImage(userId, adIconFile, 'profile-images');
+				await supabase.from('user_profiles').update({ icon_path: iconPath }).eq('user_id', userId);
+				await supabase.from('yakonin_profiles').upsert(
+					{ user_id: userId, avatar_path: iconPath, is_public: true, updated_at: new Date().toISOString() },
+					{ onConflict: 'user_id' }
+				);
+			}
+
 			const res = await fetch('/api/corporate/ad', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
 				body: JSON.stringify({ headline: adHeadline, storeUrl: adStoreUrl, recruitUrl: adRecruitUrl, imagePath })
 			});
 			if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.message ?? '保存に失敗しました'); }
-			profile = { ...profile, ad_headline: adHeadline, ad_store_url: adStoreUrl, ad_recruit_url: adRecruitUrl, ad_image_path: imagePath };
-			adImageFile = null;
+			profile = { ...profile, ad_headline: adHeadline, ad_store_url: adStoreUrl, ad_recruit_url: adRecruitUrl, ad_image_path: imagePath, icon_path: iconPath };
+			adImageFile = null; adIconFile = null;
 			subMsg = '広告を保存しました。夜行人図鑑に反映されます。';
 			setTimeout(() => (subMsg = ''), 4000);
 		} catch (e) { subErr = e.message; } finally { subBusy = false; }
@@ -512,6 +533,35 @@
 		if (!v) return '—';
 		return `${((c / v) * 100).toFixed(1)}%`;
 	})());
+
+	// ── 広告アクセス解析（時系列・v25） ──
+	let adStats = $state(null); // { month, year, monthly: [{label, view, click, reach}] } | null
+	async function loadAdStats(uid) {
+		const now = new Date();
+		const since = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+		const { data, error } = await supabase
+			.from('ad_events')
+			.select('kind, occurred_at')
+			.eq('user_id', uid)
+			.gte('occurred_at', since.toISOString());
+		if (error) { adStats = null; return; } // v25 未適用 → 累計のみ表示
+		const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+		const curYm = ym(now), curYear = now.getFullYear();
+		const months = Array.from({ length: 12 }, (_, i) => ym(new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)));
+		const blank = () => ({ view: 0, click: 0, reach: 0 });
+		const monthMap = Object.fromEntries(months.map((m) => [m, blank()]));
+		const month = blank(), year = blank();
+		for (const e of data ?? []) {
+			const d = new Date(e.occurred_at), m = ym(d);
+			if (monthMap[m] && e.kind in monthMap[m]) monthMap[m][e.kind]++;
+			if (m === curYm && e.kind in month) month[e.kind]++;
+			if (d.getFullYear() === curYear && e.kind in year) year[e.kind]++;
+		}
+		adStats = {
+			month, year,
+			monthly: months.map((m) => ({ label: `${parseInt(m.slice(5))}月`, ...monthMap[m] }))
+		};
+	}
 	let isActiveSub = $derived(profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing');
 	let subStatusLabel = $derived(
 		profile?.subscription_status === 'active' ? '利用中'
@@ -947,7 +997,6 @@
 				<div class="link-stack">
 					{#if isActiveSub}
 						<button class="btn-primary block" onclick={openPortal} disabled={subBusy}>お支払い・プランの管理（解約）</button>
-						<a class="link-strong" href="{base}/groups">イベントグループを作成・管理 ›</a>
 					{:else}
 						<button class="btn-primary block" onclick={subscribe} disabled={subBusy}>法人プランに申し込む（月額）</button>
 					{/if}
@@ -957,18 +1006,81 @@
 			<!-- アクセス解析 -->
 			<section class="card">
 				<h2 class="card-title">アクセス解析</h2>
-				<p class="card-note">夜行人図鑑での広告の表示回数と、アイコンがクリックされた回数です。</p>
+				<p class="card-note">
+					<strong>表示</strong>＝夜行人図鑑にアクセスされ広告ノードが現れた回数、
+					<strong>クリック</strong>＝図鑑であなたのアイコンが押された回数、
+					<strong>サイト到達</strong>＝広告のリンクから外部サイトへ実際に遷移した回数です。
+				</p>
 				<div class="metric-row">
-					<div class="metric"><span class="metric-value">{(profile.ad_view_count ?? 0).toLocaleString()}</span><span class="metric-label">表示回数</span></div>
-					<div class="metric"><span class="metric-value">{(profile.ad_click_count ?? 0).toLocaleString()}</span><span class="metric-label">クリック回数</span></div>
-					<div class="metric"><span class="metric-value">{ctr}</span><span class="metric-label">クリック率</span></div>
+					<div class="metric"><span class="metric-value">{(profile.ad_view_count ?? 0).toLocaleString()}</span><span class="metric-label">表示（累計）</span></div>
+					<div class="metric"><span class="metric-value">{(profile.ad_click_count ?? 0).toLocaleString()}</span><span class="metric-label">クリック（累計）</span></div>
+					<div class="metric"><span class="metric-value">{(profile.ad_reach_count ?? 0).toLocaleString()}</span><span class="metric-label">サイト到達（累計）</span></div>
 				</div>
+				<div class="metric-row ctr-row">
+					<div class="metric small"><span class="metric-value">{ctr}</span><span class="metric-label">クリック率</span></div>
+				</div>
+
+				{#if adStats}
+					<!-- 今月 / 今年 -->
+					<div class="stat-period">
+						<div class="stat-period-col">
+							<span class="stat-period-label">今月</span>
+							<div class="stat-period-nums">
+								<span>表示 <b>{adStats.month.view.toLocaleString()}</b></span>
+								<span>クリック <b>{adStats.month.click.toLocaleString()}</b></span>
+								<span>到達 <b>{adStats.month.reach.toLocaleString()}</b></span>
+							</div>
+						</div>
+						<div class="stat-period-col">
+							<span class="stat-period-label">今年</span>
+							<div class="stat-period-nums">
+								<span>表示 <b>{adStats.year.view.toLocaleString()}</b></span>
+								<span>クリック <b>{adStats.year.click.toLocaleString()}</b></span>
+								<span>到達 <b>{adStats.year.reach.toLocaleString()}</b></span>
+							</div>
+						</div>
+					</div>
+
+					<!-- 月次推移（直近12ヶ月） -->
+					<div class="monthly-head">月次推移（直近12ヶ月）</div>
+					<div class="monthly-table-wrap">
+						<table class="monthly-table">
+							<thead>
+								<tr><th>月</th><th>表示</th><th>クリック</th><th>到達</th></tr>
+							</thead>
+							<tbody>
+								{#each adStats.monthly as m}
+									<tr>
+										<td>{m.label}</td>
+										<td>{m.view.toLocaleString()}</td>
+										<td>{m.click.toLocaleString()}</td>
+										<td>{m.reach.toLocaleString()}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{:else}
+					<p class="stat-note">月次・年次の詳細は、マイグレーション v25 適用後に表示されます。</p>
+				{/if}
 			</section>
 
 			<!-- 広告編集 -->
 			<section class="card">
 				<h2 class="card-title">広告の内容</h2>
 				<p class="card-note">図鑑であなたのアイコンをクリックした際に表示されます。契約中は放浪者として図鑑内を巡回します。</p>
+				<div class="f-field">
+					<span class="f-label">広告者アイコン（夜行人図鑑に表示されるアイコン）</span>
+					<div class="ad-icon-row">
+						{#if adIconPreview}
+							<img class="ad-icon-preview" src={adIconPreview.startsWith('blob:') || adIconPreview.startsWith('http') ? adIconPreview : base + adIconPreview} alt="広告者アイコン" />
+						{:else}
+							<span class="ad-icon-preview placeholder"><Icon name="user" size={22} /></span>
+						{/if}
+						<label class="file-btn"><Icon name="image" size={15} /> アイコンを選ぶ<input type="file" accept="image/*" onchange={onAdIconPick} hidden /></label>
+					</div>
+					<span class="f-hint">ここで設定したアイコンが、夜行人図鑑のあなたのノードに表示されます。</span>
+				</div>
 				<label class="f-field"><span class="f-label">キャッチコピー（全角30字まで）</span><input class="inp" bind:value={adHeadline} maxlength="60" placeholder="例: 京都の夜に、あたたかい一杯を。" /></label>
 				<label class="f-field"><span class="f-label">オンラインストアURL</span><input class="inp" type="url" bind:value={adStoreUrl} placeholder="https://…" /></label>
 				<label class="f-field"><span class="f-label">求人・採用URL</span><input class="inp" type="url" bind:value={adRecruitUrl} placeholder="https://…" /></label>
@@ -992,7 +1104,7 @@
 		{:else}
 			<section class="card">
 				<h2 class="card-title">法人プラン（サブスクリプション）</h2>
-				<p class="card-note">法人プラン（月額）で、夜行人図鑑への広告掲載・法人バッジ・アクセス解析・イベントグループ作成が使えます。まずは法人として申請してください（審査あり）。</p>
+				<p class="card-note">法人プラン（月額）で、夜行人図鑑への広告掲載・法人バッジ・アクセス解析が使えます。まずは法人として申請してください（審査あり）。</p>
 				{#if profile?.corp_status === 'rejected'}<p class="err-msg">前回の申請は承認されませんでした。</p>{/if}
 				<label class="f-field"><span class="f-label">法人名 / 屋号</span><input class="inp" bind:value={corpName} placeholder="例: 株式会社 夜行社" /></label>
 				<button class="btn-primary block" onclick={applyCorporate} disabled={applyingCorp}>{applyingCorp ? '送信中…' : '法人として申請する'}</button>
@@ -1279,6 +1391,29 @@
 	.metric-value { font-size: 1.5rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
 	.metric-label { font-size: 0.72rem; color: var(--ink-3); font-weight: 600; }
 	.ad-preview { display: block; width: 100%; max-height: 200px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); margin-bottom: 10px; }
+
+	/* 広告者アイコン */
+	.ad-icon-row { display: flex; align-items: center; gap: 14px; }
+	.ad-icon-preview { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--line-strong); flex-shrink: 0; }
+	.ad-icon-preview.placeholder { display: inline-flex; align-items: center; justify-content: center; background: var(--surface-sunk); color: var(--ink-3); }
+	.f-hint { font-size: 0.72rem; color: var(--ink-3); margin-top: 4px; }
+
+	/* アクセス解析（詳細） */
+	.ctr-row { grid-template-columns: 1fr; margin-top: 10px; }
+	.metric.small { padding: 10px 8px; }
+	.metric.small .metric-value { font-size: 1.15rem; }
+	.stat-period { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+	.stat-period-col { background: var(--surface-sunk); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+	.stat-period-label { font-size: 0.72rem; font-weight: 700; color: var(--accent-deep); }
+	.stat-period-nums { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; font-size: 0.82rem; color: var(--ink-2); }
+	.stat-period-nums b { color: var(--ink); font-variant-numeric: tabular-nums; margin-left: 2px; }
+	.monthly-head { font-size: 0.78rem; font-weight: 700; color: var(--ink-2); margin: 18px 0 8px; }
+	.monthly-table-wrap { overflow-x: auto; }
+	.monthly-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+	.monthly-table th, .monthly-table td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+	.monthly-table th { color: var(--ink-3); font-weight: 600; font-size: 0.74rem; }
+	.monthly-table th:first-child, .monthly-table td:first-child { text-align: left; color: var(--ink-2); }
+	.stat-note { font-size: 0.78rem; color: var(--ink-3); margin: 14px 0 0; line-height: 1.6; }
 
 	/* EC / 汎用リンクスタック */
 	.link-stack { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }

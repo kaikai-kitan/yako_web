@@ -231,12 +231,12 @@
 					{#if selected.ad.headline}<p class="ad-headline">{selected.ad.headline}</p>{/if}
 					<div class="ad-links">
 						{#if selected.ad.storeUrl}
-							<a href={selected.ad.storeUrl} target="_blank" rel="noopener noreferrer" class="ad-link store">
+							<a href={selected.ad.storeUrl} target="_blank" rel="noopener noreferrer" class="ad-link store" onclick={() => trackAd(selected, 'reach')}>
 								<Icon name="store" size={14} /> オンラインストア
 							</a>
 						{/if}
 						{#if selected.ad.recruitUrl}
-							<a href={selected.ad.recruitUrl} target="_blank" rel="noopener noreferrer" class="ad-link recruit">
+							<a href={selected.ad.recruitUrl} target="_blank" rel="noopener noreferrer" class="ad-link recruit" onclick={() => trackAd(selected, 'reach')}>
 								<Icon name="clipboard-list" size={14} /> 採用情報
 							</a>
 						{/if}
