@@ -11,7 +11,10 @@
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run"
+		"test": "npm run test:unit -- --run",
+		"team:check": "node scripts/team-board-runner.mjs --dry-run",
+		"team:run": "node scripts/team-board-runner.mjs --once",
+		"team:watch": "node scripts/team-board-runner.mjs --watch"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.4.0",
