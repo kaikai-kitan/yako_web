@@ -1,6 +1,6 @@
 <!--
 	YATAKARI アプリのボトムナビ（5枠）。
-	左から: マップ / 夜行人図鑑 / オンラインストア / マイページ / ・・・（メニュー）
+	左から: マップ / 夜行人ネットワーク / オンラインストア / マイページ / ・・・（メニュー）
 	「・・・」に お問い合わせ と ログイン/ログアウト（セッションで切替）を内包。
 -->
 <script>
@@ -44,7 +44,7 @@
 
 	const tabs = [
 		{ label: 'マップ',           icon: 'map',          href: `${base}/map`,              match: (p) => p.startsWith('/map') || p.startsWith('/yatakari') },
-		{ label: '夜行人図鑑',       icon: 'share',        href: `${base}/network`,          match: (p) => p.startsWith('/directory') || p.startsWith('/network') || p.startsWith('/groups') },
+		{ label: '夜行人ネットワーク', icon: 'share',      href: `${base}/network`,          match: (p) => p.startsWith('/directory') || p.startsWith('/network') || p.startsWith('/groups') },
 		{ label: 'オンラインストア', icon: 'shopping-bag', href: `${base}/shop`,             match: (p) => p.startsWith('/shop') },
 		{ label: 'マイページ',       icon: 'user',         href: `${base}/mypage/dashboard`, match: (p) => p.startsWith('/mypage') }
 	];
@@ -81,7 +81,7 @@
 		{@const active = t.match(path)}
 		<a href={t.href} class="bn-item" class:active aria-current={active ? 'page' : undefined}>
 			<Icon name={t.icon} size={22} />
-			<span class="bn-label">{t.label}</span>
+			<span class="bn-label">{#if t.label === '夜行人ネットワーク'}夜行人<wbr />ネットワーク{:else}{t.label}{/if}</span>
 		</a>
 	{/each}
 	<button class="bn-item more-btn" class:active={moreOpen} onclick={() => (moreOpen = !moreOpen)} aria-haspopup="menu" aria-expanded={moreOpen}>
