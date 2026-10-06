@@ -1,7 +1,6 @@
 <!--
 	夜行人ネットワーク 3D 可視化
-	友人の O_noder（three.js + 3d-force-graph）のデザインに寄せた版。
-	白背景・円形アイコン・細い黒リンク・全方位オービット回転。
+	three.js + 3d-force-graph。星座背景と従来の白いグリッドを切り替える。
 
 	props:
 	  data        : { nodes: [{ id, name, img, roles, degree, type }], links: [{ source, target, origin }] }
@@ -12,7 +11,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { base } from '$app/paths';
 
-	let { data, onNodeClick, height = '60vh', highlightRole = null } = $props();
+	let { data, onNodeClick, height = '60vh', highlightRole = null, background = 'grid', autoRotate = true, controlType = 'trackball' } = $props();
 
 	let container = $state();
 	let graph = null;
@@ -27,6 +26,13 @@
 	let roamNodes = [];
 	let roamRadius = 260;
 	let renderer3d = null, scene3d = null, camera3d = null; // 周回フレームでの明示的再描画用
+	let three = null, grid = null;
+	let constellation = null, createStars = null;
+	let starBackground = '#080e1b';
+	let originalPixelRatio = 1;
+	let cameraInteracted = false;
+	let highlightTimer = null, startTimer = null;
+	let graphError = $state('');
 
 	const ROLE_COLOR = {
 		'屋台営業者': '#b85c2b',
@@ -223,6 +229,7 @@
 		});
 		const s = new THREE.Sprite(mat);
 		s.scale.set(scale, scale, 1);
+		s.raycast = () => {}; // 光彩は人物のクリック判定を広げない
 		s.position.set(0, 0, -1); // 本体スプライトの背後
 		group.add(s);
 		return s;
@@ -257,16 +264,71 @@
 		if (ready) applyHighlight(role);
 	});
 
+	function styleLabel(label, isStall = false) {
+		const stars = background === 'constellation';
+		label.color = stars ? (isStall ? '#ecd2a1' : '#e8eef4') : isStall ? '#8a5a12' : '#26201a';
+		label.material.fog = background === 'grid';
+		label.material.toneMapped = false;
+		label.material.needsUpdate = true;
+		label.backgroundColor = stars ? 'rgba(8,14,27,0.7)' : false;
+		label.padding = background === 'grid' ? 0 : 1;
+	}
+
+	function styleNode(node) {
+		if (node.__label) styleLabel(node.__label, node.type === 'stall');
+		if (!node.__sprite) return;
+		node.__sprite.material.fog = background === 'grid';
+		node.__sprite.material.needsUpdate = true;
+		if (background === 'constellation' && !node.__glow) {
+			node.__glowBase = 0.3;
+			node.__glow = addGlow(three, node.__group, BASE * (node.__mult ?? 1) * 2.8, node.adActive ? '#edc985' : '#94c4ea', node.__glowBase);
+			if (node.__glow) { node.__glow.material.fog = false; node.__glow.material.toneMapped = false; }
+		}
+		if (node.__glow) node.__glow.visible = background === 'constellation';
+	}
+
+	function applyBackground(mode = background) {
+		if (!graph || !three || !scene3d) return;
+		const stars = mode === 'constellation';
+		if (stars && !constellation) { constellation = createStars(); scene3d.add(constellation.group); }
+		if (constellation) constellation.group.visible = stars;
+		grid.visible = !stars;
+		graph.backgroundColor(stars ? starBackground : BG);
+		scene3d.fog = stars ? null : new three.Fog(BG, 420, 1700);
+		renderer3d.setPixelRatio(stars ? Math.min(originalPixelRatio, 1.5) : originalPixelRatio);
+		for (const node of prepared?.nodes ?? []) styleNode(node);
+		graph.linkColor((link) => link.origin === 'stall' ? (stars ? '#d7b978' : '#c9b183') : stars ? '#9bbbcf' : '#9aa1ae');
+		graph.linkWidth(stars ? 0.8 : 0.5);
+	}
+
+	$effect(() => {
+		applyBackground(background);
+	});
+
+	$effect(() => {
+		const enabled = autoRotate;
+		if (graph) graph.controls().autoRotate = enabled;
+	});
+
+	export function resetView() {
+		if (graph) graph.zoomToFit(700, 80);
+	}
+
 	onMount(async () => {
 		mounted = true;
+		try {
 
-		const [{ default: ForceGraph3D }, THREE, { default: SpriteText }, d3force] = await Promise.all([
+		const [{ default: ForceGraph3D }, THREE, { default: SpriteText }, d3force, starsModule] = await Promise.all([
 			import('3d-force-graph'),
 			import('three'),
 			import('three-spritetext'),
-			import('d3-force-3d')
+			import('d3-force-3d'),
+			import('$lib/three/constellation.js')
 		]);
 		if (!mounted || !container) return;
+		three = THREE;
+		createStars = starsModule.createConstellation;
+		starBackground = starsModule.CONSTELLATION_BACKGROUND;
 
 		// JSON ディープクローン（Svelte 5 の $state プロキシは structuredClone 不可）
 		prepared = JSON.parse(JSON.stringify(data));
@@ -288,7 +350,7 @@
 
 		GLOW = glowTexture(THREE); // ネオン風グローを1枚用意して使い回す
 
-		graph = new ForceGraph3D(container)
+		graph = new ForceGraph3D(container, { controlType })
 			.backgroundColor(BG)
 			.showNavInfo(false)
 			.enableNodeDrag(false)
@@ -302,10 +364,11 @@
 
 				if (node.type === 'stall') {
 					const label = new SpriteText(`🏮 ${node.name}`);
-					label.color = '#8a5a12';
+					styleLabel(label, true);
 					label.textHeight = 6;
 					label.material.transparent = true;
 					group.add(label);
+					node.__label = label;
 					return group;
 				}
 
@@ -317,7 +380,9 @@
 					map: node.adActive
 						? yataiTexture(THREE, ringColor)
 						: placeholderTexture(THREE, node.name, ringColor, shape),
-					transparent: true
+					transparent: true,
+					fog: background === 'grid',
+					toneMapped: false
 				});
 				const sprite = new THREE.Sprite(material);
 				sprite.scale.set(scale, scale, 1);
@@ -336,12 +401,13 @@
 				}
 
 				const label = new SpriteText(node.name);
-				label.color = '#26201a';
+				styleLabel(label);
 				label.material.transparent = true;
 				label.textHeight = Math.max(4, scale * 0.2);
 				label.position.set(0, -(scale / 2 + label.textHeight), 0);
 				group.add(label);
 				node.__label = label;
+				styleNode(node);
 
 				return group;
 			})
@@ -366,20 +432,14 @@
 			camera3d = graph.camera();
 		} catch { /* noop */ }
 
-		// 立体感を出すフォグ（遠いノードが白背景に溶ける＝奥行き知覚）
-		try {
-			if (scene3d) scene3d.fog = new THREE.Fog(BG, 420, 1700);
-		} catch { /* noop */ }
-
-		// 床グリッドで「3D空間」であることを分かりやすく（白背景・視認性優先）
-		try {
-			if (scene3d) {
-				const grid = new THREE.GridHelper(2600, 52, 0xc4c4bd, 0xe0e0d8);
-				grid.position.y = -140; // クラスタの下に敷く床
-				if (grid.material) { grid.material.transparent = true; grid.material.opacity = 0.6; }
-				scene3d.add(grid);
-			}
-		} catch { /* noop */ }
+		// 旧グリッドを保持し、グラフ本体を作り直さずに背景だけ切り替える。
+		grid = new THREE.GridHelper(2600, 52, 0xc4c4bd, 0xe0e0d8);
+		grid.position.y = -140;
+		grid.material.transparent = true;
+		grid.material.opacity = 0.6;
+		scene3d.add(grid);
+		originalPixelRatio = renderer3d.getPixelRatio();
+		applyBackground();
 
 		// 孤立ノード（流浪人）を安定した radial 力で外周へ（土星の環）
 		if (isolatedCount > 0 && d3force?.forceRadial) {
@@ -393,20 +453,22 @@
 
 		// 自動回転（操作中は一時停止 → 数秒後に再開）。全方位オービットは既定で可能。
 		const controls = graph.controls();
-		controls.autoRotate = true;
+		controls.autoRotate = autoRotate;
 		controls.autoRotateSpeed = 0.6;
 		controls.addEventListener('start', () => {
+			cameraInteracted = true;
 			controls.autoRotate = false;
 			if (resumeTimer) clearTimeout(resumeTimer);
 		});
 		controls.addEventListener('end', () => {
 			if (resumeTimer) clearTimeout(resumeTimer);
-			resumeTimer = setTimeout(() => { controls.autoRotate = true; }, 4000);
+			resumeTimer = setTimeout(() => { if (mounted) controls.autoRotate = autoRotate; }, 4000);
 		});
 
 		graph.onEngineStop(() => {
 			refreshRoamRadius(); // 配置確定ごとに実測し、軌道を外側へ自動拡張
 			startRoaming(); // レイアウト確定後に放浪者の周回を開始
+			if (cameraInteracted) return;
 			try { graph.zoomToFit(700, 80); } catch { /* noop */ }
 			// 単一・少数ノードでカメラが寄りすぎて見切れるのを防ぐ（最小距離）
 			try {
@@ -425,12 +487,15 @@
 
 		ready = true;
 		// スプライトはレンダリングループで後から生成されるため、少し遅延して初期ハイライトを適用
-		setTimeout(() => applyHighlight(highlightRole), 400);
+		highlightTimer = setTimeout(() => { if (mounted) applyHighlight(highlightRole); }, 400);
 		// 放浪はonEngineStop（最大数秒〜15秒後）を待たず即開始する
-		setTimeout(() => { refreshRoamRadius(); startRoaming(); }, 700);
+		startTimer = setTimeout(() => { if (mounted) { refreshRoamRadius(); startRoaming(); } }, 700);
 
 		resizeObs = new ResizeObserver(syncSize);
 		resizeObs.observe(container);
+		} catch {
+			if (mounted) graphError = '3D表示を開始できませんでした。ページを再読み込みしてください。';
+		}
 	});
 
 	// 非放浪ノードの実際の広がり（原点からの距離＋見た目サイズ）を測る
@@ -490,8 +555,14 @@
 	onDestroy(() => {
 		mounted = false;
 		if (resumeTimer) clearTimeout(resumeTimer);
+		clearTimeout(highlightTimer);
+		clearTimeout(startTimer);
 		if (roamRAF) cancelAnimationFrame(roamRAF);
 		resizeObs?.disconnect();
+		constellation?.dispose();
+		grid?.removeFromParent();
+		grid?.geometry.dispose();
+		grid?.material.dispose();
 		if (graph) {
 			graph._destructor?.();
 			graph = null;
@@ -499,9 +570,11 @@
 	});
 </script>
 
-<div class="graph-host" bind:this={container} style="height: {height};"></div>
+<div class="graph-host" bind:this={container} style="height: {height}; background: {background === 'constellation' ? starBackground : BG};"></div>
+{#if graphError}<p class="graph-error" role="alert">{graphError}</p>{/if}
 
 <style>
+	.graph-error { position: absolute; inset: 35% 24px auto; text-align: center; padding: 20px; background: #fffdf7; color: #443e35; border-radius: 12px; }
 	.graph-host {
 		width: 100%;
 		min-height: 320px;

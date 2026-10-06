@@ -8,6 +8,16 @@
 	import seedNetwork from '$lib/assets/data/network.json';
 	import NetworkGraph3D from '$lib/components/NetworkGraph3D.svelte';
 
+	const BACKGROUND_KEY = 'yako-network-background-v2';
+	let background = $state('constellation');
+	let autoRotate = $state(true);
+	let graphView = $state();
+
+	function chooseBackground(value) {
+		background = value;
+		try { localStorage.setItem(BACKGROUND_KEY, value); } catch { /* Storage may be unavailable. */ }
+	}
+
 	let graphData = $state(null);
 	let usingSeed = $state(false);
 	let selected = $state(null); // クリックされた人物ノード
@@ -55,6 +65,11 @@
 	}
 
 	onMount(async () => {
+		try {
+			const saved = localStorage.getItem(BACKGROUND_KEY);
+			if (saved === 'grid' || saved === 'constellation') background = saved;
+		} catch { /* Use the trial background when storage is unavailable. */ }
+		autoRotate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		try {
 			const res = await fetch('/api/network/graph');
 			const data = res.ok ? await res.json() : { nodes: [] };
@@ -164,15 +179,19 @@
 
 <svelte:head><title>夜行人ネットワーク | 微小夜行電灯</title></svelte:head>
 
-<div class="net-wrap">
+<div class="net-wrap" class:starry={background === 'constellation'}>
 	{#if graphData}
-		<NetworkGraph3D data={graphData} onNodeClick={handleNodeClick} height="100%" />
+		<NetworkGraph3D bind:this={graphView} data={graphData} onNodeClick={handleNodeClick} height="100%" {background} {autoRotate} controlType="orbit" />
 	{:else}
 		<div class="loading"><div class="spinner"></div></div>
 	{/if}
 
 	<!-- 上部バー -->
 	<div class="topbar">
+		<div class="background-switch" role="group" aria-label="背景を切り替える">
+			<button aria-pressed={background === 'constellation'} onclick={() => chooseBackground('constellation')}>星座</button>
+			<button aria-pressed={background === 'grid'} onclick={() => chooseBackground('grid')}>グリッド</button>
+		</div>
 		<div class="legend">
 			<span class="lg-static"><i style="background:#b5892e"></i>法人</span>
 			<span class="lg-static"><i style="background:#8a94ab"></i>夜行人</span>
@@ -182,6 +201,12 @@
 	{#if usingSeed}
 		<div class="seed-note">デモ表示中（登録が2人以上になると実データに切り替わります）</div>
 	{/if}
+
+	<div class="view-controls">
+		<label><input type="checkbox" bind:checked={autoRotate} /> 自動回転</label>
+		<button onclick={() => graphView?.resetView()}>全体を見る</button>
+		<span>ドラッグで回転・ピンチで拡大</span>
+	</div>
 
 	<!-- 「+」メニュー（QRで繋がる / プライベートネットワーク作成） -->
 	{#if fabOpen}
@@ -313,9 +338,41 @@
 	.lg-static i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 
 	.seed-note {
-		position: absolute; top: 58px; left: 50%; transform: translateX(-50%); z-index: 5;
+		position: absolute; top: 72px; left: 14px; right: 14px; width: fit-content; max-width: calc(100% - 28px); margin: 0 auto; z-index: 5;
 		background: rgba(43,51,64,0.9); color: #efe7d8; font-size: 0.72rem;
-		padding: 6px 13px; border-radius: 100px; white-space: nowrap; letter-spacing: 0.03em;
+		padding: 6px 13px; border-radius: 12px; text-align: center; letter-spacing: 0.03em;
+	}
+
+	.background-switch {
+		display: flex; flex-shrink: 0; pointer-events: auto; padding: 4px; gap: 3px;
+		background: rgba(255,253,247,0.94); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-1);
+	}
+	.background-switch button, .view-controls button {
+		font: inherit; font-size: 0.75rem; cursor: pointer; color: #494c43;
+		border: 0; background: transparent; border-radius: 10px; min-height: 40px; padding: 0 12px;
+	}
+	.background-switch button[aria-pressed='true'] { background: #3e5148; color: #fffdf7; }
+	.background-switch button:focus-visible, .view-controls button:focus-visible { outline: 2px solid #a9582d; outline-offset: 2px; }
+	.view-controls {
+		position: absolute; left: 14px; bottom: calc(20px + 64px + env(safe-area-inset-bottom, 0)); z-index: 5;
+		display: flex; align-items: center; flex-wrap: wrap; width: fit-content; box-sizing: border-box; max-width: calc(100% - 100px); padding: 6px 10px;
+		background: rgba(255,253,247,0.94); border: 1px solid var(--line); border-radius: 14px; color: #494c43;
+	}
+	.view-controls label { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; min-height: 40px; cursor: pointer; }
+	.view-controls input { accent-color: #3e5148; width: 16px; height: 16px; }
+	.view-controls span { flex-basis: 100%; font-size: 0.62rem; opacity: 0.8; padding-bottom: 4px; }
+	.starry { background: #080e1b; }
+	.starry .background-switch, .starry .view-controls, .starry .lg-static {
+		background: rgba(14,25,40,0.9); color: #e1e6ed; border-color: rgba(156,182,203,0.25);
+	}
+	.starry .background-switch button, .starry .view-controls button { color: #e1e6ed; }
+	.starry .background-switch button[aria-pressed='true'] { background: #cbd9e0; color: #152332; }
+	.starry .view-controls input { accent-color: #83afc9; }
+	@media (max-width: 420px) {
+
+		.legend { gap: 4px; }
+		.lg-static { padding: 5px 8px; font-size: 0.62rem; }
+		.background-switch button { padding: 0 9px; }
 	}
 
 	/* 「+」FAB＋メニュー */
