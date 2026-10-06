@@ -11,7 +11,6 @@
 	const BACKGROUND_KEY = 'yako-network-background-v2';
 	let background = $state('constellation');
 	let autoRotate = $state(true);
-	let graphView = $state();
 
 	function chooseBackground(value) {
 		background = value;
@@ -181,7 +180,7 @@
 
 <div class="net-wrap" class:starry={background === 'constellation'}>
 	{#if graphData}
-		<NetworkGraph3D bind:this={graphView} data={graphData} onNodeClick={handleNodeClick} height="100%" {background} {autoRotate} controlType="orbit" />
+		<NetworkGraph3D data={graphData} onNodeClick={handleNodeClick} height="100%" {background} {autoRotate} controlType="orbit" />
 	{:else}
 		<div class="loading"><div class="spinner"></div></div>
 	{/if}
@@ -201,12 +200,6 @@
 	{#if usingSeed}
 		<div class="seed-note">デモ表示中（登録が2人以上になると実データに切り替わります）</div>
 	{/if}
-
-	<div class="view-controls">
-		<label><input type="checkbox" bind:checked={autoRotate} /> 自動回転</label>
-		<button onclick={() => graphView?.resetView()}>全体を見る</button>
-		<span>ドラッグで回転・ピンチで拡大</span>
-	</div>
 
 	<!-- 「+」メニュー（QRで繋がる / プライベートネットワーク作成） -->
 	{#if fabOpen}
@@ -347,27 +340,18 @@
 		display: flex; flex-shrink: 0; pointer-events: auto; padding: 4px; gap: 3px;
 		background: rgba(255,253,247,0.94); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-1);
 	}
-	.background-switch button, .view-controls button {
+	.background-switch button {
 		font: inherit; font-size: 0.75rem; cursor: pointer; color: #494c43;
 		border: 0; background: transparent; border-radius: 10px; min-height: 40px; padding: 0 12px;
 	}
 	.background-switch button[aria-pressed='true'] { background: #3e5148; color: #fffdf7; }
-	.background-switch button:focus-visible, .view-controls button:focus-visible { outline: 2px solid #a9582d; outline-offset: 2px; }
-	.view-controls {
-		position: absolute; left: 14px; bottom: calc(20px + 64px + env(safe-area-inset-bottom, 0)); z-index: 5;
-		display: flex; align-items: center; flex-wrap: wrap; width: fit-content; box-sizing: border-box; max-width: calc(100% - 100px); padding: 6px 10px;
-		background: rgba(255,253,247,0.94); border: 1px solid var(--line); border-radius: 14px; color: #494c43;
-	}
-	.view-controls label { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; min-height: 40px; cursor: pointer; }
-	.view-controls input { accent-color: #3e5148; width: 16px; height: 16px; }
-	.view-controls span { flex-basis: 100%; font-size: 0.62rem; opacity: 0.8; padding-bottom: 4px; }
+	.background-switch button:focus-visible { outline: 2px solid #a9582d; outline-offset: 2px; }
 	.starry { background: #080e1b; }
-	.starry .background-switch, .starry .view-controls, .starry .lg-static {
+	.starry .background-switch, .starry .lg-static {
 		background: rgba(14,25,40,0.9); color: #e1e6ed; border-color: rgba(156,182,203,0.25);
 	}
-	.starry .background-switch button, .starry .view-controls button { color: #e1e6ed; }
+	.starry .background-switch button { color: #e1e6ed; }
 	.starry .background-switch button[aria-pressed='true'] { background: #cbd9e0; color: #152332; }
-	.starry .view-controls input { accent-color: #83afc9; }
 	@media (max-width: 420px) {
 
 		.legend { gap: 4px; }
