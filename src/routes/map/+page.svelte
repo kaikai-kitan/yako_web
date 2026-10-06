@@ -1,9 +1,10 @@
 <script>
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { base } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import { supabase } from '$lib/supabase.js';
+	import { withTimeout } from '$lib/with-timeout.js';
 	import {
 		getActiveStalls,
 		getAvailableSpaces,
@@ -29,6 +30,8 @@
 	let mapInstance = $state();
 	let markers = $state([]);
 	let leafletLib = null;
+	let realtimeChannel = null;
+	let isDestroyed = false;
 
 	let currentView = $state('map'); // 'map'|'reserve'|'qr'|'active'|'return'|'finish'
 
@@ -55,6 +58,7 @@
 	let availableStallsList = $state([]);
 	let isLoading = $state(true);
 	let fetchError = $state('');
+	let mapError = $state('');
 
 	// 予約済み屋台IDセット（全ユーザー共通のブッキング確認）
 	let bookedStallIds = $state(new Set());
@@ -130,14 +134,27 @@
 	// 画像拡大表示
 	let enlargedImageUrl = $state('');
 
-	onMount(async () => {
-		const {
-			data: { session }
-		} = await supabase.auth.getSession();
-		currentUser = session?.user ?? null;
-		accessToken = session?.access_token ?? '';
+	onMount(() => {
+		// 地図は認証・データサーバーの応答を待たずに表示する。
+		initializeMap();
+		loadMapData();
 
+		return () => {
+			isDestroyed = true;
+			if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+			stopQrCamera();
+			mapInstance?.remove();
+		};
+	});
+
+	async function loadMapData() {
 		try {
+			const { data: { session }, error } = await withTimeout(supabase.auth.getSession());
+			if (isDestroyed) return;
+			if (error) throw error;
+			currentUser = session?.user ?? null;
+			accessToken = session?.access_token ?? '';
+
 			// getBookedStallIds はログイン不要なので base fetches に含める
 			const fetches = [
 				getAvailableSpaces(),
@@ -151,7 +168,8 @@
 				fetches.push(getMyProfile(currentUser.id));        // index 6
 				fetches.push(getMyMenuItems(currentUser.id));      // index 7
 			}
-			const results = await Promise.all(fetches);
+			const results = await withTimeout(Promise.all(fetches));
+			if (isDestroyed) return;
 			availableSpaces = results[0];
 			activeStalls   = results[1];
 			stallPins      = results[2];
@@ -164,12 +182,12 @@
 				isSuspended = userProfile?.is_suspended ?? false;
 				isYataijin = userProfile?.is_yataijin === true;
 				myMenuItems = results[7] ?? [];
-				allReservations = await getMyReservations(currentUser.id);
+				allReservations = await withTimeout(getMyReservations(currentUser.id));
 
 				if (userProfile?.owners || userProfile?.operators) {
-					providerStats = await getMyProviderMonthlyStats(currentUser.id);
+					providerStats = await withTimeout(getMyProviderMonthlyStats(currentUser.id));
 				} else {
-					monthlySalesItems = await getMySalesThisMonth(currentUser.id);
+					monthlySalesItems = await withTimeout(getMySalesThisMonth(currentUser.id));
 				}
 
 				// Stripe 与信確保完了後の処理（Auth & Capture フロー）
@@ -205,40 +223,73 @@
 					}
 				}
 			}
+			if (!isDestroyed) {
+				updateMarkers(mapInstance);
+				startRealtime();
+			}
 		} catch (e) {
 			console.error('DB fetch error:', e);
-			fetchError = e.message.includes('未設定')
-				? 'Supabase 未設定: .env の設定を確認してください'
-				: 'データの取得に失敗しました';
+			fetchError = '屋台・予約情報を読み込めませんでした。時間をおいて再読み込みしてください。';
 		} finally {
 			isLoading = false;
 		}
+	}
 
+	async function initializeMap() {
 		try {
 			const L = (await import('leaflet')).default;
+			if (isDestroyed) return;
 			leafletLib = L;
 			mapInstance = L.map(mapContainer, {
 				center: KSU_CENTER,
 				zoom: 15,
 				zoomControl: false,
-				attributionControl: false,
+				attributionControl: true,
 				// スマホでの意図しないスクロール対策
 				tap: false,
 				tapTolerance: 15,
 				bounceAtZoomLimits: false
 			});
-			L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-				subdomains: 'abcd',
-				maxZoom: 19
-			}).addTo(mapInstance);
+			mapInstance.attributionControl.setPosition('topleft');
+			// タイルレイヤーは環境変数で切り替え可能にする
+			// キー不要の OpenStreetMap を標準にし、既存の明示設定も維持する。
+			const tileProvider = import.meta.env.VITE_MAP_TILE_PROVIDER || 'osm';
+			const osmAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+			if (tileProvider === 'carto_light') {
+				L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+					subdomains: 'abcd',
+					maxZoom: 19,
+					attribution: `${osmAttribution} &copy; <a href="https://carto.com/attributions">CARTO</a>`
+				}).addTo(mapInstance);
+			} else if (tileProvider === 'carto_possibly_keyed') {
+				// もし API キーが必要な場合は VITE_CARTO_API_KEY を使う
+				const cartoKey = import.meta.env.VITE_CARTO_API_KEY || '';
+				const url = cartoKey
+					? `https://api.mapbox.com/styles/v1/mapbox/light-v10/tiles/{z}/{x}/{y}?access_token=${cartoKey}`
+					: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+				L.tileLayer(url, {
+					maxZoom: 19,
+					attribution: cartoKey
+						? `${osmAttribution} &copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>`
+						: osmAttribution
+				}).addTo(mapInstance);
+			} else {
+				L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+					maxZoom: 19,
+					attribution: osmAttribution
+				}).addTo(mapInstance);
+			}
 			addExperimentOverlay(L, mapInstance);
 			updateMarkers(mapInstance);
 		} catch (e) {
 			console.error('Map Load Error:', e);
+			mapError = '地図を読み込めませんでした。再読み込みしてください。';
 		}
+	}
 
+	function startRealtime() {
 		// ── Supabase Realtime: 屋台ステータス変化を自動反映 ──
-		const realtimeChannel = supabase
+		realtimeChannel = supabase
 			.channel('map-realtime')
 			.on('postgres_changes', { event: '*', schema: 'public', table: 'stall_specs' }, async () => {
 				[activeStalls, stallPins, availableStallsList] = await Promise.all([
@@ -264,9 +315,7 @@
 				if (mapInstance) updateMarkers(mapInstance);
 			})
 			.subscribe();
-
-		return () => { supabase.removeChannel(realtimeChannel); };
-	});
+	}
 
 	// ── 実証実験エリア（京都産業大学） ──
 	const KSU_CENTER = [35.0703, 135.7585];
@@ -368,7 +417,7 @@
 	}
 
 	function updateMarkers(map) {
-		if (!map || !leafletLib) return;
+		if (isDestroyed || !map || !leafletLib) return;
 		const L = leafletLib;
 
 		markers.forEach((m) => map.removeLayer(m));
@@ -1053,13 +1102,16 @@
 			<div class="map-canvas" bind:this={mapContainer}></div>
 			<!-- スマホ: タッチ操作はLeafletに委譲（touch-action: noneで制御） -->
 
-			{#if isLoading}
+			{#if mapError || fetchError}
+				<div class="map-overlay error" role="alert">
+					<p>{mapError || fetchError}</p>
+					<button class="map-retry-btn" onclick={() => window.location.reload()}>再読み込み</button>
+				</div>
+			{:else if isLoading}
 				<div class="map-overlay">
 					<div class="loading-spinner"></div>
 					<p>データを読み込み中…</p>
 				</div>
-			{:else if fetchError}
-				<div class="map-overlay error"><p>{fetchError}</p></div>
 			{:else if mapMode === 'available' && availableSpaces.length === 0 && stallPins.length === 0}
 				<div class="map-overlay info"><p>現在登録されているスペース・屋台はありません</p></div>
 			{:else if mapMode === 'active' && activeStalls.length === 0}
@@ -1067,7 +1119,7 @@
 			{/if}
 
 			<!-- 屋台人ゲート: 未登録は貸出可能屋台を閲覧不可 -->
-			{#if !isLoading && mapMode === 'available' && !isYataijin}
+			{#if !isLoading && !fetchError && !mapError && mapMode === 'available' && !isYataijin}
 				<div class="yataijin-gate">
 					<div class="yataijin-card">
 						<span class="yg-badge"><Icon name="yatai" size={26} /></span>
@@ -1876,6 +1928,7 @@
 	:global(.leaflet-control-zoom) { border: none !important; box-shadow: 0 2px 10px rgba(0,0,0,0.15) !important; border-radius: 10px !important; overflow: hidden; }
 	:global(.leaflet-control-zoom a) { border: none !important; color: var(--ink) !important; font-weight: 600 !important; width: 36px !important; height: 36px !important; line-height: 36px !important; }
 	:global(.leaflet-bottom.leaflet-right) { bottom: 80px !important; right: 10px !important; }
+	.map-canvas :global(.leaflet-top.leaflet-left) { top: 72px; }
 
 	.app-container {
 		width: 100%; height: 100svh;
@@ -1926,7 +1979,20 @@
 		display: flex; align-items: center; gap: 10px;
 		font-size: 0.9rem; color: var(--ink-2); z-index: 800; white-space: nowrap;
 	}
-	.map-overlay.error { background: rgba(184, 92, 43, 0.08); color: #dc2626; }
+	.map-overlay.error {
+		bottom: calc(136px + env(safe-area-inset-bottom, 0));
+		background: #fff; color: #b91c1c;
+		flex-direction: column; gap: 8px;
+		width: 360px; max-width: calc(100% - 32px);
+		box-sizing: border-box; white-space: normal;
+		text-align: center; line-height: 1.6;
+	}
+	.map-overlay.error p { margin: 0; }
+	.map-retry-btn {
+		min-height: 44px; padding: 8px 16px;
+		border: 1px solid currentColor; border-radius: 8px;
+		background: #fff; color: inherit; font: inherit; cursor: pointer;
+	}
 	.loading-spinner {
 		width: 18px; height: 18px; border: 2px solid var(--line-strong);
 		border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;
