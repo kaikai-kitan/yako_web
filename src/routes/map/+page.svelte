@@ -250,12 +250,19 @@
 				tapTolerance: 15,
 				bounceAtZoomLimits: false
 			});
-			mapInstance.attributionControl.setPosition('topleft');
+			mapInstance.attributionControl.setPrefix(false);
+			mapInstance.attributionControl.setPosition('bottomright');
 			// タイルレイヤーは環境変数で切り替え可能にする
-			// キー不要の OpenStreetMap を標準にし、既存の明示設定も維持する。
-			const tileProvider = import.meta.env.VITE_MAP_TILE_PROVIDER || 'osm';
+			// 淡色地図を標準にし、既存の明示設定も維持する。
+			const tileProvider = import.meta.env.VITE_MAP_TILE_PROVIDER || 'gsi_light';
 			const osmAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-			if (tileProvider === 'carto_light') {
+			if (tileProvider === 'gsi_light') {
+				mapInstance.setMinZoom(5);
+				mapInstance.setMaxZoom(19);
+				const { addLightBasemap } = await import('$lib/maps/light-basemap.js');
+				await addLightBasemap(L, mapInstance, () => isDestroyed);
+				if (isDestroyed) return;
+			} else if (tileProvider === 'carto_light') {
 				L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
 					subdomains: 'abcd',
 					maxZoom: 19,
@@ -333,8 +340,8 @@
 				[lat + dLat, lng + dLng], [lat + dLat, lng - dLng]
 			]
 		], {
-			fillColor: 'var(--ink-2)',
-			fillOpacity: 0.48,
+			fillColor: '#ffffff',
+			fillOpacity: 0.12,
 			stroke: false,
 			interactive: false
 		}).addTo(map);
@@ -343,14 +350,14 @@
 		const areaCircle = L.circle(KSU_CENTER, {
 			radius: ACTIVE_RADIUS_M,
 			color: '#3b82f6',
-			weight: 2.5,
+			weight: 1.5,
 			fillColor: '#3b82f6',
-			fillOpacity: 0.14,
+			fillOpacity: 0.05,
 			interactive: true
 		}).addTo(map);
 		areaCircle.on('click', () => goReserveFromArea('京都産業大学（実証実験エリア）'));
-		areaCircle.on('mouseover', () => areaCircle.setStyle({ fillOpacity: 0.22 }));
-		areaCircle.on('mouseout', () => areaCircle.setStyle({ fillOpacity: 0.14 }));
+		areaCircle.on('mouseover', () => areaCircle.setStyle({ fillOpacity: 0.10 }));
+		areaCircle.on('mouseout', () => areaCircle.setStyle({ fillOpacity: 0.05 }));
 
 		// 実証実験エリアバッジ
 		L.marker([lat + 0.0056, lng], {
@@ -363,23 +370,6 @@
 			interactive: false,
 			zIndexOffset: 1000
 		}).addTo(map);
-
-		// "エリア準備中" ラベル（グレーゾーン内の複数箇所）
-		[
-			[lat - 0.020, lng + 0.004],
-			[lat + 0.004, lng + 0.020],
-			[lat + 0.004, lng - 0.020]
-		].forEach(([plat, plng]) => {
-			L.marker([plat, plng], {
-				icon: L.divIcon({
-					className: '',
-					html: '<div class="ksu-badge-prep">エリア準備中</div>',
-					iconSize: [112, 28],
-					iconAnchor: [56, 14]
-				}),
-				interactive: false
-			}).addTo(map);
-		});
 	}
 
 	// 屋台アイコン（提灯絵文字の代わり。屋台＝ひさし・カウンター・車輪のラインアイコン）
@@ -1910,19 +1900,6 @@
 		opacity: 0.8;
 		display: block;
 	}
-	:global(.ksu-badge-prep) {
-		background: rgba(254, 242, 242, 0.94);
-		border: 1.5px solid #ef9a9a;
-		color: #c0392b;
-		border-radius: 20px;
-		padding: 5px 14px;
-		font-size: 0.72rem;
-		font-weight: 600;
-		white-space: nowrap;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
-		pointer-events: none;
-		letter-spacing: 0.03em;
-	}
 
 	/* Leaflet ズームコントロールのスタイル調整 */
 	:global(.leaflet-control-zoom) { border: none !important; box-shadow: 0 2px 10px rgba(0,0,0,0.15) !important; border-radius: 10px !important; overflow: hidden; }
@@ -1935,6 +1912,12 @@
 		display: flex; flex-direction: column;
 		background: var(--paper); position: relative; overflow: hidden;
 	}
+
+	.map-canvas :global(.leaflet-control-attribution) {
+		font-size: 10px; line-height: 1.5; padding: 2px 6px;
+		background: rgba(255, 255, 255, 0.88); color: #65706c; border-radius: 5px 0 0 0;
+	}
+	.map-canvas :global(.leaflet-control-attribution a) { color: #53645d; }
 
 	/* z-index はすべて Leaflet のマーカーペイン(600)より高い 800+ に統一 */
 	.app-header { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 800; }
