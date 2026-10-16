@@ -10,7 +10,7 @@
 		getAvailableSpaces,
 		getAvailableStallPins,
 		getAvailableStallsList,
-		createReservation,
+		startRentalReservation,
 		getUserReservations,
 		getMyReservations,
 		completeRental,
@@ -611,44 +611,16 @@
 			const startDatetime = `${reservationForm.startDate}T${reservationForm.startTime}:00`;
 			const endDatetime   = `${reservationForm.endDate}T${reservationForm.endTime}:00`;
 
-			// 予約時点の料金をロック（スペース・屋台それぞれ）
-			const selectedSpace = availableSpaces.find((s) => s.id === reservationForm.spaceId);
-			const selectedStallForRes = availableStallsList.find((s) => s.id === reservationForm.stallId);
-			const lockedSpaceFee = selectedSpace?.price ?? 0;
-			const lockedStallFee = reservationMode === 'space-first' && !needsStall ? 0 : (selectedStallForRes?.rental_fee ?? 0);
-
-			// DB に予約を作成（ID を受け取る）
-			const reservationId = await createReservation(currentUser.id, {
+			// 予約の作成と料金の確定はサーバー側で行う（ブラウザから料金は送らない）
+			const { url, free } = await startRentalReservation({
 				rentalSpaceId: reservationForm.spaceId || null,
 				stallId: (reservationMode === 'space-first' && !needsStall)
 					? null
 					: (reservationForm.stallId || null),
 				startDatetime, endDatetime,
 				plannedItems: plannedItemsJson,
-				lockedSpaceFee,
-				lockedStallFee,
 				selectedUseCases: reservationUseCases
 			});
-
-			// Stripe 与信確保セッションを作成（Auth & Capture フロー）
-			const origin = window.location.origin;
-			const checkoutRes = await fetch('/api/create-rental-checkout', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					reservationId,
-					userId: currentUser.id,
-					successUrl: `${origin}/map?rental_authorized=${reservationId}&session_id={CHECKOUT_SESSION_ID}`,
-					cancelUrl: `${origin}/map`
-				})
-			});
-
-			if (!checkoutRes.ok) {
-				const d = await checkoutRes.json().catch(() => ({}));
-				throw new Error(d.message ?? 'チェックアウトセッションの作成に失敗しました');
-			}
-
-			const { url, free } = await checkoutRes.json();
 
 			if (free) {
 				// 無料レンタル: 与信不要なのでそのまま完了

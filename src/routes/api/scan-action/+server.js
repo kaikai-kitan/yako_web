@@ -1,3 +1,4 @@
+import { isRentalConfirmed, RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
 import Stripe from 'stripe';
 import { env } from '$env/dynamic/private';
 import { json, error } from '@sveltejs/kit';
@@ -73,17 +74,16 @@ export async function POST({ request }) {
 
 	// 3. 該当する予約を検索（pending or active）
 	const filterCol = type === 'space' ? 'rental_space_id' : 'stall_id';
-	const { data: reservation, error: resErr } = await supabase
+	const { data: reservations, error: resErr } = await supabase
 		.from('reservations')
-		.select('id, status, stripe_payment_intent_id')
+		.select(`id, status, ${RENTAL_PAYMENT_FIELDS}`)
 		.eq('user_id', user.id)
 		.eq(filterCol, id)
 		.in('status', ['pending', 'active'])
-		.order('start_datetime', { ascending: true })
-		.limit(1)
-		.maybeSingle();
+		.order('start_datetime', { ascending: true });
 
 	if (resErr) throw error(500, resErr.message);
+	const reservation = reservations?.find(isRentalConfirmed);
 	if (!reservation) {
 		throw error(404, 'この場所の有効な予約が見つかりません。予約状況をご確認ください。');
 	}

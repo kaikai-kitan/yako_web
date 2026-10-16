@@ -1,3 +1,4 @@
+import { isRentalConfirmed, RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
 import Stripe from 'stripe';
 import { env } from '$env/dynamic/private';
 import { json, error } from '@sveltejs/kit';
@@ -22,7 +23,7 @@ export async function POST({ request }) {
 	// 予約を取得（pending のみ対象）
 	const { data: reservation, error: resErr } = await supabase
 		.from('reservations')
-		.select('id, user_id, status, stripe_payment_intent_id')
+		.select(`id, user_id, status, ${RENTAL_PAYMENT_FIELDS}`)
 		.eq('id', reservationId)
 		.single();
 
@@ -31,6 +32,8 @@ export async function POST({ request }) {
 	if (reservation.status !== 'pending') {
 		throw error(400, `この予約はチェックインできません（ステータス: ${reservation.status}）`);
 	}
+
+	if (!isRentalConfirmed(reservation)) throw error(402, 'カードの確認が未完了です。予約手続きを完了してください。');
 
 	const piId = reservation.stripe_payment_intent_id;
 

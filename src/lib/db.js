@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '$lib/supabase.js';
+import { isRentalConfirmed, isUnfinishedCheckout, readRentalRows, RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
 
 function requireSupabase() {
 	if (!isSupabaseConfigured) {
@@ -335,47 +336,51 @@ export async function getMyReservations(userId) {
 	// ユーザー画面には直近1ヶ月以内の予約のみ表示する。
 	// （DB からは削除せず、内部監査用に保持。表示だけを絞る）
 	const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-	const { data, error } = await supabase
-		.from('reservations')
-		.select(`
-			id, rental_space_id, stall_id, start_datetime, end_datetime, planned_items, status, created_at,
-			rental_spaces ( name, address ),
-			stall_specs ( stall_name )
-		`)
+	const { data, error } = await readRentalRows(
+		(fields) => supabase.from('reservations').select(fields)
 		.eq('user_id', userId)
 		.gte('start_datetime', cutoff)
-		.order('start_datetime', { ascending: false });
+		.order('start_datetime', { ascending: false }),
+		`
+			id, rental_space_id, stall_id, start_datetime, end_datetime, planned_items, status, created_at, ${RENTAL_PAYMENT_FIELDS},
+			rental_spaces ( name, address ),
+			stall_specs ( stall_name )
+		`
+	);
 	if (error) throw error;
-	return data ?? [];
+	return (data ?? []).filter((r) => !isUnfinishedCheckout(r));
 }
 
 /** 現在予約が入っている屋台IDの一覧を取得（ダブルブッキング表示用） */
 export async function getBookedStallIds() {
 	requireSupabase();
-	const { data } = await supabase
-		.from('reservations')
-		.select('stall_id')
+	const { data, error } = await readRentalRows(
+		(fields) => supabase.from('reservations').select(fields)
 		.or('status.eq.pending,status.eq.active,status.is.null')
-		.not('stall_id', 'is', null);
-	return new Set((data ?? []).map((r) => r.stall_id).filter(Boolean));
+		.not('stall_id', 'is', null),
+		`stall_id, status, ${RENTAL_PAYMENT_FIELDS}`
+	);
+	if (error) throw error;
+	return new Set((data ?? []).filter(isRentalConfirmed).map((r) => r.stall_id).filter(Boolean));
 }
 
 /** ログイン中ユーザーの進行中予約を取得（pending/active） */
 export async function getUserReservations(userId) {
 	requireSupabase();
-	const { data, error } = await supabase
-		.from('reservations')
-		.select(`
-			id, start_datetime, end_datetime, status, planned_items,
+	const { data, error } = await readRentalRows(
+		(fields) => supabase.from('reservations').select(fields)
+		.eq('user_id', userId)
+		.or('status.eq.pending,status.eq.active,status.is.null')
+		.order('start_datetime', { ascending: true }),
+		`
+			id, start_datetime, end_datetime, status, planned_items, ${RENTAL_PAYMENT_FIELDS},
 			rental_space_id, stall_id,
 			rental_spaces ( id, name, lat, lng ),
 			stall_specs ( id, stall_name )
-		`)
-		.eq('user_id', userId)
-		.or('status.eq.pending,status.eq.active,status.is.null')
-		.order('start_datetime', { ascending: true });
+		`
+	);
 	if (error) throw error;
-	return data ?? [];
+	return (data ?? []).filter(isRentalConfirmed);
 }
 
 /** 今月の品目別販売個数を取得（屋台利用者用） */
@@ -436,24 +441,28 @@ export async function getMyProviderMonthlyStats(userId) {
 	return { count, grossRevenue, netRevenue };
 }
 
-/** 予約をキャンセル */
+/** 予約をキャンセル（サーバー側で所有者確認・ペナルティ計算を行う） */
 export async function cancelReservation(reservationId) {
 	requireSupabase();
-	const { error } = await supabase
-		.from('reservations')
-		.update({ status: 'cancelled' })
-		.eq('id', reservationId);
-	if (error) throw error;
+	const { data: { session } } = await supabase.auth.getSession();
+	const response = await fetch('/api/cancel-rental', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+		body: JSON.stringify({ reservationId })
+	});
+	if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message ?? 'キャンセルできませんでした');
 }
 
 /** 貸出開始（pending → active） */
 export async function startRental(reservationId) {
 	requireSupabase();
-	const { error } = await supabase
-		.from('reservations')
-		.update({ status: 'active' })
-		.eq('id', reservationId);
-	if (error) throw error;
+	const { data: { session } } = await supabase.auth.getSession();
+	const response = await fetch('/api/checkin-rental', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+		body: JSON.stringify({ reservationId })
+	});
+	if (!response.ok) throw new Error((await response.json()).message ?? 'チェックインできませんでした');
 }
 
 /** QRスキャンによる貸出開始（スペースIDからpending予約を検索してactive化） */
@@ -649,45 +658,27 @@ export async function getMonthlyRevenue(userId) {
 // 予約
 // =====================================================
 
-/** 予約を作成（屋台のダブルブッキングチェック付き） */
-export async function createReservation(
-	userId,
-	{ rentalSpaceId, stallId, startDatetime, endDatetime, plannedItems, lockedSpaceFee, lockedStallFee, selectedUseCases }
+/**
+ * 予約を作成し、決済（カードの与信確保）を開始する。
+ * 予約の作成・料金の確定・屋台の空き確認はすべてサーバー側で行う。
+ * 戻り値: { reservationId, free, url }
+ */
+export async function startRentalReservation(
+	{ rentalSpaceId, stallId, startDatetime, endDatetime, plannedItems, selectedUseCases }
 ) {
 	requireSupabase();
-	// 屋台がすでに他の予約と重複していないか確認
-	if (stallId) {
-		const { data: existing } = await supabase
-			.from('reservations')
-			.select('id')
-			.eq('stall_id', stallId)
-			.or('status.eq.pending,status.eq.active,status.is.null')
-			.limit(1);
-		if (existing && existing.length > 0) {
-			throw new Error('この屋台はすでに予約が入っています。別の屋台をお選びください。');
-		}
-	}
-	const base = {
-		user_id: userId,
-		rental_space_id: rentalSpaceId || null,
-		stall_id: stallId || null,
-		start_datetime: startDatetime,
-		end_datetime: endDatetime,
-		planned_items: plannedItems || null,
-		locked_space_fee: lockedSpaceFee ?? 0,
-		locked_stall_fee: lockedStallFee ?? 0
-	};
-	const withUseCases = Array.isArray(selectedUseCases) && selectedUseCases.length > 0
-		? { ...base, selected_use_cases: selectedUseCases }
-		: base;
-
-	let { data, error } = await supabase.from('reservations').insert(withUseCases).select('id').single();
-	// v24（selected_use_cases 列）未適用環境では列なしで再試行
-	if (error && /selected_use_cases/.test(error.message ?? '')) {
-		({ data, error } = await supabase.from('reservations').insert(base).select('id').single());
-	}
-	if (error) throw error;
-	return data.id;
+	const { data: { session } } = await supabase.auth.getSession();
+	if (!session?.access_token) throw new Error('ログインが必要です');
+	const response = await fetch('/api/create-rental-checkout', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+		body: JSON.stringify({
+			reservation: { rentalSpaceId, stallId, startDatetime, endDatetime, plannedItems, selectedUseCases }
+		})
+	});
+	const body = await response.json().catch(() => ({}));
+	if (!response.ok) throw new Error(body.message ?? '予約の作成に失敗しました');
+	return body;
 }
 
 // =====================================================

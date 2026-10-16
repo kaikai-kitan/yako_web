@@ -37,6 +37,7 @@ Supabase ダッシュボード → **SQL Editor** に各ファイルの内容を
 | 15 | `supabase_migration_v15.sql` | 夜行人ネットワーク（人脈グラフ） |
 | 16 | `supabase_migration_v16.sql` | 信用スコアの獲得（返却ボーナス + 営業レビュー） |
 | 17 | `supabase_migration_v17.sql` | 夜行人プロフィールの名前変更を1回に制限 |
+| 26 | `supabase_migration_v26.sql` | 予約の作成をサーバー限定にし、ブラウザからの不正な予約の書き換えを禁止 |
 
 > 次に追加する場合は `supabase_migration_v18.sql` としてこのフォルダに置き、上の表に1行追記してください。
 
