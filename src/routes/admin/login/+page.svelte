@@ -68,7 +68,7 @@
 	}
 	.title {
 		font-size: 1.2rem;
-		font-weight: 700;
+		font-weight: 500;
 		margin: 0 0 24px;
 		text-align: center;
 		color: var(--ink);
@@ -102,7 +102,7 @@
 		border: none;
 		border-radius: 8px;
 		font-size: 0.95rem;
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 	}
 	.btn:disabled {

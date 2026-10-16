@@ -107,7 +107,7 @@
 	.page {
 		min-height: 100svh;
 		background: var(--surface-sunk);
-		font-family: sans-serif;
+		font-family: var(--font-gothic);
 		padding-bottom: 60px;
 	}
 
@@ -138,7 +138,7 @@
 	.back-link { font-size: 0.88rem; color: #5a6e99; text-decoration: none; }
 
 	.stall-name {
-		font-size: 1.4rem; font-weight: 800; color: var(--ink);
+		font-size: 1.4rem; font-weight: 500; color: var(--ink);
 		margin: 0 0 16px; line-height: 1.3;
 	}
 
@@ -149,8 +149,8 @@
 		border: 1px solid var(--surface-sunk);
 	}
 	.info-item { display: flex; justify-content: space-between; align-items: baseline; }
-	.info-label { font-size: 0.78rem; color: var(--ink-3); font-weight: 600; }
-	.info-value { font-size: 0.88rem; color: var(--ink); font-weight: 600; text-align: right; max-width: 60%; }
+	.info-label { font-size: 0.78rem; color: var(--ink-3); font-weight: 500; }
+	.info-value { font-size: 0.88rem; color: var(--ink); font-weight: 500; text-align: right; max-width: 60%; }
 
 	.operator-row {
 		display: flex; align-items: center; gap: 12px;
@@ -167,6 +167,6 @@
 		background: var(--surface-sunk); font-size: 1.4rem;
 	}
 	.op-info { display: flex; flex-direction: column; gap: 2px; }
-	.op-name { font-size: 0.9rem; font-weight: 700; color: var(--ink); }
+	.op-name { font-size: 0.9rem; font-weight: 500; color: var(--ink); }
 	.op-bio { font-size: 0.78rem; color: var(--ink-2); line-height: 1.5; }
 </style>

@@ -108,8 +108,8 @@
 		width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--line);
 		border-radius: var(--r-lg); padding: 40px 32px; text-align: center; box-shadow: var(--shadow-2);
 	}
-	.kicker { font-size: 0.68rem; letter-spacing: 0.4em; color: var(--ink-3); margin: 0 0 12px; font-weight: 600; }
-	.title { font-family: "Zen Antique", serif; font-size: 1.3rem; letter-spacing: 0.06em; color: var(--ink); margin: 0 0 16px; line-height: 1.5; font-weight: 600; }
+	.kicker { font-size: 0.68rem; letter-spacing: 0.4em; color: var(--ink-3); margin: 0 0 12px; font-weight: 500; }
+	.title { font-family: var(--font-gothic); font-size: 1.3rem; letter-spacing: 0.06em; color: var(--ink); margin: 0 0 16px; line-height: 1.5; font-weight: 500; }
 	.lead { font-size: 0.9rem; color: var(--ink-2); line-height: 1.7; margin: 0; }
 
 	.stars { display: flex; justify-content: center; gap: 8px; margin: 26px 0 22px; }
@@ -122,7 +122,7 @@
 
 	.comment {
 		width: 100%; box-sizing: border-box; border: 1px solid var(--line-strong); border-radius: var(--r-md);
-		padding: 11px 13px; font-size: 0.92rem; font-family: inherit; color: var(--ink); background: var(--surface);
+		padding: 11px 13px; font-size: 0.92rem; font-family: var(--font-gothic); color: var(--ink); background: var(--surface);
 		resize: vertical; transition: border-color 0.15s, box-shadow 0.15s;
 	}
 	.comment:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(184, 92, 43, 0.1); }
@@ -130,7 +130,7 @@
 	.err { color: var(--accent-deep); font-size: 0.84rem; margin: 12px 0 0; font-weight: 500; }
 	.submit {
 		width: 100%; margin-top: 16px; padding: 12px; border: none; border-radius: var(--r-md);
-		background: var(--accent); color: white; font-family: inherit; font-size: 0.95rem;
+		background: var(--accent); color: white; font-family: var(--font-gothic); font-size: 0.95rem;
 		letter-spacing: 0.02em; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
 	}
 	.submit:hover:not(:disabled) { background: var(--accent-deep); transform: translateY(-1px); }

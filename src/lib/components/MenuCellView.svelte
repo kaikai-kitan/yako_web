@@ -145,7 +145,7 @@
 		font-size: 0.78rem;
 		white-space: nowrap;
 		color: var(--accent);
-		font-weight: 700;
+		font-weight: 500;
 	}
 
 	/* ライトボックス */
@@ -199,7 +199,7 @@
 
 	.lightbox-name {
 		font-size: 1rem;
-		font-weight: 600;
+		font-weight: 500;
 	}
 
 	.lightbox-price {

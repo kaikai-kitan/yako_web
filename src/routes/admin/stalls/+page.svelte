@@ -81,11 +81,11 @@
 </div>
 
 <style>
-	.page { min-height: 100svh; background: var(--surface-sunk); font-family: sans-serif; padding-bottom: 60px; }
+	.page { min-height: 100svh; background: var(--surface-sunk); font-family: var(--font-gothic); padding-bottom: 60px; }
 	.top-bar { position: sticky; top: 0; z-index: 10; background: rgba(250,248,245,0.97); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 16px; padding: 12px 20px; }
 	.back-link { font-size: 0.82rem; color: var(--ink-2); text-decoration: none; }
 	.back-link:hover { color: var(--ink); }
-	.page-title { font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0; }
+	.page-title { font-size: 1rem; font-weight: 500; color: var(--ink); margin: 0; }
 	.toast { margin: 12px 20px; padding: 10px 16px; border-radius: 10px; font-size: 0.88rem; }
 	.toast.success { background: #ecfdf5; color: #14532d; border: 1px solid #bbf7d0; }
 	.toast.error { background: #fef2f2; color: var(--accent-deep); border: 1px solid #fecaca; }
@@ -97,12 +97,12 @@
 
 	.stall-card { background: #fff; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); padding: 16px; margin-bottom: 12px; border: 1px solid var(--surface-sunk); }
 	.stall-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-	.stall-name { font-size: 0.95rem; font-weight: 700; color: var(--ink); }
+	.stall-name { font-size: 0.95rem; font-weight: 500; color: var(--ink); }
 	.stall-owner { font-size: 0.78rem; color: var(--ink-3); }
 	.caps { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
 	.cap-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.86rem; color: var(--ink); cursor: pointer; }
 	.cap-toggle input { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
-	.save-btn { padding: 8px 18px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 0.84rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+	.save-btn { padding: 8px 18px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 0.84rem; font-weight: 500; cursor: pointer; font-family: var(--font-gothic); }
 	.save-btn:hover:not(:disabled) { background: var(--accent-deep); }
 	.save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

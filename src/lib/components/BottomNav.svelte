@@ -1,13 +1,12 @@
 <!--
 	YATAKARI アプリのボトムナビ（5枠）。
-	左から: マップ / 夜行人ネットワーク / オンラインストア / マイページ / ・・・（メニュー）
+	左から: マップ / ネットワーク / オンラインストア / マイページ / ・・・（メニュー）
 	「・・・」に お問い合わせ と ログイン/ログアウト（セッションで切替）を内包。
 -->
 <script>
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
 	import { session } from '$lib/auth.js';
 	import { signOut } from '$lib/db.js';
 	import Icon from '$lib/components/Icon.svelte';
@@ -15,36 +14,10 @@
 	let path = $derived($page.url.pathname);
 	let moreOpen = $state(false);
 
-	// iOS Safari 等でアドレスバー（下部ツールバー）が開くと position:fixed;bottom:0 は
-	// レイアウトビューポート下端＝ツールバーの裏に潜り込み、バーが見切れる。
-	// visualViewport から「可視領域の下に隠れている量」を算出し、その分だけ持ち上げて
-	// 常に可視領域の最下部へ貼り付ける。未対応環境では 0（＝通常の bottom:0）。
-	onMount(() => {
-		const vv = window.visualViewport;
-		if (!vv) return;
-		let raf = 0;
-		const apply = () => {
-			raf = 0;
-			const layoutH = document.documentElement.clientHeight;
-			const hidden = layoutH - (vv.height + vv.offsetTop);
-			const offset = hidden > 1 ? Math.round(hidden) : 0;
-			document.documentElement.style.setProperty('--bn-offset', offset + 'px');
-		};
-		const schedule = () => { if (!raf) raf = requestAnimationFrame(apply); };
-		apply();
-		vv.addEventListener('resize', schedule);
-		vv.addEventListener('scroll', schedule);
-		return () => {
-			vv.removeEventListener('resize', schedule);
-			vv.removeEventListener('scroll', schedule);
-			if (raf) cancelAnimationFrame(raf);
-			document.documentElement.style.removeProperty('--bn-offset');
-		};
-	});
 
 	const tabs = [
 		{ label: 'マップ',           icon: 'map',          href: `${base}/map`,              match: (p) => p.startsWith('/map') || p.startsWith('/yatakari') },
-		{ label: '夜行人ネットワーク', icon: 'share',      href: `${base}/network`,          match: (p) => p.startsWith('/directory') || p.startsWith('/network') || p.startsWith('/groups') },
+		{ label: 'ネットワーク',     icon: 'share',           href: `${base}/network`,          match: (p) => p.startsWith('/directory') || p.startsWith('/network') || p.startsWith('/groups') },
 		{ label: 'オンラインストア', icon: 'shopping-bag', href: `${base}/shop`,             match: (p) => p.startsWith('/shop') },
 		{ label: 'マイページ',       icon: 'user',         href: `${base}/mypage/dashboard`, match: (p) => p.startsWith('/mypage') }
 	];
@@ -81,7 +54,7 @@
 		{@const active = t.match(path)}
 		<a href={t.href} class="bn-item" class:active aria-current={active ? 'page' : undefined}>
 			<Icon name={t.icon} size={22} />
-			<span class="bn-label">{#if t.label === '夜行人ネットワーク'}夜行人<wbr />ネットワーク{:else}{t.label}{/if}</span>
+			<span class="bn-label">{#if t.label === 'オンラインストア'}オンライン<br />ストア{:else}{t.label}{/if}</span>
 		</a>
 	{/each}
 	<button class="bn-item more-btn" class:active={moreOpen} onclick={() => (moreOpen = !moreOpen)} aria-haspopup="menu" aria-expanded={moreOpen}>
@@ -96,54 +69,54 @@
 		left: 0; right: 0; bottom: 0;
 		z-index: 60;
 		display: grid;
-		grid-template-columns: repeat(5, 1fr);
-		/* 不透明背景を基本にする。iOS Safari では position:fixed + backdrop-filter で
-		   バーが消える/点滅する不具合があるため、半透明+ブラーは非対応時に隠れないよう
-		   下の @supports だけで適用する */
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		height: var(--bottom-nav-height);
+		box-sizing: border-box;
 		background: #fffdf7;
 		border-top: 1px solid var(--line);
-		/* ホームインジケータ分の余白（viewport-fit=cover で有効化） */
-		padding-bottom: env(safe-area-inset-bottom, 0);
+		padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 		box-shadow: 0 -2px 16px rgba(60, 45, 25, 0.06);
-		/* iOS でのアドレスバー開閉に追従して常に可視領域の最下部へ貼り付ける
-		   （JS が visualViewport から算出。未対応環境では 0） */
-		bottom: var(--bn-offset, 0px);
+		/* スクロール（特に下→最上部への戻り）でバーが一瞬ずれる対策:
+		   ・JS で位置を書き換えない（visualViewport 追従は描画が1フレーム遅れて揺れの原因になる）
+		   ・独立した合成レイヤーにして、ページのスクロール/再描画に引きずられないようにする
+		   ・高さは固定値（ラベルの折返しや読み込み中の変化で高さが変わらない） */
+		transform: translate3d(0, 0, 0);
+		-webkit-backface-visibility: hidden;
+		backface-visibility: hidden;
+		will-change: transform;
 	}
-	@supports ((-webkit-backdrop-filter: blur(10px)) or (backdrop-filter: blur(10px))) {
-		.bottom-nav {
-			background: rgba(255, 253, 247, 0.9);
-			-webkit-backdrop-filter: blur(10px);
-			backdrop-filter: blur(10px);
-		}
-	}
+
 	.bn-item {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		gap: 4px;
-		min-height: 56px;
-		padding: 8px 2px;
+		min-height: 0;
+		min-width: 0;
+		height: var(--bottom-nav-content-height);
+		box-sizing: border-box;
+		padding: 6px 2px;
 		text-decoration: none;
 		color: var(--ink-3);
 		font-size: 0.62rem;
-		font-weight: 600;
+		font-weight: 500;
 		letter-spacing: 0;
 		transition: color 0.15s;
 		-webkit-tap-highlight-color: transparent;
 	}
-	.more-btn { background: none; border: none; cursor: pointer; font-family: inherit; }
+	.more-btn { background: none; border: none; cursor: pointer; font-family: var(--font-gothic); }
 	.bn-item :global(.icon) { color: currentColor; flex-shrink: 0; }
 	.bn-item svg { flex-shrink: 0; }
 	.bn-item.active { color: var(--accent); }
 	.bn-item:not(.active):hover { color: var(--ink-2); }
-	.bn-label { line-height: 1.2; text-align: center; word-break: keep-all; }
+	.bn-label { line-height: 1.2; height: 2.4em; display: grid; align-content: center; text-align: center; white-space: nowrap; }
 
 	/* 「・・・」メニュー（マップの各種オーバーレイより前面に） */
 	.more-overlay { position: fixed; inset: 0; z-index: 1490; }
 	.more-menu {
 		position: fixed; z-index: 1500; right: 8px;
-		bottom: calc(60px + env(safe-area-inset-bottom, 0));
+		bottom: calc(var(--bottom-nav-height) + 8px);
 		background: var(--surface); border: 1px solid var(--line);
 		border-radius: 14px; box-shadow: 0 6px 28px rgba(60,45,25,0.18);
 		padding: 6px; min-width: 190px; display: flex; flex-direction: column;
@@ -151,9 +124,9 @@
 	.more-item {
 		display: flex; align-items: center; gap: 10px;
 		padding: 12px 14px; border-radius: 9px;
-		font-size: 0.88rem; font-weight: 600; color: var(--ink);
+		font-size: 0.88rem; font-weight: 500; color: var(--ink);
 		text-decoration: none; background: none; border: none; cursor: pointer;
-		font-family: inherit; text-align: left; width: 100%;
+		font-family: var(--font-gothic); text-align: left; width: 100%;
 	}
 	.more-item:hover { background: var(--surface-sunk); }
 	.more-item :global(.icon) { color: var(--ink-2); }

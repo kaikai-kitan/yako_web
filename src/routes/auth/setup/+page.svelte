@@ -143,7 +143,7 @@
 	.logo-img { width: 56px; height: 56px; object-fit: contain; margin: 0 auto 12px; display: block; }
 	.verified {
 		display: inline-flex; align-items: center; gap: 6px;
-		font-size: 0.82rem; font-weight: 600; color: #4a6a3a;
+		font-size: 0.82rem; font-weight: 500; color: #4a6a3a;
 		background: rgba(95, 122, 82, 0.12); border: 1px solid rgba(95, 122, 82, 0.28);
 		padding: 5px 12px; border-radius: 100px; margin-bottom: 14px;
 	}
@@ -153,7 +153,7 @@
 		display: inline-flex; align-items: center; justify-content: center;
 	}
 	.title {
-		font-family: "Zen Antique", serif;
+		font-family: var(--font-gothic);
 		font-size: 1.25rem; letter-spacing: 0.03em; color: var(--ink);
 		margin: 0 0 8px; line-height: 1.45;
 	}
@@ -197,7 +197,7 @@
 	.field-input {
 		display: block; width: 100%; margin-top: 6px;
 		padding: 11px 13px; border: 1px solid var(--line-strong);
-		border-radius: var(--r-md); font-size: 0.95rem; font-family: inherit;
+		border-radius: var(--r-md); font-size: 0.95rem; font-family: var(--font-gothic);
 		box-sizing: border-box; background: var(--surface); color: var(--ink);
 		transition: border-color 0.15s, box-shadow 0.15s;
 	}
@@ -211,8 +211,8 @@
 	.primary-btn {
 		width: 100%; margin-top: 8px; padding: 13px;
 		background: var(--accent); color: #fff; border: none;
-		border-radius: var(--r-md); font-size: 0.98rem; font-weight: 600;
-		font-family: inherit; letter-spacing: 0.02em; cursor: pointer;
+		border-radius: var(--r-md); font-size: 0.98rem; font-weight: 500;
+		font-family: var(--font-gothic); letter-spacing: 0.02em; cursor: pointer;
 		box-shadow: 0 2px 10px rgba(184, 92, 43, 0.25);
 		transition: background 0.15s, transform 0.1s;
 	}

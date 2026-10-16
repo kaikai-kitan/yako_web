@@ -152,10 +152,10 @@
 	.masthead { text-align: center; margin-bottom: 2rem; }
 	.kicker {
 		font-size: 0.72rem; letter-spacing: 0.5em; color: var(--ink-3);
-		margin: 0 0 1rem; padding-left: 0.5em; font-family: "Zen Antique", serif;
+		margin: 0 0 1rem; padding-left: 0.5em; font-family: var(--font-gothic);
 	}
 	.title {
-		font-family: "Zen Antique", "Yu Mincho", serif;
+		font-family: var(--font-gothic);
 		font-size: clamp(1.7rem, 6vw, 2.3rem); font-weight: 500; color: var(--ink);
 		letter-spacing: 0.14em; line-height: 1.4; margin: 0;
 	}
@@ -187,7 +187,7 @@
 	.portal-body { display: flex; flex-direction: column; gap: 4px; position: relative; }
 	.portal-kicker { font-size: 0.66rem; letter-spacing: 0.32em; color: #c9a06a; }
 	.portal-title {
-		font-family: "Zen Antique", serif; font-size: 1.2rem; letter-spacing: 0.12em; color: #f3ece0;
+		font-family: var(--font-gothic); font-size: 1.2rem; letter-spacing: 0.12em; color: #f3ece0;
 	}
 	.portal-desc { font-size: 0.76rem; color: #a99f8f; letter-spacing: 0.04em; }
 	.portal-arrow { margin-left: auto; font-size: 1.3rem; color: #c9a06a; position: relative; }
@@ -195,7 +195,7 @@
 	/* ── セクション見出し ── */
 	.section-head { display: flex; align-items: center; gap: 14px; margin-bottom: 1.4rem; }
 	.section-kicker {
-		font-family: "Zen Antique", serif; font-size: 0.95rem; letter-spacing: 0.2em;
+		font-family: var(--font-gothic); font-size: 0.95rem; letter-spacing: 0.2em;
 		color: var(--ink); white-space: nowrap;
 	}
 	.section-line { flex: 1; height: 1px; background: var(--line-strong); }
@@ -216,11 +216,11 @@
 	.face.placeholder {
 		display: flex; align-items: center; justify-content: center;
 		background: var(--surface-sunk); color: var(--ink-3);
-		font-family: "Zen Antique", serif; font-size: 1.4rem;
+		font-family: var(--font-gothic); font-size: 1.4rem;
 	}
 	.person-body { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 	.person-name {
-		font-family: "Zen Antique", serif; font-size: 1.05rem; letter-spacing: 0.06em; color: var(--ink);
+		font-family: var(--font-gothic); font-size: 1.05rem; letter-spacing: 0.06em; color: var(--ink);
 		display: inline-flex; align-items: center; gap: 5px;
 	}
 	.corp-badge { display: inline-flex; color: #b5892e; }
@@ -236,7 +236,7 @@
 	.join { text-align: center; margin-top: 3.4rem; }
 	.join-lead { font-size: 0.9rem; color: var(--ink-2); letter-spacing: 0.06em; margin: 0 0 1rem; }
 	.join-link {
-		display: inline-block; font-family: "Zen Antique", serif; font-size: 0.92rem;
+		display: inline-block; font-family: var(--font-gothic); font-size: 0.92rem;
 		letter-spacing: 0.14em; color: var(--accent-deep); text-decoration: none;
 		padding: 10px 4px; border-bottom: 1px solid var(--accent); transition: color 0.15s;
 	}

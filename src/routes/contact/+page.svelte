@@ -167,7 +167,7 @@
 	.back-link:hover { color: var(--ink); }
 	.page-title {
 		font-size: 1.6rem;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--ink);
 		margin: 0 0 12px;
 	}
@@ -190,7 +190,7 @@
 	}
 	.field-label {
 		font-size: 0.88rem;
-		font-weight: 600;
+		font-weight: 500;
 		color: var(--ink);
 	}
 	.req { color: var(--accent); }
@@ -199,7 +199,7 @@
 		border: 1.5px solid var(--line);
 		border-radius: 10px;
 		font-size: 0.95rem;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 		background: #fff;
 		color: var(--ink);
 		box-sizing: border-box;
@@ -231,7 +231,7 @@
 		border: none;
 		border-radius: 10px;
 		font-size: 1rem;
-		font-weight: 700;
+		font-weight: 500;
 		cursor: pointer;
 		transition: background 0.15s;
 	}
@@ -282,7 +282,7 @@
 		color: #fff;
 		border-radius: 10px;
 		text-decoration: none;
-		font-weight: 700;
+		font-weight: 500;
 		font-size: 0.95rem;
 	}
 

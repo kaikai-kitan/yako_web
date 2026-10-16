@@ -380,8 +380,8 @@
 	}
 	.fab-item {
 		display: flex; align-items: center; gap: 10px; padding: 13px 15px; border-radius: 10px;
-		font-size: 0.9rem; font-weight: 600; color: var(--ink); text-decoration: none;
-		background: none; border: none; cursor: pointer; font-family: inherit; text-align: left; width: 100%;
+		font-size: 0.9rem; font-weight: 500; color: var(--ink); text-decoration: none;
+		background: none; border: none; cursor: pointer; font-family: var(--font-gothic); text-align: left; width: 100%;
 	}
 	.fab-item:hover { background: var(--surface-sunk); }
 	.fab-item :global(.icon) { color: var(--accent); }
@@ -393,19 +393,19 @@
 		border: 1px solid var(--line);
 	}
 	.my-qr-name {
-		font-family: "Zen Antique", serif; font-size: 0.95rem;
+		font-family: var(--font-gothic); font-size: 0.95rem;
 		color: var(--ink); letter-spacing: 0.06em; margin: 0 0 6px; text-align: center;
 	}
 	.my-qr-cta {
 		display: inline-block; margin: 8px 0; color: var(--accent);
-		font-size: 0.86rem; text-decoration: none; font-weight: 600;
+		font-size: 0.86rem; text-decoration: none; font-weight: 500;
 	}
 	.my-qr-cta:hover { text-decoration: underline; }
 	.scan-toggle {
 		margin-top: 12px; width: 100%;
 		background: var(--accent); color: #fff; border: none;
 		border-radius: var(--r-md); padding: 11px 20px; font-size: 0.86rem;
-		letter-spacing: 0.06em; cursor: pointer; font-family: "Zen Antique", serif;
+		letter-spacing: 0.06em; cursor: pointer; font-family: var(--font-gothic);
 		transition: background 0.15s;
 	}
 	.scan-toggle:hover { background: var(--accent-deep); }
@@ -424,24 +424,24 @@
 	}
 	.detail-head { display: flex; align-items: center; gap: 14px; }
 	.detail-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--line); }
-	.detail-avatar.placeholder { display: flex; align-items: center; justify-content: center; background: var(--surface-sunk); color: var(--ink-3); font-family: "Zen Antique", serif; font-size: 1.5rem; }
-	.detail-name { font-family: "Zen Antique", serif; font-size: 1.15rem; letter-spacing: 0.06em; color: var(--ink); margin: 0; display: inline-flex; align-items: center; gap: 6px; }
+	.detail-avatar.placeholder { display: flex; align-items: center; justify-content: center; background: var(--surface-sunk); color: var(--ink-3); font-family: var(--font-gothic); font-size: 1.5rem; }
+	.detail-name { font-family: var(--font-gothic); font-size: 1.15rem; letter-spacing: 0.06em; color: var(--ink); margin: 0; display: inline-flex; align-items: center; gap: 6px; }
 	.corp-badge { display: inline-flex; color: #b5892e; }
 	.detail-deg { font-size: 0.76rem; color: var(--ink-3); margin: 4px 0 0; letter-spacing: 0.03em; }
 	.roles { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
 	.role-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.74rem; color: var(--ink-2); letter-spacing: 0.05em; }
 	.role-chip::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--dot, #6b7688); }
-	.role-chip.corp { --dot: #b5892e; color: #8a6a1e; font-weight: 700; }
+	.role-chip.corp { --dot: #b5892e; color: #8a6a1e; font-weight: 500; }
 	.detail-status { font-size: 0.85rem; color: var(--ink-2); margin: 14px 0 0; letter-spacing: 0.03em; }
 	.detail-msg { font-size: 0.9rem; color: var(--ink-2); margin: 8px 0 0; line-height: 1.7; font-style: italic; }
 
 	/* 法人広告（PR） */
 	.detail-ad { margin-top: 16px; padding: 14px; border-radius: 12px; background: rgba(181,137,46,0.08); border: 1px solid rgba(181,137,46,0.3); }
-	.ad-label { display: inline-flex; align-items: center; gap: 4px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; color: #8a6a1e; background: rgba(181,137,46,0.16); padding: 2px 8px; border-radius: 20px; }
+	.ad-label { display: inline-flex; align-items: center; gap: 4px; font-size: 0.62rem; font-weight: 500; letter-spacing: 0.08em; color: #8a6a1e; background: rgba(181,137,46,0.16); padding: 2px 8px; border-radius: 20px; }
 	.ad-image { display: block; width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px; margin: 10px 0 0; }
-	.ad-headline { font-size: 0.92rem; color: var(--ink); font-weight: 600; line-height: 1.6; margin: 10px 0 0; }
+	.ad-headline { font-size: 0.92rem; color: var(--ink); font-weight: 500; line-height: 1.6; margin: 10px 0 0; }
 	.ad-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-	.ad-link { display: inline-flex; align-items: center; gap: 5px; font-size: 0.78rem; font-weight: 600; text-decoration: none; padding: 7px 12px; border-radius: 8px; }
+	.ad-link { display: inline-flex; align-items: center; gap: 5px; font-size: 0.78rem; font-weight: 500; text-decoration: none; padding: 7px 12px; border-radius: 8px; }
 	.ad-link.store { background: var(--accent); color: #fff; }
 	.ad-link.store:hover { background: var(--accent-deep); }
 	.ad-link.recruit { background: none; color: var(--ink); border: 1px solid var(--line-strong); }
@@ -468,9 +468,9 @@
 		background: var(--surface); border-radius: var(--r-lg); padding: 22px; width: 100%; max-width: 360px;
 		margin: auto; text-align: center;
 	}
-	.scan-card h2 { font-family: "Zen Antique", serif; font-size: 1.05rem; letter-spacing: 0.08em; color: var(--ink); margin: 0 0 6px; }
+	.scan-card h2 { font-family: var(--font-gothic); font-size: 1.05rem; letter-spacing: 0.08em; color: var(--ink); margin: 0 0 6px; }
 	.scan-hint { font-size: 0.8rem; color: var(--ink-3); margin: 0 0 14px; line-height: 1.6; }
 	#net-qr-reader { width: 100%; border-radius: 12px; overflow: hidden; }
 	.scan-err { color: #b0402c; font-size: 0.82rem; margin: 10px 0 0; }
-	.scan-cancel { margin-top: 14px; background: none; border: 1px solid var(--line-strong); color: var(--ink-2); border-radius: var(--r-md); padding: 11px 20px; font-size: 0.86rem; letter-spacing: 0.06em; cursor: pointer; width: 100%; font-family: "Zen Antique", serif; }
+	.scan-cancel { margin-top: 14px; background: none; border: 1px solid var(--line-strong); color: var(--ink-2); border-radius: var(--r-md); padding: 11px 20px; font-size: 0.86rem; letter-spacing: 0.06em; cursor: pointer; width: 100%; font-family: var(--font-gothic); }
 </style>

@@ -382,7 +382,7 @@
 	.works-link:hover { color: var(--accent); }
 	.works-cta {
 		display: inline-block; padding: 13px 34px; background: var(--accent); color: #fff;
-		text-decoration: none; border-radius: 100px; font-size: 0.98rem; font-weight: 700;
+		text-decoration: none; border-radius: 100px; font-size: 0.98rem; font-weight: 500;
 		letter-spacing: 0.05em; box-shadow: var(--shadow-2); transition: background 0.2s;
 	}
 	.works-cta:hover { background: var(--accent-deep); }
@@ -454,6 +454,7 @@
 	.phrase-3 { justify-content: flex-end; }   /* 左寄り：おもろい空間を… */
 
 	.description-text {
+		font-family: var(--font-mincho);
 		writing-mode: vertical-rl;
 		font-size: 20px;
 		text-align: center;
@@ -507,7 +508,7 @@
 		background: linear-gradient(90deg, var(--accent), #f4a94a);
 		color: #fff;
 		font-size: 0.65rem;
-		font-weight: 800;
+		font-weight: 500;
 		letter-spacing: 0.1em;
 		padding: 2px 10px;
 		border-radius: 20px;
@@ -526,7 +527,7 @@
 	.event-appearance-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
 	.event-appearance-title {
 		font-size: 1rem;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--ink);
 		margin: 0;
 		line-height: 1.4;
@@ -572,14 +573,14 @@
 		background: var(--accent);
 		color: #fff;
 		font-size: 0.7rem;
-		font-weight: 700;
+		font-weight: 500;
 		letter-spacing: 0.06em;
 		padding: 2px 10px;
 		border-radius: 20px;
 	}
 	.schedule-title {
 		font-size: 1rem;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--ink);
 		margin: 0;
 	}
@@ -608,7 +609,7 @@
 		display: block; width: 40px; height: 2px;
 		background: var(--accent); border-radius: 2px;
 	}
-	.section-title { font-size: 1.3rem; font-weight: 700; color: var(--ink); letter-spacing: 0.1em; }
+	.section-title { font-size: 1.3rem; font-weight: 500; color: var(--ink); letter-spacing: 0.1em; }
 	.section-desc  { font-size: 0.85rem; color: var(--ink-2); letter-spacing: 0.03em; }
 
 	/* ===== ニュース ===== */
@@ -644,7 +645,7 @@
 		background: var(--accent);
 		color: #fff;
 		font-size: 0.64rem;
-		font-weight: 800;
+		font-weight: 500;
 		letter-spacing: 0.08em;
 		padding: 3px 8px;
 		border-radius: 100px;
@@ -672,7 +673,7 @@
 		position: absolute;
 		left: 12px; bottom: 10px;
 		color: #fff;
-		font-size: 0.72rem; font-weight: 600;
+		font-size: 0.72rem; font-weight: 500;
 		letter-spacing: 0.06em;
 		background: rgba(0,0,0,0.42);
 		padding: 3px 9px; border-radius: 100px;
@@ -690,10 +691,10 @@
 		display: inline-flex; align-items: baseline; gap: 6px;
 		font-size: 0.78rem; color: var(--ink-3); letter-spacing: 0.04em;
 	}
-	.news-year { font-weight: 700; color: var(--accent); }
+	.news-year { font-weight: 500; color: var(--accent); }
 	.news-title {
 		font-size: 0.95rem; line-height: 1.55; color: var(--ink);
-		font-weight: 600; font-family: "Zen Antique", serif;
+		font-weight: 500; font-family: var(--font-gothic);
 		flex: 1;
 	}
 	.news-more {

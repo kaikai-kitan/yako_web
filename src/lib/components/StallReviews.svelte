@@ -189,12 +189,12 @@
 		display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
 	}
 	.reviews-title {
-		font-size: 1rem; font-weight: 700; color: #26201a; margin: 0;
+		font-size: 1rem; font-weight: 500; color: #26201a; margin: 0;
 	}
 	.avg-badge {
 		font-size: 0.82rem; background: #fef9f0;
 		color: #d56d04; border: 1px solid #fde68a;
-		border-radius: 20px; padding: 2px 10px; font-weight: 600;
+		border-radius: 20px; padding: 2px 10px; font-weight: 500;
 	}
 
 	/* 投稿フォーム */
@@ -223,7 +223,7 @@
 		width: 100%; box-sizing: border-box;
 		border: 1.5px solid #e8e0d8; border-radius: 10px;
 		padding: 9px 12px; font-size: 0.88rem;
-		font-family: inherit; resize: vertical; outline: none;
+		font-family: var(--font-gothic); resize: vertical; outline: none;
 		margin-bottom: 10px;
 	}
 	.comment-input:focus { border-color: #d56d04; }
@@ -234,8 +234,8 @@
 		width: 100%; padding: 10px;
 		background: #26201a; color: white;
 		border: none; border-radius: 10px;
-		font-size: 0.88rem; font-weight: 700;
-		font-family: inherit; cursor: pointer;
+		font-size: 0.88rem; font-weight: 500;
+		font-family: var(--font-gothic); cursor: pointer;
 	}
 	.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -262,10 +262,10 @@
 		display: flex; align-items: center; justify-content: center;
 		background: #f0ede8; font-size: 0.9rem;
 	}
-	.reviewer-name { font-size: 0.85rem; font-weight: 600; color: #26201a; }
+	.reviewer-name { font-size: 0.85rem; font-weight: 500; color: #26201a; }
 	.own-badge {
 		font-size: 0.65rem; background: #fde68a; color: #92400e;
-		border-radius: 4px; padding: 1px 5px; margin-left: 4px; font-weight: 700;
+		border-radius: 4px; padding: 1px 5px; margin-left: 4px; font-weight: 500;
 	}
 	.review-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 	.review-stars { color: #f59e0b; font-size: 0.85rem; letter-spacing: 0.05em; }

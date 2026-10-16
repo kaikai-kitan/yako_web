@@ -390,7 +390,7 @@
 	}
 	.quick-link:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); border-color: var(--accent); }
 	.quick-icon { display: inline-flex; color: var(--accent); }
-	.quick-label { font-size: 0.8rem; font-weight: 600; }
+	.quick-label { font-size: 0.8rem; font-weight: 500; }
 
 	.back-link {
 		display: inline-block;
@@ -402,7 +402,7 @@
 	.back-link:hover { color: var(--ink); }
 	.page-title {
 		font-size: 1.3rem;
-		font-weight: 700;
+		font-weight: 500;
 		margin: 0 0 24px;
 		padding-bottom: 12px;
 		border-bottom: 2px solid var(--line);
@@ -430,7 +430,7 @@
 		align-items: center;
 		gap: 8px;
 		font-size: 1rem;
-		font-weight: 700;
+		font-weight: 500;
 		margin: 0 0 16px;
 		padding-bottom: 6px;
 		border-bottom: 1px solid var(--line);
@@ -461,7 +461,7 @@
 	}
 	.stat-value {
 		font-size: 1.3rem;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--ink);
 	}
 	.stat-value.fee {
@@ -527,7 +527,7 @@
 	}
 	.badge {
 		font-size: 0.75rem;
-		font-weight: 600;
+		font-weight: 500;
 		padding: 3px 10px;
 		border-radius: 20px;
 		background: var(--paper);
@@ -571,7 +571,7 @@
 		margin-bottom: 10px;
 	}
 	.addr-label {
-		font-weight: 600;
+		font-weight: 500;
 		margin-right: 6px;
 	}
 	.tracking {
@@ -601,7 +601,7 @@
 		border: none;
 		border-radius: 8px;
 		font-size: 0.88rem;
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 	}
 	.btn-ship:disabled {
@@ -624,7 +624,7 @@
 		border: 1.5px solid var(--accent);
 		border-radius: 8px;
 		font-size: 0.88rem;
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 	}
 	.btn-ship-open:hover {
@@ -655,7 +655,7 @@
 	}
 	.form-group label {
 		font-size: 0.85rem;
-		font-weight: 600;
+		font-weight: 500;
 		color: #4a3f38;
 	}
 	.form-group input,
@@ -673,7 +673,7 @@
 		border: none;
 		border-radius: 10px;
 		font-size: 0.9rem;
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 		align-self: flex-start;
 	}

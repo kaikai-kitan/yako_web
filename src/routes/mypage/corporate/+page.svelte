@@ -222,29 +222,29 @@
 
 	.head { margin-bottom: 24px; }
 	.kicker { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; letter-spacing: 0.2em; color: #8a6a1e; }
-	.title { font-family: "Zen Antique", serif; font-size: 1.5rem; letter-spacing: 0.06em; color: var(--ink); margin: 6px 0 0; }
+	.title { font-family: var(--font-gothic); font-size: 1.5rem; letter-spacing: 0.06em; color: var(--ink); margin: 6px 0 0; }
 
 	.error-msg { background: #fef2f2; color: var(--accent-deep); border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; font-size: 0.85rem; margin: 0 0 14px; }
 	.save-msg  { background: #ecfdf5; color: #14532d; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 14px; font-size: 0.85rem; margin: 0 0 14px; }
 
 	.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg, 16px); padding: 20px; margin-bottom: 18px; box-shadow: var(--shadow-1); }
-	.card-title { font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0 0 8px; }
+	.card-title { font-size: 1rem; font-weight: 500; color: var(--ink); margin: 0 0 8px; }
 	.card-hint { font-size: 0.82rem; color: var(--ink-2); line-height: 1.7; margin: 0 0 16px; }
 
 	.status-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-	.status-chip { font-size: 0.8rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; background: var(--surface-sunk); color: var(--ink-2); border: 1px solid var(--line); }
+	.status-chip { font-size: 0.8rem; font-weight: 500; padding: 4px 12px; border-radius: 20px; background: var(--surface-sunk); color: var(--ink-2); border: 1px solid var(--line); }
 	.status-chip.on { background: rgba(181,137,46,0.14); color: #8a6a1e; border-color: rgba(181,137,46,0.4); }
 	.status-note { font-size: 0.82rem; color: var(--ink-2); }
 
 	.metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 	.metric { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 8px; border-radius: 12px; background: var(--surface-sunk); border: 1px solid var(--line); }
-	.metric-value { font-size: 1.5rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
-	.metric-label { font-size: 0.72rem; color: var(--ink-3); font-weight: 600; }
+	.metric-value { font-size: 1.5rem; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+	.metric-label { font-size: 0.72rem; color: var(--ink-3); font-weight: 500; }
 
 	.field { display: block; margin-bottom: 16px; }
-	.field-label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+	.field-label { display: block; font-size: 0.82rem; font-weight: 500; color: var(--ink); margin-bottom: 6px; }
 	.muted { color: var(--ink-3); font-weight: 400; }
-	.input { width: 100%; box-sizing: border-box; padding: 10px 14px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: 0.95rem; font-family: inherit; background: var(--surface); color: var(--ink); }
+	.input { width: 100%; box-sizing: border-box; padding: 10px 14px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: 0.95rem; font-family: var(--font-gothic); background: var(--surface); color: var(--ink); }
 	.input:focus { outline: 2px solid var(--accent); border-color: transparent; }
 
 	.ad-preview { display: block; width: 100%; max-height: 200px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); margin-bottom: 10px; }
@@ -252,7 +252,7 @@
 	.file-btn:hover { background: #ede8e2; }
 
 	.card-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
-	.btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; font-family: inherit; cursor: pointer; border: none; background: var(--accent); color: #fff; text-decoration: none; }
+	.btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; font-family: var(--font-gothic); cursor: pointer; border: none; background: var(--accent); color: #fff; text-decoration: none; }
 	.btn:hover:not(:disabled) { background: var(--accent-deep); }
 	.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 	.btn.ghost { background: none; border: 1px solid var(--line-strong); color: var(--ink); }

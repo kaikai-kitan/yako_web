@@ -616,7 +616,7 @@
 	.page-header { margin-bottom: 20px; }
 	.back-link { font-size: 0.85rem; color: var(--ink-2); text-decoration: none; }
 	.back-link:hover { color: var(--accent); }
-	.page-title { display: flex; align-items: center; gap: 8px; font-size: 1.3rem; font-weight: 700; margin: 6px 0 0; }
+	.page-title { display: flex; align-items: center; gap: 8px; font-size: 1.3rem; font-weight: 500; margin: 6px 0 0; }
 	.page-title :global(.icon) { color: var(--accent); }
 	.tab-btn :global(.icon) { color: currentColor; }
 
@@ -636,7 +636,7 @@
 		background: transparent;
 		border-radius: 9px;
 		font-size: 0.88rem;
-		font-weight: 600;
+		font-weight: 500;
 		color: var(--ink-2);
 		cursor: pointer;
 		display: flex;
@@ -711,9 +711,9 @@
 		gap: 2px;
 		min-width: 0;
 	}
-	.menu-name { font-size: 1rem; font-weight: 700; }
+	.menu-name { font-size: 1rem; font-weight: 500; }
 	.menu-desc { font-size: 0.78rem; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.menu-price { font-size: 0.82rem; color: var(--accent); font-weight: 600; }
+	.menu-price { font-size: 0.82rem; color: var(--accent); font-weight: 500; }
 	.menu-meta {
 		display: flex;
 		flex-direction: column;
@@ -747,7 +747,7 @@
 		align-items: center;
 		gap: 6px;
 		font-size: 0.85rem;
-		font-weight: 700;
+		font-weight: 500;
 		margin: 0;
 		color: var(--ink);
 	}
@@ -781,10 +781,10 @@
 
 	.ing-left { display: flex; align-items: center; gap: 6px; }
 	.ing-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-	.ing-name { font-size: 0.88rem; font-weight: 600; }
+	.ing-name { font-size: 0.88rem; font-weight: 500; }
 	.ing-qty { font-size: 0.78rem; color: var(--ink-2); }
 	.ing-stock { font-size: 0.78rem; color: #2d8a4e; }
-	.ing-stock.stock-low { color: var(--accent-deep); font-weight: 700; }
+	.ing-stock.stock-low { color: var(--accent-deep); font-weight: 500; }
 
 	.btn-del-ing {
 		width: 22px; height: 22px;
@@ -840,7 +840,7 @@
 		border: none;
 		border-radius: 7px;
 		font-size: 0.82rem;
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 	}
 	.btn-confirm:disabled { background: #bbb; cursor: default; }
@@ -870,7 +870,7 @@
 	}
 	.summary-card.warning { background: #fff7ed; border-color: #fed7aa; }
 	.s-label { font-size: 0.75rem; color: var(--ink-2); }
-	.s-value { font-size: 1.3rem; font-weight: 700; }
+	.s-value { font-size: 1.3rem; font-weight: 500; }
 	.summary-card.warning .s-value { color: var(--accent-deep); }
 
 	.add-form-card {
@@ -880,7 +880,7 @@
 		padding: 16px 20px;
 		margin-bottom: 24px;
 	}
-	.form-title { font-size: 0.9rem; font-weight: 700; margin: 0 0 12px; }
+	.form-title { font-size: 0.9rem; font-weight: 500; margin: 0 0 12px; }
 	.add-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 	.input {
 		padding: 8px 10px;
@@ -898,7 +898,7 @@
 		border: none;
 		border-radius: 8px;
 		font-size: 0.88rem;
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 		white-space: nowrap;
 	}
@@ -921,12 +921,12 @@
 	.col-actions { width: 1%; }
 
 	.shortage-row { background: #fff7ed; }
-	.shortage-num { color: var(--accent-deep); font-weight: 700; }
+	.shortage-num { color: var(--accent-deep); font-weight: 500; }
 	.shortage-dot {
 		display: inline-flex; align-items: center; justify-content: center;
 		width: 16px; height: 16px;
 		background: var(--accent-deep); color: #fff;
-		font-size: 0.65rem; font-weight: 800;
+		font-size: 0.65rem; font-weight: 500;
 		border-radius: 50%;
 		margin-right: 4px; vertical-align: middle;
 	}
@@ -977,7 +977,7 @@
 		border: none;
 		border-radius: 8px;
 		font-size: 0.88rem;
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 	}
 	.btn-add-menu:hover { background: #b85d03; }
@@ -990,7 +990,7 @@
 	}
 	.add-menu-title {
 		font-size: 0.9rem;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--ink);
 		margin: 0 0 12px;
 	}
@@ -1010,7 +1010,7 @@
 		border: 1.5px solid var(--line-strong);
 		border-radius: 8px;
 		font-size: 0.9rem;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 	}
 	.add-menu-input:focus { outline: none; border-color: var(--accent); }
 	.add-menu-actions {
@@ -1024,7 +1024,7 @@
 		border: none;
 		border-radius: 8px;
 		font-size: 0.88rem;
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 	}
 	.btn-confirm-menu:disabled { opacity: 0.5; cursor: default; }

@@ -13,8 +13,6 @@
 		createReservation,
 		getUserReservations,
 		getMyReservations,
-		cancelReservation,
-		startRental,
 		completeRental,
 		getMyProfile,
 		getMySalesThisMonth,
@@ -29,9 +27,10 @@
 	let mapContainer = $state();
 	let mapInstance = $state();
 	let markers = $state([]);
-	let leafletLib = null;
+	let mapLib = null;
 	let realtimeChannel = null;
 	let isDestroyed = false;
+	let checkoutNotice = $state('');
 
 	let currentView = $state('map'); // 'map'|'reserve'|'qr'|'active'|'return'|'finish'
 
@@ -138,9 +137,18 @@
 		// 地図は認証・データサーバーの応答を待たずに表示する。
 		initializeMap();
 		loadMapData();
+		const onPageShow = (event) => {
+			if (event.persisted) {
+				currentView = 'map';
+				selectedStall = null;
+				loadMapData();
+			}
+		};
+		window.addEventListener('pageshow', onPageShow);
 
 		return () => {
 			isDestroyed = true;
+			window.removeEventListener('pageshow', onPageShow);
 			if (realtimeChannel) supabase.removeChannel(realtimeChannel);
 			stopQrCamera();
 			mapInstance?.remove();
@@ -194,13 +202,16 @@
 				const urlParams = new URLSearchParams(window.location.search);
 				const rentalAuthorizedId = urlParams.get('rental_authorized');
 				const stripeSessionId    = urlParams.get('session_id');
+				if (urlParams.has('rental_cancelled')) {
+					checkoutNotice = 'お支払い手続きは完了していません。予約は確定していません。';
+					window.history.replaceState(window.history.state, '', '/map');
+				}
 
 				if (rentalAuthorizedId && stripeSessionId) {
-					window.history.replaceState({}, '', '/map');
 					try {
 						const authRes = await fetch('/api/activate-rental', {
 							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
+							headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
 							body: JSON.stringify({
 								sessionId: stripeSessionId,
 								reservationId: rentalAuthorizedId,
@@ -208,18 +219,21 @@
 							})
 						});
 						if (authRes.ok) {
+							window.history.replaceState(window.history.state, '', '/map');
 							// 予約リストを更新（status は pending のまま）
-							[myUserReservations, allReservations] = await Promise.all([
+							[myUserReservations, allReservations, bookedStallIds] = await Promise.all([
 								getUserReservations(currentUser.id),
-								getMyReservations(currentUser.id)
+								getMyReservations(currentUser.id),
+								getBookedStallIds()
 							]);
 							authSuccessMsg = 'カードの与信確保が完了しました。当日、現地のQRコードをスキャンしてチェックインしてください。';
 							isReservationOpen = true;
 						} else {
-							console.error('auth confirm failed:', await authRes.text());
+							checkoutNotice = 'カードの確認結果を取得できませんでした。この画面を再読み込みして確認してください。';
 						}
 					} catch (e) {
 						console.error('activate rental error:', e);
+						checkoutNotice = '予約の確定を確認できませんでした。再読み込みしてください。';
 					}
 				}
 			}
@@ -228,7 +242,7 @@
 				startRealtime();
 			}
 		} catch (e) {
-			console.error('DB fetch error:', e);
+			console.error('DB fetch error:', e?.code, e?.message);
 			fetchError = '屋台・予約情報を読み込めませんでした。時間をおいて再読み込みしてください。';
 		} finally {
 			isLoading = false;
@@ -239,7 +253,7 @@
 		try {
 			const L = (await import('leaflet')).default;
 			if (isDestroyed) return;
-			leafletLib = L;
+			mapLib = L;
 			mapInstance = L.map(mapContainer, {
 				center: KSU_CENTER,
 				zoom: 15,
@@ -251,50 +265,28 @@
 				bounceAtZoomLimits: false
 			});
 			mapInstance.attributionControl.setPrefix(false);
-			mapInstance.attributionControl.setPosition('bottomright');
-			// タイルレイヤーは環境変数で切り替え可能にする
-			// 淡色地図を標準にし、既存の明示設定も維持する。
-			const tileProvider = import.meta.env.VITE_MAP_TILE_PROVIDER || 'gsi_light';
-			const osmAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-			if (tileProvider === 'gsi_light') {
-				mapInstance.setMinZoom(5);
-				mapInstance.setMaxZoom(19);
-				const { addLightBasemap } = await import('$lib/maps/light-basemap.js');
-				await addLightBasemap(L, mapInstance, () => isDestroyed);
-				if (isDestroyed) return;
-			} else if (tileProvider === 'carto_light') {
-				L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-					subdomains: 'abcd',
-					maxZoom: 19,
-					attribution: `${osmAttribution} &copy; <a href="https://carto.com/attributions">CARTO</a>`
-				}).addTo(mapInstance);
-			} else if (tileProvider === 'carto_possibly_keyed') {
-				// もし API キーが必要な場合は VITE_CARTO_API_KEY を使う
-				const cartoKey = import.meta.env.VITE_CARTO_API_KEY || '';
-				const url = cartoKey
-					? `https://api.mapbox.com/styles/v1/mapbox/light-v10/tiles/{z}/{x}/{y}?access_token=${cartoKey}`
-					: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-				L.tileLayer(url, {
-					maxZoom: 19,
-					attribution: cartoKey
-						? `${osmAttribution} &copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>`
-						: osmAttribution
-				}).addTo(mapInstance);
-			} else {
-				L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-					maxZoom: 19,
-					attribution: osmAttribution
-				}).addTo(mapInstance);
-			}
+			// 8月版と同じ CARTO「light_all」タイル。
+			// 2026年9月末から CARTO はAPIキー必須になったため、.env の
+			// VITE_CARTO_BASEMAP_KEY があればキー付きURLを使う（無い場合は透かし入りで表示される）。
+			const cartoKey = import.meta.env.VITE_CARTO_BASEMAP_KEY || '';
+			const tileUrl = cartoKey
+				? `https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(cartoKey)}`
+				: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+			L.tileLayer(tileUrl, {
+				subdomains: 'abcd',
+				maxZoom: 19,
+				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+			}).addTo(mapInstance);
 			addExperimentOverlay(L, mapInstance);
 			updateMarkers(mapInstance);
 		} catch (e) {
 			console.error('Map Load Error:', e);
-			mapError = '地図を読み込めませんでした。再読み込みしてください。';
+			if (!isDestroyed) mapError = '地図を読み込めませんでした。再読み込みしてください。';
 		}
 	}
 
 	function startRealtime() {
+		if (realtimeChannel) return;
 		// ── Supabase Realtime: 屋台ステータス変化を自動反映 ──
 		realtimeChannel = supabase
 			.channel('map-realtime')
@@ -340,8 +332,8 @@
 				[lat + dLat, lng + dLng], [lat + dLat, lng - dLng]
 			]
 		], {
-			fillColor: '#ffffff',
-			fillOpacity: 0.12,
+			fillColor: 'var(--ink-2)',
+			fillOpacity: 0.48,
 			stroke: false,
 			interactive: false
 		}).addTo(map);
@@ -350,14 +342,14 @@
 		const areaCircle = L.circle(KSU_CENTER, {
 			radius: ACTIVE_RADIUS_M,
 			color: '#3b82f6',
-			weight: 1.5,
+			weight: 2.5,
 			fillColor: '#3b82f6',
-			fillOpacity: 0.05,
+			fillOpacity: 0.14,
 			interactive: true
 		}).addTo(map);
 		areaCircle.on('click', () => goReserveFromArea('京都産業大学（実証実験エリア）'));
-		areaCircle.on('mouseover', () => areaCircle.setStyle({ fillOpacity: 0.10 }));
-		areaCircle.on('mouseout', () => areaCircle.setStyle({ fillOpacity: 0.05 }));
+		areaCircle.on('mouseover', () => areaCircle.setStyle({ fillOpacity: 0.22 }));
+		areaCircle.on('mouseout', () => areaCircle.setStyle({ fillOpacity: 0.14 }));
 
 		// 実証実験エリアバッジ
 		L.marker([lat + 0.0056, lng], {
@@ -370,6 +362,23 @@
 			interactive: false,
 			zIndexOffset: 1000
 		}).addTo(map);
+
+		// "エリア準備中" ラベル（グレーゾーン内の複数箇所）
+		[
+			[lat - 0.020, lng + 0.004],
+			[lat + 0.004, lng + 0.020],
+			[lat + 0.004, lng - 0.020]
+		].forEach(([plat, plng]) => {
+			L.marker([plat, plng], {
+				icon: L.divIcon({
+					className: '',
+					html: '<div class="ksu-badge-prep">エリア準備中</div>',
+					iconSize: [112, 28],
+					iconAnchor: [56, 14]
+				}),
+				interactive: false
+			}).addTo(map);
+		});
 	}
 
 	// 屋台アイコン（提灯絵文字の代わり。屋台＝ひさし・カウンター・車輪のラインアイコン）
@@ -407,8 +416,8 @@
 	}
 
 	function updateMarkers(map) {
-		if (isDestroyed || !map || !leafletLib) return;
-		const L = leafletLib;
+		if (isDestroyed || !map || !mapLib) return;
+		const L = mapLib;
 
 		markers.forEach((m) => map.removeLayer(m));
 		markers = [];
@@ -606,7 +615,7 @@
 			const selectedSpace = availableSpaces.find((s) => s.id === reservationForm.spaceId);
 			const selectedStallForRes = availableStallsList.find((s) => s.id === reservationForm.stallId);
 			const lockedSpaceFee = selectedSpace?.price ?? 0;
-			const lockedStallFee = selectedStallForRes?.rental_fee ?? 0;
+			const lockedStallFee = reservationMode === 'space-first' && !needsStall ? 0 : (selectedStallForRes?.rental_fee ?? 0);
 
 			// DB に予約を作成（ID を受け取る）
 			const reservationId = await createReservation(currentUser.id, {
@@ -644,9 +653,10 @@
 			if (free) {
 				// 無料レンタル: 与信不要なのでそのまま完了
 				reservationSuccess = true;
-				[myUserReservations, bookedStallIds] = await Promise.all([
+				[myUserReservations, bookedStallIds, allReservations] = await Promise.all([
 					getUserReservations(currentUser.id),
-					getBookedStallIds()
+					getBookedStallIds(),
+					getMyReservations(currentUser.id)
 				]);
 				setTimeout(() => {
 					currentView = 'map';
@@ -1076,6 +1086,13 @@
 	{#if isSuspended}
 		<div class="suspension-banner">
 			⚠️ アカウントが停止されています。新規予約・購入はご利用いただけません。詳細はお問い合わせください。
+		</div>
+	{/if}
+
+	{#if checkoutNotice}
+		<div class="checkout-notice" role="status">
+			<span>{checkoutNotice}</span>
+			<button aria-label="通知を閉じる" onclick={() => (checkoutNotice = '')}>×</button>
 		</div>
 	{/if}
 
@@ -1819,14 +1836,31 @@
 {/if}
 
 <style>
+	.checkout-notice { position: relative; z-index: 900; display: flex; gap: 12px; padding: 12px 16px; background: #fff7ed; color: var(--ink); font-size: 0.85rem; }
+	.checkout-notice button { flex-shrink: 0; align-self: start; min-width: 32px; min-height: 32px; border: 0; background: transparent; color: inherit; }
+	.full-screen-modal, .modal-content { overscroll-behavior-y: contain; }
+
+	/* 地図の出典表記（ライセンス上必要。小さく控えめに） */
+	.map-canvas :global(.leaflet-control-attribution) {
+		font-size: 9px; line-height: 1.4; padding: 1px 5px;
+		background: rgba(255, 255, 255, 0.7); color: var(--ink-3);
+	}
+	.map-canvas :global(.leaflet-control-attribution a) { color: var(--ink-3); }
+	.map-overlay.error { flex-direction: column; gap: 8px; white-space: normal; text-align: center; max-width: calc(100% - 32px); box-sizing: border-box; }
+	.map-overlay.error p { margin: 0; }
+	.map-retry-btn {
+		min-height: 40px; padding: 6px 16px;
+		border: 1px solid currentColor; border-radius: 8px;
+		background: #fff; color: inherit; font: inherit; cursor: pointer;
+	}
 	:global(body) { margin: 0; padding: 0; }
 
 	.suspension-banner {
 		background: #fef2f2; color: var(--accent-deep);
 		border-bottom: 1px solid #fecaca;
 		padding: 10px 16px; font-size: 0.82rem;
-		font-weight: 600; text-align: center;
-		font-family: sans-serif;
+		font-weight: 500; text-align: center;
+		font-family: var(--font-gothic);
 	}
 
 	.auth-success-banner {
@@ -1834,7 +1868,7 @@
 		background: #ecfdf5; color: var(--ink-2);
 		border-bottom: 1px solid #bbf7d0;
 		padding: 10px 16px; font-size: 0.82rem;
-		font-weight: 600; font-family: sans-serif;
+		font-weight: 500; font-family: var(--font-gothic);
 	}
 	.auth-success-close {
 		background: none; border: none; cursor: pointer;
@@ -1886,7 +1920,7 @@
 		border-radius: 20px;
 		padding: 6px 16px;
 		font-size: 0.78rem;
-		font-weight: 700;
+		font-weight: 500;
 		white-space: nowrap;
 		text-align: center;
 		line-height: 1.5;
@@ -1900,24 +1934,30 @@
 		opacity: 0.8;
 		display: block;
 	}
+	:global(.ksu-badge-prep) {
+		background: rgba(254, 242, 242, 0.94);
+		border: 1.5px solid #ef9a9a;
+		color: #c0392b;
+		border-radius: 20px;
+		padding: 5px 14px;
+		font-size: 0.72rem;
+		font-weight: 500;
+		white-space: nowrap;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+		pointer-events: none;
+		letter-spacing: 0.03em;
+	}
 
 	/* Leaflet ズームコントロールのスタイル調整 */
 	:global(.leaflet-control-zoom) { border: none !important; box-shadow: 0 2px 10px rgba(0,0,0,0.15) !important; border-radius: 10px !important; overflow: hidden; }
-	:global(.leaflet-control-zoom a) { border: none !important; color: var(--ink) !important; font-weight: 600 !important; width: 36px !important; height: 36px !important; line-height: 36px !important; }
+	:global(.leaflet-control-zoom a) { border: none !important; color: var(--ink) !important; font-weight: 500 !important; width: 36px !important; height: 36px !important; line-height: 36px !important; }
 	:global(.leaflet-bottom.leaflet-right) { bottom: 80px !important; right: 10px !important; }
-	.map-canvas :global(.leaflet-top.leaflet-left) { top: 72px; }
 
 	.app-container {
 		width: 100%; height: 100svh;
 		display: flex; flex-direction: column;
 		background: var(--paper); position: relative; overflow: hidden;
 	}
-
-	.map-canvas :global(.leaflet-control-attribution) {
-		font-size: 10px; line-height: 1.5; padding: 2px 6px;
-		background: rgba(255, 255, 255, 0.88); color: #65706c; border-radius: 5px 0 0 0;
-	}
-	.map-canvas :global(.leaflet-control-attribution a) { color: #53645d; }
 
 	/* z-index はすべて Leaflet のマーカーペイン(600)より高い 800+ に統一 */
 	.app-header { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 800; }
@@ -1934,7 +1974,7 @@
 	}
 	.toggle-switch span {
 		flex: 1; text-align: center; z-index: 1;
-		font-size: 0.85rem; font-weight: 700; color: var(--ink-3); transition: color 0.3s;
+		font-size: 0.85rem; font-weight: 500; color: var(--ink-3); transition: color 0.3s;
 		letter-spacing: 0.02em;
 	}
 	.toggle-switch span.active { color: white; }
@@ -1962,20 +2002,7 @@
 		display: flex; align-items: center; gap: 10px;
 		font-size: 0.9rem; color: var(--ink-2); z-index: 800; white-space: nowrap;
 	}
-	.map-overlay.error {
-		bottom: calc(136px + env(safe-area-inset-bottom, 0));
-		background: #fff; color: #b91c1c;
-		flex-direction: column; gap: 8px;
-		width: 360px; max-width: calc(100% - 32px);
-		box-sizing: border-box; white-space: normal;
-		text-align: center; line-height: 1.6;
-	}
-	.map-overlay.error p { margin: 0; }
-	.map-retry-btn {
-		min-height: 44px; padding: 8px 16px;
-		border: 1px solid currentColor; border-radius: 8px;
-		background: #fff; color: inherit; font: inherit; cursor: pointer;
-	}
+	.map-overlay.error { background: rgba(184, 92, 43, 0.08); color: #dc2626; }
 	.loading-spinner {
 		width: 18px; height: 18px; border: 2px solid var(--line-strong);
 		border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;
@@ -2011,13 +2038,13 @@
 	}
 	.specs-icon :global(.icon) { vertical-align: -2px; color: var(--ink-3); }
 	.meta-icon :global(.icon) { vertical-align: -2px; color: var(--accent); }
-	.stall-info { flex: 1; }
+	.stall-info { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 	.stall-info h3 { margin: 0 0 5px 0; font-size: 1.1rem; }
 	.specs { font-size: 0.8rem; color: var(--ink-2); margin: 2px 0; }
 
 	/* 出店中パネル */
 	.active-store-info { width: 100%; }
-	.owner-name { font-weight: bold; font-size: 1rem; color: var(--ink); margin: 0 0 4px; }
+	.owner-name { font-weight: 500; font-size: 1rem; color: var(--ink); margin: 0 0 4px; }
 	.store-bio {
 		font-size: 0.8rem; color: var(--ink-2); margin: 2px 0 0;
 		line-height: 1.5; white-space: pre-wrap;
@@ -2029,7 +2056,7 @@
 		padding: 10px 12px;
 	}
 	.active-menu-label {
-		font-size: 0.72rem; font-weight: bold; color: var(--accent-deep);
+		font-size: 0.72rem; font-weight: 500; color: var(--accent-deep);
 		text-transform: uppercase; letter-spacing: 0.04em;
 		margin: 0 0 6px;
 	}
@@ -2053,10 +2080,10 @@
 		font-size: 0.75rem; color: var(--ink-2); line-height: 1.4;
 	}
 	.active-menu-price {
-		font-weight: bold; color: var(--accent-deep); font-size: 0.88rem;
+		font-weight: 500; color: var(--accent-deep); font-size: 0.88rem;
 		flex-shrink: 0; margin-left: 8px; padding-top: 1px;
 	}
-	.price { font-weight: bold; font-size: 1.1rem; margin: 5px 0; }
+	.price { font-weight: 500; font-size: 1.1rem; margin: 5px 0; }
 	.space-meta {
 		display: flex; gap: 10px; font-size: 0.78rem; color: var(--ink-2);
 		background: var(--surface); border-radius: 6px; padding: 5px 8px; margin: 4px 0;
@@ -2064,13 +2091,13 @@
 	.booked-badge {
 		margin-top: 10px; padding: 8px 12px;
 		background: rgba(184, 92, 43, 0.08); color: #dc2626;
-		border-radius: 8px; font-size: 0.82rem; font-weight: bold; text-align: center;
+		border-radius: 8px; font-size: 0.82rem; font-weight: 500; text-align: center;
 	}
 
 	.action-btn {
 		width: 100%; padding: 12px; border: none; border-radius: var(--r-md);
-		font-weight: 600; cursor: pointer; margin-top: 10px; font-size: 0.95rem;
-		font-family: inherit; letter-spacing: 0.02em;
+		font-weight: 500; cursor: pointer; margin-top: 10px; font-size: 0.95rem;
+		font-family: var(--font-gothic); letter-spacing: 0.02em;
 		transition: background 0.15s, transform 0.1s;
 	}
 	.action-btn.primary { background: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(184, 92, 43, 0.25); }
@@ -2108,7 +2135,7 @@
 	.reserve-form { padding: 20px; }
 	.form-section { margin-bottom: 18px; }
 	.form-label {
-		display: block; font-size: 0.85rem; color: var(--ink-2); margin-bottom: 6px; font-weight: bold;
+		display: block; font-size: 0.85rem; color: var(--ink-2); margin-bottom: 6px; font-weight: 500;
 	}
 	.form-hint { font-size: 0.75rem; color: var(--ink-3); font-weight: normal; margin-left: 6px; }
 	.req { color: var(--accent-deep); }
@@ -2118,11 +2145,12 @@
 	}
 	.form-select, .form-input {
 		width: 100%; padding: 10px 12px; border: 1.5px solid var(--line-strong);
-		border-radius: 8px; font-size: 0.9rem; box-sizing: border-box;
-		background: white; font-family: inherit;
+		border-radius: 8px; font-size: 1rem; min-width: 0; box-sizing: border-box;
+		background: white; font-family: var(--font-gothic);
 	}
 	.form-select:focus, .form-input:focus { outline: none; border-color: var(--accent); }
-	.date-row { display: flex; gap: 8px; }
+	.date-row { display: flex; gap: 8px; min-width: 0; }
+	.date-row input[type="date"] { flex: 1; width: 0; }
 	.time-input { width: 110px; flex-shrink: 0; }
 	.form-error {
 		background: rgba(184, 92, 43, 0.08); color: #dc2626; border-radius: 8px;
@@ -2138,7 +2166,7 @@
 		gap: 6px; margin-bottom: 4px; padding: 0 2px;
 	}
 	.items-col-label {
-		font-size: 0.75rem; color: var(--ink-3); font-weight: bold;
+		font-size: 0.75rem; color: var(--ink-3); font-weight: 500;
 	}
 	.item-row {
 		display: grid; grid-template-columns: 1fr 100px 28px;
@@ -2147,7 +2175,7 @@
 	.item-name-input {
 		padding: 8px 10px; border: 1.5px solid var(--line-strong);
 		border-radius: 8px; font-size: 0.88rem;
-		font-family: inherit; box-sizing: border-box; width: 100%;
+		font-family: var(--font-gothic); box-sizing: border-box; width: 100%;
 	}
 	.item-price-wrapper {
 		display: flex; align-items: center;
@@ -2161,7 +2189,7 @@
 	}
 	.item-price-input {
 		border: none; padding: 8px 6px;
-		font-size: 0.88rem; font-family: inherit;
+		font-size: 0.88rem; font-family: var(--font-gothic);
 		width: 100%; min-width: 0;
 	}
 	.item-price-input:focus { outline: none; }
@@ -2176,7 +2204,7 @@
 		width: 100%; padding: 8px; margin-top: 4px;
 		background: var(--surface); border: 1.5px dashed var(--line-strong);
 		border-radius: 8px; color: var(--ink-2); font-size: 0.85rem;
-		cursor: pointer; font-family: inherit;
+		cursor: pointer; font-family: var(--font-gothic);
 	}
 	.add-item-btn:hover { border-color: var(--accent); color: var(--ink); }
 
@@ -2188,11 +2216,11 @@
 		flex: 1; padding: 10px 8px;
 		border: 1.5px solid #e2ddd8; border-radius: 8px;
 		background: white; color: var(--ink-2);
-		font-size: 0.82rem; font-family: inherit; cursor: pointer;
+		font-size: 0.82rem; font-family: var(--font-gothic); cursor: pointer;
 		transition: all 0.15s;
 	}
 	.flow-toggle-btn.selected {
-		border-color: var(--accent); background: rgba(184, 92, 43, 0.1); color: var(--ink); font-weight: 700;
+		border-color: var(--accent); background: rgba(184, 92, 43, 0.1); color: var(--ink); font-weight: 500;
 	}
 	.flow-info-box {
 		background: var(--surface); border-radius: 8px;
@@ -2204,7 +2232,7 @@
 		width: 100%; padding: 8px 12px; margin-bottom: 8px;
 		background: rgba(184, 92, 43, 0.1); border: 1.5px solid var(--accent);
 		border-radius: 8px; color: var(--accent-deep); font-size: 0.82rem;
-		font-weight: bold; cursor: pointer; font-family: inherit;
+		font-weight: 500; cursor: pointer; font-family: var(--font-gothic);
 		text-align: left;
 	}
 	.load-menu-btn:hover { background: var(--accent); color: var(--ink); }
@@ -2228,8 +2256,8 @@
 		width: 100%; padding: 15px; margin-top: 4px;
 		background: var(--accent); color: #fff;
 		border: none; border-radius: var(--r-md);
-		font-size: 1.05rem; font-weight: 700; cursor: pointer;
-		font-family: inherit; letter-spacing: 0.04em;
+		font-size: 1.05rem; font-weight: 500; cursor: pointer;
+		font-family: var(--font-gothic); letter-spacing: 0.04em;
 		box-shadow: 0 4px 16px rgba(184, 92, 43, 0.28);
 		transition: background 0.15s, transform 0.1s;
 	}
@@ -2294,7 +2322,7 @@
 		width: 64px; height: 64px; border-radius: 50%;
 		background: rgba(239,68,68,0.3);
 		display: flex; align-items: center; justify-content: center;
-		font-size: 1.8rem; font-weight: 700;
+		font-size: 1.8rem; font-weight: 500;
 	}
 
 	/* 利用中ダッシュボード */
@@ -2305,7 +2333,7 @@
 	}
 	.status-bar {
 		background: rgba(95, 122, 82, 0.08); color: var(--ink-2); padding: 10px;
-		border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 24px;
+		border-radius: 8px; font-weight: 500; text-align: center; margin-bottom: 24px;
 	}
 	.blinking { animation: blink 1s infinite; }
 	@keyframes blink { 50% { opacity: 0; } }
@@ -2326,10 +2354,10 @@
 	}
 	.stepper span {
 		min-width: 28px; text-align: center;
-		font-weight: bold; font-size: 1rem;
+		font-weight: 500; font-size: 1rem;
 	}
 	.total-sales {
-		font-size: 1.15rem; font-weight: bold; text-align: right;
+		font-size: 1.15rem; font-weight: 500; text-align: right;
 		margin-top: 16px; border-top: 2px solid var(--surface-sunk);
 		padding-top: 16px; color: var(--ink);
 	}
@@ -2361,7 +2389,7 @@
 		display: inline-flex; align-items: center; gap: 7px;
 		padding: 10px 16px; border-radius: 100px;
 		background: var(--ink); color: #fff; border: none;
-		font-size: 0.82rem; font-weight: 700; font-family: inherit; cursor: pointer;
+		font-size: 0.82rem; font-weight: 500; font-family: var(--font-gothic); cursor: pointer;
 		box-shadow: 0 4px 16px rgba(0,0,0,0.22);
 	}
 	.reserve-fab svg { width: 18px; height: 18px; }
@@ -2369,53 +2397,53 @@
 
 	/* 屋台の「できること」 */
 	.cap-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
-	.cap { display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 700; color: #8a6a1e; background: rgba(181,137,46,0.14); border: 1px solid rgba(181,137,46,0.35); border-radius: 20px; padding: 3px 9px; }
+	.cap { display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 500; color: #8a6a1e; background: rgba(181,137,46,0.14); border: 1px solid rgba(181,137,46,0.35); border-radius: 20px; padding: 3px 9px; }
 	.cap :global(.icon) { color: currentColor; }
 
 	/* 使用可能な用途ラベル */
 	.uc-block { margin: 10px 0 2px; }
-	.uc-label { font-size: 0.7rem; font-weight: 700; color: var(--ink-3); letter-spacing: 0.04em; }
+	.uc-label { font-size: 0.7rem; font-weight: 500; color: var(--ink-3); letter-spacing: 0.04em; }
 	.uc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-	.uc-chip { font-size: 0.74rem; font-weight: 600; color: var(--accent-deep); background: var(--accent-tint); border: 1px solid var(--line-strong); border-radius: 20px; padding: 3px 10px; }
+	.uc-chip { font-size: 0.74rem; font-weight: 500; color: var(--accent-deep); background: var(--accent-tint); border: 1px solid var(--line-strong); border-radius: 20px; padding: 3px 10px; }
 
 	/* 貸出中の借主 */
 	.renter { margin: 10px 0 2px; padding: 10px 12px; border-radius: 12px; background: var(--surface-sunk); border: 1px solid var(--line); }
-	.renter-label { font-size: 0.7rem; font-weight: 700; color: var(--accent-deep); }
+	.renter-label { font-size: 0.7rem; font-weight: 500; color: var(--accent-deep); }
 	.renter-main { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
 	.renter-ava { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 	.renter-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-	.renter-name { font-size: 0.9rem; font-weight: 700; color: var(--ink); }
+	.renter-name { font-size: 0.9rem; font-weight: 500; color: var(--ink); }
 	.renter-until { font-size: 0.74rem; color: var(--ink-2); }
 	.renter-uc { margin-top: 8px; }
 	.renter-menu { margin-top: 10px; }
-	.renter-menu-label { font-size: 0.7rem; font-weight: 700; color: var(--ink-3); }
+	.renter-menu-label { font-size: 0.7rem; font-weight: 500; color: var(--ink-3); }
 	.renter-menu-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 	.renter-menu-item { display: flex; align-items: center; gap: 8px; }
 	.rm-thumb { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
 	.rm-name { flex: 1; font-size: 0.8rem; color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	.rm-price { font-size: 0.8rem; font-weight: 700; color: var(--accent-deep); white-space: nowrap; }
+	.rm-price { font-size: 0.8rem; font-weight: 500; color: var(--accent-deep); white-space: nowrap; }
 
 	/* 予約フォームの用途選択チップ */
 	.uc-select { display: flex; flex-wrap: wrap; gap: 8px; }
-	.uc-select-chip { display: inline-flex; align-items: center; gap: 4px; padding: 8px 14px; border-radius: 100px; border: 1.5px solid var(--line-strong); background: #fff; color: var(--ink-2); font-size: 0.85rem; font-family: inherit; cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; }
-	.uc-select-chip.on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-deep); font-weight: 600; }
+	.uc-select-chip { display: inline-flex; align-items: center; gap: 4px; padding: 8px 14px; border-radius: 100px; border: 1.5px solid var(--line-strong); background: #fff; color: var(--ink-2); font-size: 0.85rem; font-family: var(--font-gothic); cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; }
+	.uc-select-chip.on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-deep); font-weight: 500; }
 
 	/* 過去利用者 */
 	.past-users { margin: 10px 0 2px; }
-	.pu-label { font-size: 0.72rem; font-weight: 700; color: var(--ink-2); }
+	.pu-label { font-size: 0.72rem; font-weight: 500; color: var(--ink-2); }
 	.pu-list { display: flex; gap: 12px; margin-top: 8px; overflow-x: auto; padding-bottom: 2px; }
 	.pu-item { display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; flex-shrink: 0; width: 52px; }
 	.pu-ava { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }
-	.pu-ava.ph { display: flex; align-items: center; justify-content: center; background: var(--surface-sunk); color: var(--ink-3); font-weight: 700; font-family: "Zen Antique", serif; }
+	.pu-ava.ph { display: flex; align-items: center; justify-content: center; background: var(--surface-sunk); color: var(--ink-3); font-weight: 500; font-family: var(--font-gothic); }
 	.pu-name { font-size: 0.66rem; color: var(--ink-2); max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 	/* 屋台人ゲート */
 	.yataijin-gate { position: absolute; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(247,241,230,0.72); backdrop-filter: blur(3px); }
 	.yataijin-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 26px 24px; max-width: 340px; text-align: center; box-shadow: var(--shadow-2); }
 	.yg-badge { width: 54px; height: 54px; border-radius: 50%; background: var(--accent-tint); color: var(--accent-deep); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; }
-	.yg-title { font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0 0 8px; line-height: 1.5; }
+	.yg-title { font-size: 1rem; font-weight: 500; color: var(--ink); margin: 0 0 8px; line-height: 1.5; }
 	.yg-desc { font-size: 0.8rem; color: var(--ink-2); line-height: 1.7; margin: 0 0 18px; }
-	.yg-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 0.92rem; font-weight: 700; font-family: inherit; cursor: pointer; }
+	.yg-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 0.92rem; font-weight: 500; font-family: var(--font-gothic); cursor: pointer; }
 	.yg-btn:hover:not(:disabled) { background: var(--accent-deep); }
 	.yg-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -2440,7 +2468,7 @@
 	.kpi-card.highlight { background: var(--ink); color: white; }
 	.kpi-card.highlight .kpi-label { color: var(--ink-3); }
 	.kpi-label { font-size: 0.75rem; color: var(--ink-2); margin-bottom: 5px; }
-	.kpi-value { font-size: 1.3rem; font-weight: bold; }
+	.kpi-value { font-size: 1.3rem; font-weight: 500; }
 	.fee-note {
 		font-size: 0.78rem; color: var(--ink-2); margin-top: 0;
 		padding: 8px 12px; background: var(--surface-sunk); border-radius: 8px;
@@ -2456,7 +2484,7 @@
 		font-size: 0.9rem; color: var(--ink-2);
 	}
 	.breakdown-row:last-child { border-bottom: none; }
-	.breakdown-count { font-weight: bold; color: var(--ink); }
+	.breakdown-count { font-weight: 500; color: var(--ink); }
 	.empty-history { color: var(--ink-3); text-align: center; padding: 20px; }
 	/* 予約確認パネル */
 	.modal-close-btn {
@@ -2473,9 +2501,9 @@
 		display: flex; justify-content: space-between; align-items: center;
 		margin-bottom: 8px;
 	}
-	.res-space-name { font-size: 0.95rem; font-weight: 700; color: var(--ink); }
+	.res-space-name { font-size: 0.95rem; font-weight: 500; color: var(--ink); }
 	.res-badge {
-		font-size: 0.7rem; font-weight: 700; padding: 3px 10px;
+		font-size: 0.7rem; font-weight: 500; padding: 3px 10px;
 		border-radius: 20px; white-space: nowrap;
 	}
 	.res-pending  { background: #dbeafe; color: #1d4ed8; }
@@ -2486,7 +2514,7 @@
 	.res-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 	.res-action-btn {
 		width: 100%; padding: 10px; border-radius: 8px;
-		font-size: 0.85rem; font-weight: 600; font-family: inherit;
+		font-size: 0.85rem; font-weight: 500; font-family: var(--font-gothic);
 		cursor: pointer; border: none; text-align: center; text-decoration: none;
 		display: block;
 	}
@@ -2513,7 +2541,7 @@
 	}
 	.res-filter-label {
 		font-size: 0.72rem;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--ink-2);
 		min-width: 40px;
 	}
@@ -2529,7 +2557,7 @@
 		background: white;
 		color: var(--ink-2);
 		font-size: 0.75rem;
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 		transition: all 0.15s;
 	}

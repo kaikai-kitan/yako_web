@@ -240,7 +240,7 @@
 	}
 
 	.title {
-		font-family: "Zen Antique", serif;
+		font-family: var(--font-gothic);
 		font-size: 1.4rem;
 		letter-spacing: 0.06em;
 		color: var(--ink);
@@ -316,7 +316,7 @@
 		border: 1px solid var(--line-strong);
 		border-radius: var(--r-md);
 		font-size: 0.95rem;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 		box-sizing: border-box;
 		background: var(--surface);
 		color: var(--ink);
@@ -368,7 +368,7 @@
 	}
 	.terms-check a {
 		color: var(--ink);
-		font-weight: 600;
+		font-weight: 500;
 		text-decoration: underline;
 		text-decoration-color: var(--line);
 		text-underline-offset: 2px;
@@ -388,7 +388,7 @@
 		border-radius: var(--r-md);
 		font-size: 0.95rem;
 		font-weight: 500;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 		letter-spacing: 0.02em;
 		cursor: pointer;
 		margin-top: 8px;
@@ -433,7 +433,7 @@
 	}
 
 	.reset-title {
-		font-family: "Zen Antique", serif;
+		font-family: var(--font-gothic);
 		font-size: 1.05rem; color: var(--ink); letter-spacing: 0.04em;
 		margin: 0 0 8px; text-align: center;
 	}
@@ -444,7 +444,7 @@
 	.forgot-link {
 		display: block; margin: -6px 0 14px auto;
 		background: none; border: none; padding: 0;
-		font-family: inherit; font-size: 0.8rem; color: var(--ink-2);
+		font-family: var(--font-gothic); font-size: 0.8rem; color: var(--ink-2);
 		text-decoration: underline; text-decoration-color: var(--line-strong);
 		text-underline-offset: 2px; cursor: pointer;
 	}
@@ -452,7 +452,7 @@
 	.back-to-login {
 		display: inline-block; margin-top: 18px;
 		background: none; border: none; padding: 4px;
-		font-family: inherit; font-size: 0.88rem; color: var(--ink-2);
+		font-family: var(--font-gothic); font-size: 0.88rem; color: var(--ink-2);
 		cursor: pointer; transition: color 0.15s;
 	}
 	.back-to-login:hover { color: var(--accent); }

@@ -241,12 +241,12 @@
 
 	.form { display: flex; flex-direction: column; gap: 16px; }
 	.field { display: flex; flex-direction: column; gap: 6px; }
-	.label { font-size: 0.82rem; font-weight: 600; color: #5a4f45; }
+	.label { font-size: 0.82rem; font-weight: 500; color: #5a4f45; }
 	.req { color: var(--accent); font-size: 0.72rem; margin-left: 4px; }
 	.field-note { font-size: 0.74rem; color: var(--ink-3); }
 	input[type="text"], textarea {
 		border: 1px solid #ded3c4; border-radius: 10px; padding: 11px 13px;
-		font-size: 0.95rem; font-family: inherit; background: #fff; color: var(--ink);
+		font-size: 0.95rem; font-family: var(--font-gothic); background: #fff; color: var(--ink);
 		box-sizing: border-box; width: 100%;
 	}
 	input:focus, textarea:focus { outline: none; border-color: var(--accent); }
@@ -271,7 +271,7 @@
 
 	.save-btn {
 		margin-top: 6px; padding: 13px; border: none; border-radius: 12px;
-		background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 700;
+		background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 500;
 		cursor: pointer; transition: background 0.15s;
 	}
 	.save-btn:hover:not(:disabled) { background: #b85d03; }

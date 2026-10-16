@@ -296,7 +296,7 @@
 		color: var(--accent);
 		border-radius: 8px;
 		font-size: 0.82rem;
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 		white-space: nowrap;
 	}
@@ -348,7 +348,7 @@
 		display: block; width: 100%; margin-top: 5px;
 		padding: 10px 12px; border: 1.5px solid var(--line-strong);
 		border-radius: 8px; font-size: 0.95rem;
-		font-family: inherit; box-sizing: border-box;
+		font-family: var(--font-gothic); box-sizing: border-box;
 	}
 
 	.field-input:focus { outline: none; border-color: var(--accent); }
@@ -360,18 +360,18 @@
 		display: inline-flex; align-items: center; gap: 4px;
 		padding: 8px 14px; border-radius: 100px;
 		border: 1.5px solid var(--line-strong); background: var(--surface);
-		color: var(--ink-2); font-size: 0.85rem; font-family: inherit; cursor: pointer;
+		color: var(--ink-2); font-size: 0.85rem; font-family: var(--font-gothic); cursor: pointer;
 		transition: border-color 0.15s, background 0.15s, color 0.15s;
 	}
 	.usecase-chip:hover { border-color: var(--accent); }
-	.usecase-chip.on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-deep); font-weight: 600; }
+	.usecase-chip.on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-deep); font-weight: 500; }
 	.field-hint { display: block; font-size: 0.72rem; color: var(--ink-3); margin-top: 8px; }
 
 	.submit-btn {
 		width: 100%; padding: 14px;
 		background: var(--accent); color: var(--ink);
 		border: none; border-radius: 10px;
-		font-size: 1rem; font-weight: bold;
+		font-size: 1rem; font-weight: 500;
 		cursor: pointer; margin-top: 8px;
 	}
 

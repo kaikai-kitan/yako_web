@@ -266,10 +266,10 @@
     }
     .hero-label {
         font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
-        color: #e8c97a; font-weight: 700;
+        color: #e8c97a; font-weight: 500;
     }
     .hero-title {
-        font-size: clamp(1.6rem, 5vw, 2.4rem); font-weight: 800;
+        font-size: clamp(1.6rem, 5vw, 2.4rem); font-weight: 500;
         letter-spacing: 0.08em; margin: 8px 0 10px;
     }
     .hero-sub { font-size: 0.9rem; opacity: 0.85; margin: 0; }
@@ -278,7 +278,7 @@
     .steps-section { background: var(--surface-sunk); padding: 48px 20px; }
     .steps-inner { max-width: 800px; margin: 0 auto; }
     .steps-title {
-        text-align: center; font-size: 1.2rem; font-weight: 700;
+        text-align: center; font-size: 1.2rem; font-weight: 500;
         color: var(--ink); margin: 0 0 32px;
     }
     .steps-grid {
@@ -295,17 +295,17 @@
         display: flex; flex-direction: column; align-items: center; gap: 6px;
     }
     .step-num {
-        font-size: 0.68rem; font-weight: 800; color: var(--accent);
+        font-size: 0.68rem; font-weight: 500; color: var(--accent);
         letter-spacing: 0.08em;
     }
     .step-icon { font-size: 1.8rem; }
-    .step-name { font-size: 0.88rem; font-weight: 700; color: var(--ink); margin: 0; }
+    .step-name { font-size: 0.88rem; font-weight: 500; color: var(--ink); margin: 0; }
     .step-desc { font-size: 0.72rem; color: var(--ink-2); margin: 0; line-height: 1.4; }
 
     /* フォーム */
     .form-section { padding: 48px 20px 64px; background: #fff; }
     .form-inner { max-width: 560px; margin: 0 auto; }
-    .form-title { font-size: 1.1rem; font-weight: 700; color: var(--ink); margin: 0 0 28px; }
+    .form-title { font-size: 1.1rem; font-weight: 500; color: var(--ink); margin: 0 0 28px; }
 
     .loading { text-align: center; color: var(--ink-3); padding: 40px; }
 
@@ -315,7 +315,7 @@
     .login-btn {
         display: inline-block; padding: 12px 28px;
         background: var(--ink); color: white; border-radius: 10px;
-        text-decoration: none; font-weight: 700; font-size: 0.95rem;
+        text-decoration: none; font-weight: 500; font-size: 0.95rem;
     }
 
     .store-form { display: flex; flex-direction: column; gap: 20px; }
@@ -330,11 +330,11 @@
     }
 
     .field { display: flex; flex-direction: column; gap: 6px; }
-    .label { font-size: 0.85rem; font-weight: 600; color: var(--ink); }
+    .label { font-size: 0.85rem; font-weight: 500; color: var(--ink); }
     .req { color: var(--accent); }
     .input {
         padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 8px;
-        font-size: 0.95rem; font-family: inherit; color: var(--ink);
+        font-size: 0.95rem; font-family: var(--font-gothic); color: var(--ink);
         background: var(--surface-sunk); transition: border-color 0.15s; width: 100%; box-sizing: border-box;
     }
     .input:focus { outline: none; border-color: var(--accent); background: #fff; }
@@ -362,7 +362,7 @@
     .save-btn {
         padding: 14px; background: var(--ink); color: white;
         border: none; border-radius: 10px; font-size: 1rem;
-        font-weight: 700; font-family: inherit; cursor: pointer;
+        font-weight: 500; font-family: var(--font-gothic); cursor: pointer;
         transition: background 0.15s;
     }
     .save-btn:hover { background: #3a2e26; }
@@ -372,7 +372,7 @@
         border-top: 1px solid var(--line); padding-top: 20px;
         display: flex; flex-direction: column; gap: 10px;
     }
-    .next-title { font-size: 0.8rem; font-weight: 700; color: var(--ink-3); margin: 0; }
+    .next-title { font-size: 0.8rem; font-weight: 500; color: var(--ink-3); margin: 0; }
     .next-link {
         font-size: 0.88rem; color: var(--ink); text-decoration: none;
         padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px;

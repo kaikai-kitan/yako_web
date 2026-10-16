@@ -33,7 +33,7 @@
 	.icon {
 		width: 72px; height: 72px; border-radius: 50%;
 		display: flex; align-items: center; justify-content: center;
-		font-size: 2rem; font-weight: 700;
+		font-size: 2rem; font-weight: 500;
 	}
 	.success { background: #e8f5e9; color: #2e7d32; }
 	h1 { font-size: 1.2rem; color: var(--ink); margin: 0; }
@@ -42,7 +42,7 @@
 		display: block; width: 100%; padding: 13px;
 		background: var(--ink); color: white;
 		border-radius: 10px; text-decoration: none;
-		font-size: 0.95rem; font-weight: 700;
+		font-size: 0.95rem; font-weight: 500;
 	}
 	.btn.ghost {
 		background: none; border: 1.5px solid var(--ink); color: var(--ink);

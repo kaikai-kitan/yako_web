@@ -196,7 +196,7 @@
 	.page {
 		min-height: 100svh;
 		background: var(--surface-sunk);
-		font-family: sans-serif;
+		font-family: var(--font-gothic);
 		padding-bottom: 60px;
 	}
 
@@ -210,7 +210,7 @@
 	}
 	.back-link { font-size: 0.82rem; color: var(--ink-2); text-decoration: none; }
 	.back-link:hover { color: var(--ink); }
-	.page-title { font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0; }
+	.page-title { font-size: 1rem; font-weight: 500; color: var(--ink); margin: 0; }
 
 	.toast {
 		margin: 12px 20px; padding: 10px 16px;
@@ -236,10 +236,10 @@
 		margin-bottom: 12px; flex-wrap: wrap; gap: 4px;
 	}
 	.user-identity { display: flex; align-items: center; gap: 8px; }
-	.user-name { font-size: 0.95rem; font-weight: 700; color: var(--ink); }
+	.user-name { font-size: 0.95rem; font-weight: 500; color: var(--ink); }
 	.suspended-badge {
 		font-size: 0.68rem; background: #fecaca; color: var(--accent-deep);
-		border-radius: 4px; padding: 2px 6px; font-weight: 700;
+		border-radius: 4px; padding: 2px 6px; font-weight: 500;
 	}
 	.user-joined { font-size: 0.75rem; color: var(--ink-3); }
 
@@ -247,8 +247,8 @@
 		display: flex; align-items: center; gap: 10px;
 		margin-bottom: 12px;
 	}
-	.score-label { font-size: 0.75rem; color: var(--ink-3); font-weight: 600; white-space: nowrap; }
-	.score-value { font-size: 1rem; font-weight: 800; min-width: 36px; text-align: right; }
+	.score-label { font-size: 0.75rem; color: var(--ink-3); font-weight: 500; white-space: nowrap; }
+	.score-value { font-size: 1rem; font-weight: 500; min-width: 36px; text-align: right; }
 	.score-value.score-good { color: var(--ink-2); }
 	.score-value.score-warn { color: var(--accent-deep); }
 	.score-value.score-danger { color: var(--accent-deep); }
@@ -265,8 +265,8 @@
 
 	.action-btn {
 		padding: 7px 14px; border-radius: 8px;
-		font-size: 0.82rem; font-weight: 600;
-		font-family: inherit; cursor: pointer; border: none;
+		font-size: 0.82rem; font-weight: 500;
+		font-family: var(--font-gothic); cursor: pointer; border: none;
 	}
 	.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 	.action-btn.unsuspend { background: var(--ink-2); color: white; }
@@ -276,7 +276,7 @@
 	.action-btn.reject { background: none; border: 1px solid var(--line-strong); color: var(--accent-deep); }
 	.action-btn.corp-off { background: none; border: 1px solid var(--line-strong); color: var(--ink-2); }
 	.corp-badge-adm {
-		font-size: 0.68rem; font-weight: 700; color: #8a6a1e;
+		font-size: 0.68rem; font-weight: 500; color: #8a6a1e;
 		background: rgba(181, 137, 46, 0.14); border: 1px solid rgba(181, 137, 46, 0.4);
 		padding: 2px 8px; border-radius: 20px;
 	}

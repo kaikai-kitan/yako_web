@@ -190,7 +190,7 @@
     }
     .logo-img { width: 36px; height: 36px; object-fit: contain; }
     .logo-text {
-        font-size: 0.85rem; font-weight: 700; letter-spacing: 0.03em;
+        font-size: 0.85rem; font-weight: 500; letter-spacing: 0.03em;
         white-space: nowrap; display: none;
     }
 
@@ -236,7 +236,7 @@
         display: block; width: 100%; padding: 11px 16px;
         font-size: 0.88rem; color: var(--ink);
         text-decoration: none; background: none; border: none;
-        text-align: left; font-family: inherit; cursor: pointer;
+        text-align: left; font-family: var(--font-gothic); cursor: pointer;
         transition: background 0.12s;
     }
     .dropdown-item:hover { background: var(--surface-sunk); }
@@ -296,7 +296,7 @@
     .drawer-list a:hover { background: var(--surface-sunk); }
     .drawer-section-label {
         padding: 10px 20px 4px;
-        font-size: 0.7rem; font-weight: 700;
+        font-size: 0.7rem; font-weight: 500;
         color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase;
         margin: 0; border-bottom: none !important;
         background: var(--surface-sunk);
@@ -316,7 +316,7 @@
     .drawer-item-text {
         display: flex; flex-direction: column; gap: 1px;
     }
-    .drawer-item-name { font-size: 0.92rem; font-weight: 600; color: var(--ink); }
+    .drawer-item-name { font-size: 0.92rem; font-weight: 500; color: var(--ink); }
     .drawer-item-desc { font-size: 0.72rem; color: var(--ink-3); }
 
 

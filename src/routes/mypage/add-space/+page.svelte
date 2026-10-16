@@ -291,7 +291,7 @@
 		width: 100%; padding: 14px;
 		background: var(--accent); color: var(--ink);
 		border: none; border-radius: 10px;
-		font-size: 1rem; font-weight: bold;
+		font-size: 1rem; font-weight: 500;
 		cursor: pointer; margin-top: 8px;
 	}
 

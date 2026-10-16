@@ -80,7 +80,7 @@
 		padding: 24px 28px; border: 2px solid var(--ink); border-radius: 18px; background: #fff;
 	}
 	.qr { width: 240px; height: 240px; }
-	.card-name { font-size: 1.05rem; font-weight: 800; color: var(--ink); margin: 8px 0 0; }
+	.card-name { font-size: 1.05rem; font-weight: 500; color: var(--ink); margin: 8px 0 0; }
 	.card-sub { font-size: 0.72rem; color: var(--ink-3); margin: 0; letter-spacing: 0.04em; }
 
 	.url-row { display: flex; gap: 8px; margin: 1.6rem auto 0; max-width: 440px; }
@@ -90,7 +90,7 @@
 	}
 	.url-row button {
 		border: none; background: var(--ink); color: #fff; border-radius: 8px;
-		padding: 0 16px; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+		padding: 0 16px; font-size: 0.82rem; font-weight: 500; cursor: pointer;
 	}
 
 	.howto { text-align: left; margin: 2rem auto 0; max-width: 460px; }
@@ -102,7 +102,7 @@
 
 	.print-btn {
 		margin-top: 1.8rem; padding: 12px 28px; border: none; border-radius: 100px;
-		background: var(--accent); color: #fff; font-size: 0.9rem; font-weight: 700; cursor: pointer;
+		background: var(--accent); color: #fff; font-size: 0.9rem; font-weight: 500; cursor: pointer;
 	}
 	.print-btn:hover { background: #b85d03; }
 

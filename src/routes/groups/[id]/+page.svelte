@@ -317,38 +317,38 @@
 	.back { font-size: 0.82rem; color: var(--ink-2); text-decoration: none; white-space: nowrap; }
 	.back:hover { color: var(--ink); }
 	.title-block { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
-	.g-name { font-family: "Zen Antique", serif; font-size: 1rem; color: var(--ink); letter-spacing: 0.04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.g-name { font-family: var(--font-gothic); font-size: 1rem; color: var(--ink); letter-spacing: 0.04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	.g-meta { font-size: 0.7rem; color: var(--ink-3); }
-	.invite-btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px; border-radius: 100px; border: none; background: var(--accent); color: #fff; font-size: 0.8rem; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; }
+	.invite-btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px; border-radius: 100px; border: none; background: var(--accent); color: #fff; font-size: 0.8rem; font-weight: 500; font-family: var(--font-gothic); cursor: pointer; white-space: nowrap; }
 	.invite-btn:hover { background: var(--accent-deep); }
 	.invite-btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); }
 	.invite-btn.ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--surface); }
-	.pill { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 100px; background: var(--accent); color: #fff; font-size: 0.66rem; font-weight: 800; margin-left: 2px; }
+	.pill { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 100px; background: var(--accent); color: #fff; font-size: 0.66rem; font-weight: 500; margin-left: 2px; }
 
 	.manage-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(20,16,12,0.55); display: flex; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; }
 	.manage-card { position: relative; background: var(--surface); border-radius: 18px; padding: 22px; width: 100%; max-width: 460px; box-shadow: var(--shadow-2); margin: auto; }
 	.manage-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-	.manage-title { font-family: "Zen Antique", serif; font-size: 1.15rem; color: var(--ink); margin: 0; }
+	.manage-title { font-family: var(--font-gothic); font-size: 1.15rem; color: var(--ink); margin: 0; }
 	.m-err { background: #fef2f2; color: var(--accent-deep); border: 1px solid #fecaca; border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; margin: 0 0 12px; }
 	.m-ok { background: #ecfdf5; color: #14532d; border: 1px solid #bbf7d0; border-radius: 8px; padding: 7px 11px; font-size: 0.78rem; margin: 0 0 10px; }
 
 	.m-sec { padding: 14px 0; border-top: 1px solid var(--line); }
 	.m-sec:first-of-type { border-top: none; padding-top: 0; }
-	.m-h { font-size: 0.82rem; font-weight: 700; color: var(--ink); margin: 0 0 10px; display: flex; align-items: center; gap: 7px; }
-	.m-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 100px; background: var(--accent); color: #fff; font-size: 0.66rem; font-weight: 800; }
+	.m-h { font-size: 0.82rem; font-weight: 500; color: var(--ink); margin: 0 0 10px; display: flex; align-items: center; gap: 7px; }
+	.m-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 100px; background: var(--accent); color: #fff; font-size: 0.66rem; font-weight: 500; }
 	.m-count.light { background: var(--surface-sunk); color: var(--ink-2); }
 	.m-empty { font-size: 0.8rem; color: var(--ink-3); margin: 0; }
 
 	.m-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 	.m-row { display: flex; align-items: center; gap: 10px; }
-	.m-avatar { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--surface-sunk); color: var(--ink-2); font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+	.m-avatar { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--surface-sunk); color: var(--ink-2); font-size: 0.85rem; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; }
 	.m-name { flex: 1; min-width: 0; font-size: 0.85rem; color: var(--ink); display: inline-flex; align-items: center; gap: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	.m-role { font-size: 0.62rem; font-weight: 700; padding: 1px 7px; border-radius: 20px; background: var(--surface-sunk); color: var(--ink-3); flex-shrink: 0; }
+	.m-role { font-size: 0.62rem; font-weight: 500; padding: 1px 7px; border-radius: 20px; background: var(--surface-sunk); color: var(--ink-3); flex-shrink: 0; }
 	.m-role.owner { background: rgba(181,137,46,0.16); color: #8a6a1e; }
 	.m-role.admin { background: rgba(95,122,82,0.16); color: #4a6a3a; }
 	.m-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
-	.m-btn { padding: 5px 12px; border-radius: 8px; border: none; font-size: 0.74rem; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; }
+	.m-btn { padding: 5px 12px; border-radius: 8px; border: none; font-size: 0.74rem; font-weight: 500; font-family: var(--font-gothic); cursor: pointer; white-space: nowrap; }
 	.m-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 	.m-btn.ok { background: var(--accent); color: #fff; }
 	.m-btn.ghost { background: var(--surface-sunk); color: var(--ink); border: 1px solid var(--line); }
@@ -358,11 +358,11 @@
 
 	.m-field { display: block; margin-bottom: 10px; }
 	.m-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-	.m-label { display: block; font-size: 0.74rem; font-weight: 600; color: var(--ink-2); margin-bottom: 5px; }
-	.m-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border: 1px solid var(--line-strong); border-radius: 9px; font-size: 0.88rem; font-family: inherit; background: var(--surface); color: var(--ink); }
+	.m-label { display: block; font-size: 0.74rem; font-weight: 500; color: var(--ink-2); margin-bottom: 5px; }
+	.m-input { width: 100%; box-sizing: border-box; padding: 9px 11px; border: 1px solid var(--line-strong); border-radius: 9px; font-size: 0.88rem; font-family: var(--font-gothic); background: var(--surface); color: var(--ink); }
 	.m-input:focus { outline: 2px solid var(--accent); border-color: transparent; }
 	.m-policy { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-	.m-pol { padding: 8px; border: 1.5px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink-2); font-size: 0.8rem; font-weight: 600; font-family: inherit; cursor: pointer; }
+	.m-pol { padding: 8px; border: 1.5px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink-2); font-size: 0.8rem; font-weight: 500; font-family: var(--font-gothic); cursor: pointer; }
 	.m-pol.on { border-color: var(--accent); background: var(--accent-tint); color: var(--ink); }
 
 	.m-close-row { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
@@ -377,12 +377,12 @@
 	.invite-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(20,16,12,0.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
 	.invite-card { position: relative; background: var(--surface); border-radius: 18px; padding: 26px 24px; width: 100%; max-width: 320px; text-align: center; box-shadow: var(--shadow-2); }
 	.invite-close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 1.4rem; color: var(--ink-3); cursor: pointer; line-height: 1; }
-	.invite-title { font-family: "Zen Antique", serif; font-size: 1.1rem; color: var(--ink); margin: 0 0 6px; }
+	.invite-title { font-family: var(--font-gothic); font-size: 1.1rem; color: var(--ink); margin: 0 0 6px; }
 	.invite-hint { font-size: 0.78rem; color: var(--ink-2); line-height: 1.6; margin: 0 0 16px; }
 	.invite-qr { width: 200px; height: 200px; border-radius: 12px; border: 1px solid var(--line); margin: 0 auto 14px; display: block; }
 	.code-box { display: flex; align-items: center; gap: 8px; justify-content: center; }
-	.code-val { font-size: 1.15rem; font-weight: 800; letter-spacing: 0.16em; color: var(--ink); font-family: monospace; }
-	.copy-btn { padding: 5px 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface-sunk); color: var(--ink); font-size: 0.76rem; font-family: inherit; cursor: pointer; }
+	.code-val { font-size: 1.15rem; font-weight: 500; letter-spacing: 0.16em; color: var(--ink); font-family: monospace; }
+	.copy-btn { padding: 5px 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface-sunk); color: var(--ink); font-size: 0.76rem; font-family: var(--font-gothic); cursor: pointer; }
 	.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
 	.invite-ended { font-size: 0.72rem; color: var(--accent-deep); margin: 12px 0 0; }
 </style>

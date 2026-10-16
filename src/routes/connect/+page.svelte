@@ -201,7 +201,7 @@
 
 	.primary, .ghost {
 		width: 100%; padding: 13px; border-radius: 12px; font-size: 0.95rem;
-		font-weight: 700; font-family: inherit; cursor: pointer; border: none;
+		font-weight: 500; font-family: var(--font-gothic); cursor: pointer; border: none;
 	}
 	.primary { background: var(--accent); color: #fff; }
 	.primary:hover { background: #b85d03; }

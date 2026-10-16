@@ -176,14 +176,14 @@
 		max-width: 800px;
 		margin: 0 auto;
 		padding: 40px 20px 80px;
-		font-family: sans-serif;
+		font-family: var(--font-gothic);
 		color: var(--ink);
 		line-height: 1.8;
 	}
 
 	.page-title {
 		font-size: 1.4rem;
-		font-weight: 700;
+		font-weight: 500;
 		margin: 0 0 16px;
 		padding-bottom: 12px;
 		border-bottom: 2px solid var(--line);
@@ -204,7 +204,7 @@
 
 	.section-title {
 		font-size: 1rem;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--ink);
 		margin: 0 0 12px;
 		padding-bottom: 6px;

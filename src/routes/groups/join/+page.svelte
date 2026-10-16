@@ -95,7 +95,7 @@
 	.icon-badge { width: 56px; height: 56px; border-radius: 50%; background: var(--accent-tint); color: var(--accent-deep); display: inline-flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
 	.icon-badge.err { background: #fef2f2; color: var(--accent-deep); }
 	.kicker { display: block; font-size: 0.7rem; letter-spacing: 0.24em; color: var(--accent); margin-bottom: 6px; }
-	.g-name { font-family: "Zen Antique", serif; font-size: 1.3rem; color: var(--ink); margin: 0 0 8px; letter-spacing: 0.04em; }
+	.g-name { font-family: var(--font-gothic); font-size: 1.3rem; color: var(--ink); margin: 0 0 8px; letter-spacing: 0.04em; }
 	.g-desc { font-size: 0.85rem; color: var(--ink-2); line-height: 1.6; margin: 0 0 8px; }
 	.g-meta { font-size: 0.78rem; color: var(--ink-3); margin: 0 0 20px; }
 	.msg { font-size: 0.9rem; color: var(--ink-2); margin: 0 0 18px; }
@@ -103,7 +103,7 @@
 	.err-inline { font-size: 0.82rem; color: var(--accent-deep); margin: 0 0 12px; }
 	.fine { font-size: 0.72rem; color: var(--ink-3); margin: 12px 0 0; }
 
-	.btn { display: inline-block; width: 100%; box-sizing: border-box; padding: 13px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 700; font-family: inherit; cursor: pointer; text-decoration: none; }
+	.btn { display: inline-block; width: 100%; box-sizing: border-box; padding: 13px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 500; font-family: var(--font-gothic); cursor: pointer; text-decoration: none; }
 	.btn:hover:not(:disabled) { background: var(--accent-deep); }
 	.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 	.btn.ghost { background: none; border: 1px solid var(--line-strong); color: var(--ink); }

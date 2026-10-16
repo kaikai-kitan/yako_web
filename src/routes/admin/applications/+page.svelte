@@ -186,7 +186,7 @@
 	.page {
 		min-height: 100svh;
 		background: var(--surface-sunk);
-		font-family: sans-serif;
+		font-family: var(--font-gothic);
 		padding-bottom: 60px;
 	}
 
@@ -200,7 +200,7 @@
 	}
 	.back-link { font-size: 0.82rem; color: var(--ink-2); text-decoration: none; }
 	.back-link:hover { color: var(--ink); }
-	.page-title { font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0; }
+	.page-title { font-size: 1rem; font-weight: 500; color: var(--ink); margin: 0; }
 
 	.toast {
 		margin: 12px 20px; padding: 10px 16px;
@@ -229,7 +229,7 @@
 		margin-bottom: 14px; flex-wrap: wrap; gap: 6px;
 	}
 	.app-identity { display: flex; flex-direction: column; gap: 2px; }
-	.app-business { font-size: 1rem; font-weight: 700; color: var(--ink); }
+	.app-business { font-size: 1rem; font-weight: 500; color: var(--ink); }
 	.app-name { font-size: 0.8rem; color: var(--ink-2); }
 	.app-date { font-size: 0.78rem; color: var(--ink-3); }
 
@@ -239,16 +239,16 @@
 		padding: 12px; margin-bottom: 14px;
 	}
 	.stat { display: flex; flex-direction: column; gap: 2px; }
-	.stat-label { font-size: 0.72rem; color: var(--ink-3); font-weight: 600; }
-	.stat-value { font-size: 0.88rem; color: var(--ink); font-weight: 700; }
+	.stat-label { font-size: 0.72rem; color: var(--ink-3); font-weight: 500; }
+	.stat-value { font-size: 0.88rem; color: var(--ink); font-weight: 500; }
 	.stat-value.ok { color: var(--ink-2); }
 
 	.app-actions { display: flex; gap: 8px; }
 
 	.action-btn {
 		padding: 8px 18px; border-radius: 8px;
-		font-size: 0.85rem; font-weight: 600;
-		font-family: inherit; cursor: pointer; border: none;
+		font-size: 0.85rem; font-weight: 500;
+		font-family: var(--font-gothic); cursor: pointer; border: none;
 	}
 	.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 	.action-btn.approve { background: var(--ink-2); color: white; }
@@ -264,7 +264,7 @@
 		width: 100%; box-sizing: border-box;
 		border: 1.5px solid #fecaca; border-radius: 8px;
 		padding: 10px 12px; font-size: 0.88rem;
-		font-family: inherit; resize: vertical; outline: none;
+		font-family: var(--font-gothic); resize: vertical; outline: none;
 		margin-bottom: 8px;
 	}
 	.reject-textarea:focus { border-color: var(--accent-deep); }

@@ -2,6 +2,11 @@
    微小夜行電灯：和紙・墨・提灯のあかり・鴨川の夜。
    彩度を抑え、余白と罫線と明朝で品を出す。 */
 :root {
+  --bottom-nav-content-height: 64px;
+  --bottom-nav-height: calc(var(--bottom-nav-content-height) + env(safe-area-inset-bottom, 0px));
+  /* 書体は2種類に統一：ボタン・項目＝ゴシック／文章＝明朝 */
+  --font-gothic: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", YuGothic, Meiryo, system-ui, sans-serif;
+  --font-mincho: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "Noto Serif JP", serif;
   /* 紙・面 */
   --paper: #f7f1e6;      /* ベース（和紙） */
   --surface: #fffdf7;    /* カード面 */
@@ -30,6 +35,8 @@
 
 html {
   overflow-x: clip; /* ピンチズーム時の横余白を防ぐ（sticky を壊さない） */
+  /* 最上部・最下部でのバウンス（ゴム引き）を止め、固定ボトムバーが揺れないようにする */
+  overscroll-behavior-y: none;
 }
 
 /* スクロールバー確保はデスクトップのみ（モバイルでは右余白の原因になる） */
@@ -40,7 +47,7 @@ html {
 }
 
 body {
-  font-family: "Hiragino Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-gothic);
   font-size: 16px;
   font-weight: 400;
   line-height: 1.6;
@@ -64,8 +71,8 @@ img, video, iframe {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: "Zen Antique", YuMincho, serif;
-  font-weight: 600;
+  font-family: var(--font-gothic);
+  font-weight: 500;
   line-height: 1.3;
   letter-spacing: 0.03em;
   margin: 0;
@@ -87,6 +94,26 @@ p {
 }
 
 p + p { margin-top: 1rem; }
+
+/* ===== 書体の使い分け =====
+   文章（段落・説明文・注記）＝明朝。
+   ボタン・入力・ラベル・ナビ・見出しなどの「項目」＝ゴシック（body の既定）。
+   :where() で詳細度0にしているので、各ページで個別指定すればそちらが優先される。 */
+:where(p, blockquote, figcaption, dd,
+  [class*="desc"], [class*="lead"], [class*="note"], [class*="intro"],
+  [class*="caption"], [class*="bio"], [class*="message"], [class*="comment"],
+  .vision-body, .mission-body, .news-body, .step-body, .dl-text) {
+  font-family: var(--font-mincho);
+}
+/* 段落タグでも価格・ラベル等の「項目」はゴシック */
+:where(p):where([class*="price"], [class*="label"], [class*="badge"], [class*="status"],
+  [class*="title"], [class*="name"], [class*="count"], [class*="meta"], [class*="tag"]) {
+  font-family: var(--font-gothic);
+}
+button, input, select, textarea, label, nav, th, legend, summary,
+.btn, [role="button"], [role="tab"], [role="menuitem"] {
+  font-family: var(--font-gothic);
+}
 
 strong { font-weight: 600; color: var(--ink); }
 em { font-style: italic; }
@@ -117,7 +144,7 @@ ul, li {
 
 /* ===== ボタン・フォーム基盤 ===== */
 button, input[type="button"], input[type="submit"] {
-  font-family: inherit;
+  font-family: var(--font-gothic);
   font-size: inherit;
 }
 
@@ -192,7 +219,7 @@ input[type="date"],
 input[type="time"],
 textarea,
 select {
-  font-family: inherit;
+  font-family: var(--font-gothic);
   font-size: 0.95rem;
   padding: 11px 13px;
   border: 1px solid var(--line-strong);

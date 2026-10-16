@@ -246,7 +246,7 @@
 
 	.scan-title {
 		font-size: 1.2rem;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--ink);
 		margin: 0;
 	}
@@ -287,7 +287,7 @@
 		align-items: center;
 		justify-content: center;
 		font-size: 2rem;
-		font-weight: 700;
+		font-weight: 500;
 	}
 
 	.success-icon { background: #e8f5e9; color: #2e7d32; }
@@ -295,14 +295,14 @@
 
 	.result-title {
 		font-size: 1.3rem;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--ink);
 		margin: 0;
 	}
 
 	.place-name {
 		font-size: 1.05rem;
-		font-weight: 600;
+		font-weight: 500;
 		color: var(--ink);
 		margin: 0;
 	}
@@ -329,7 +329,7 @@
 		background: var(--ink);
 		color: #fff;
 		font-size: 0.95rem;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 		cursor: pointer;
 	}
 

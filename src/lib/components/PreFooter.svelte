@@ -76,9 +76,9 @@
     }
 
     .pf-heading {
-        font-family: "Zen Antique", serif;
+        font-family: var(--font-gothic);
         font-size: 0.85rem;
-        font-weight: 600;
+        font-weight: 500;
         letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--line-strong);
@@ -111,7 +111,7 @@
         color: #fff !important;
         border-radius: 8px;
         font-size: 0.85rem;
-        font-weight: 700;
+        font-weight: 500;
         text-decoration: none !important;
         transition: background 0.15s;
         white-space: nowrap;

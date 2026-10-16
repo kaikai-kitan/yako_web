@@ -990,7 +990,7 @@
 		background: none;
 		border: none;
 		cursor: pointer;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 	}
 
 	.map-return-btn {
@@ -1000,7 +1000,7 @@
 		flex-shrink: 0;
 		padding: 8px 16px;
 		font-size: 0.85rem;
-		font-weight: 600;
+		font-weight: 500;
 		color: #fff;
 		background: var(--accent);
 		border-radius: 100px;
@@ -1023,7 +1023,7 @@
 	}
 	.credit-head { display: flex; align-items: baseline; justify-content: space-between; }
 	.credit-label { font-size: 0.8rem; color: var(--ink-2, var(--ink-2)); letter-spacing: 0.06em; }
-	.credit-value { font-size: 1.5rem; font-weight: 700; color: var(--ink, var(--ink)); }
+	.credit-value { font-size: 1.5rem; font-weight: 500; color: var(--ink, var(--ink)); }
 	.credit-value.low { color: #b0402c; }
 	.credit-bar { height: 6px; background: #efe6d6; border-radius: 3px; overflow: hidden; margin: 8px 0; }
 	.credit-fill { height: 100%; background: var(--accent, #b85c2b); border-radius: 3px; transition: width 0.4s ease; }
@@ -1046,7 +1046,7 @@
 	.profile-edit-section .section-title {
 		color: var(--ink-3);
 		font-size: 0.72rem;
-		font-weight: 600;
+		font-weight: 500;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
 		margin: 0 0 18px;
@@ -1084,7 +1084,7 @@
 		align-items: center;
 		justify-content: center;
 		font-size: 1.8rem;
-		font-weight: bold;
+		font-weight: 500;
 	}
 
 	.avatar-label:hover .avatar-img,
@@ -1107,7 +1107,7 @@
 
 	.badge {
 		font-size: 0.72rem;
-		font-weight: 600;
+		font-weight: 500;
 		padding: 4px 11px;
 		border-radius: 20px;
 		border: 1px solid transparent;
@@ -1140,11 +1140,11 @@
 		border: none;
 		border-radius: var(--r-md);
 		font-size: 0.95rem;
-		font-weight: 600;
+		font-weight: 500;
 		letter-spacing: 0.02em;
 		cursor: pointer;
 		margin-top: 8px;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 		box-shadow: 0 2px 8px rgba(184, 92, 43, 0.22);
 		transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
 	}
@@ -1166,7 +1166,7 @@
 
 	.section-title {
 		font-size: 1rem;
-		font-weight: bold;
+		font-weight: 500;
 		color: var(--ink);
 		margin: 0 0 12px 0;
 	}
@@ -1184,13 +1184,13 @@
 		background: var(--accent);
 		color: #fff;
 		font-size: 0.85rem;
-		font-weight: 600;
+		font-weight: 500;
 		padding: 7px 16px;
 		border-radius: 20px;
 		text-decoration: none;
 		border: none;
 		cursor: pointer;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 		transition: background 0.15s, transform 0.1s;
 	}
 	.add-btn:hover { background: var(--accent-deep); }
@@ -1240,7 +1240,7 @@
 
 	.menu-name {
 		font-size: 0.92rem;
-		font-weight: bold;
+		font-weight: 500;
 		color: var(--ink);
 	}
 
@@ -1255,7 +1255,7 @@
 	.menu-price {
 		font-size: 0.82rem;
 		color: var(--accent-deep);
-		font-weight: bold;
+		font-weight: 500;
 	}
 
 	.menu-actions {
@@ -1300,7 +1300,7 @@
 	}
 	.dashboard-link:active { transform: translateY(0); box-shadow: var(--shadow-1); }
 	.dl-text { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-	.dl-text strong { font-size: 0.95rem; font-weight: 600; }
+	.dl-text strong { font-size: 0.95rem; font-weight: 500; }
 	.dl-text span { font-size: 0.78rem; color: var(--ink-2); line-height: 1.4; }
 	.dl-arrow { font-size: 1.4rem; color: var(--ink-3); flex-shrink: 0; }
 
@@ -1327,10 +1327,10 @@
 		border: none;
 		border-radius: var(--r-md);
 		font-size: 0.88rem;
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 		align-self: flex-start;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 		box-shadow: 0 2px 8px rgba(184, 92, 43, 0.22);
 		transition: background 0.15s, transform 0.1s;
 	}
@@ -1390,13 +1390,13 @@
 		margin-bottom: 6px;
 	}
 
-	.item-name { font-weight: bold; font-size: 0.95rem; color: var(--ink); }
+	.item-name { font-weight: 500; font-size: 0.95rem; color: var(--ink); }
 	.item-detail { font-size: 0.82rem; color: var(--ink-2); margin-top: 3px; }
 	.detail-with-icon :global(.icon) { vertical-align: -2px; color: var(--ink-3); }
 
 	.status-badge {
 		font-size: 0.7rem;
-		font-weight: bold;
+		font-weight: 500;
 		padding: 2px 8px;
 		border-radius: 10px;
 	}
@@ -1417,7 +1417,7 @@
 		color: var(--ink-2);
 		border-radius: 6px;
 		font-size: 0.78rem;
-		font-weight: 600;
+		font-weight: 500;
 		text-decoration: none;
 		display: flex;
 		align-items: center;
@@ -1432,7 +1432,7 @@
 		border-radius: 6px;
 		font-size: 0.78rem;
 		cursor: pointer;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 	}
 
 	.qr-modal { align-items: center; text-align: center; }
@@ -1487,7 +1487,7 @@
 		border-radius: var(--r-md);
 		cursor: pointer;
 		font-size: 0.9rem;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 		transition: background 0.15s, border-color 0.15s;
 	}
 	.logout-btn:hover { background: var(--surface-sunk); border-color: var(--ink-3); }
@@ -1504,7 +1504,7 @@
 	.corp-box p { font-size: 0.85rem; color: var(--ink-2); line-height: 1.6; margin: 8px 0; }
 	.corp-state {
 		display: inline-flex; align-items: center; gap: 5px;
-		font-size: 0.78rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+		font-size: 0.78rem; font-weight: 500; padding: 4px 10px; border-radius: 20px;
 	}
 	.corp-state.ok { background: rgba(95, 122, 82, 0.12); color: #4a6a3a; }
 	.corp-state.pending { background: rgba(184, 92, 43, 0.1); color: var(--accent-deep); }
@@ -1512,8 +1512,8 @@
 	.corp-btn {
 		width: 100%; box-sizing: border-box; margin-top: 8px; padding: 12px; border: none; border-radius: var(--r-md);
 		display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
-		background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 600;
-		font-family: inherit; cursor: pointer; box-shadow: 0 2px 8px rgba(184, 92, 43, 0.22);
+		background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 500;
+		font-family: var(--font-gothic); cursor: pointer; box-shadow: 0 2px 8px rgba(184, 92, 43, 0.22);
 		transition: background 0.15s;
 	}
 	.corp-btn:hover:not(:disabled) { background: var(--accent-deep); }
@@ -1525,18 +1525,18 @@
 	.shape-cell {
 		display: flex; flex-direction: column; align-items: center; gap: 6px;
 		padding: 14px 8px; border-radius: var(--r-md); border: 1.5px solid var(--line);
-		background: var(--surface); color: var(--ink-2); cursor: pointer; font-family: inherit;
+		background: var(--surface); color: var(--ink-2); cursor: pointer; font-family: var(--font-gothic);
 		transition: border-color 0.15s, color 0.15s, background 0.15s;
 	}
 	.shape-cell:hover:not(.locked) { border-color: var(--accent); color: var(--accent); }
 	.shape-cell.selected { border-color: var(--accent); color: var(--accent); background: var(--accent-tint); }
 	.shape-cell.locked { cursor: default; color: var(--ink-3); }
-	.shape-name { font-size: 0.78rem; font-weight: 600; }
+	.shape-name { font-size: 0.78rem; font-weight: 500; }
 	.shape-tag { font-size: 0.68rem; color: var(--ink-3); }
-	.shape-tag.on { color: var(--accent-deep); font-weight: 700; }
+	.shape-tag.on { color: var(--accent-deep); font-weight: 500; }
 	.shape-buy {
-		font-size: 0.68rem; font-weight: 700; color: #fff; background: var(--accent);
-		border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer; font-family: inherit; white-space: nowrap;
+		font-size: 0.68rem; font-weight: 500; color: #fff; background: var(--accent);
+		border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer; font-family: var(--font-gothic); white-space: nowrap;
 	}
 	.shape-buy:hover:not(:disabled) { background: var(--accent-deep); }
 	.shape-buy:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -1550,7 +1550,7 @@
 
 	.shop-badge {
 		display: inline-flex; align-items: center; gap: 4px;
-		font-size: 0.75rem; font-weight: 700;
+		font-size: 0.75rem; font-weight: 500;
 		border-radius: 20px; padding: 4px 11px; margin-bottom: 8px;
 	}
 	.shop-badge.approved { background: rgba(95, 122, 82, 0.12); color: #4a6a3a; }
@@ -1561,7 +1561,7 @@
 	.shop-goto-btn {
 		display: inline-block; padding: 9px 18px;
 		background: var(--ink); color: white;
-		border-radius: 10px; font-size: 0.85rem; font-weight: 700;
+		border-radius: 10px; font-size: 0.85rem; font-weight: 500;
 		text-decoration: none;
 	}
 	.rejection-reason {
@@ -1572,15 +1572,15 @@
 		display: block; width: 100%; padding: 11px;
 		background: var(--ink); color: white;
 		border: none; border-radius: 10px;
-		font-size: 0.9rem; font-weight: 700;
-		font-family: inherit; cursor: pointer; margin-top: 4px;
+		font-size: 0.9rem; font-weight: 500;
+		font-family: var(--font-gothic); cursor: pointer; margin-top: 4px;
 	}
 	.apply-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 	.apply-success { font-size: 0.82rem; color: var(--ink-2); margin: 0 0 8px; }
 	.apply-error   { font-size: 0.82rem; color: var(--accent-deep); margin: 0 0 8px; }
 	.cta-link {
 		display: inline-block; font-size: 0.85rem;
-		color: #5a6e99; text-decoration: none; font-weight: 600;
+		color: #5a6e99; text-decoration: none; font-weight: 500;
 	}
 
 	/* ===== モーダル共通 ===== */
@@ -1609,7 +1609,7 @@
 		align-items: center;
 		gap: 8px;
 		font-size: 1.1rem;
-		font-weight: bold;
+		font-weight: 500;
 		margin: 0 0 20px 0;
 		color: var(--ink);
 	}
@@ -1670,7 +1670,7 @@
 		border: 1px solid var(--line-strong);
 		border-radius: var(--r-md);
 		font-size: 0.95rem;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 		box-sizing: border-box;
 		background: var(--surface);
 		color: var(--ink);
@@ -1706,7 +1706,7 @@
 		cursor: pointer;
 		font-size: 0.95rem;
 		font-weight: 500;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 		transition: background 0.15s;
 	}
 	.cancel-btn:hover { background: var(--line-strong); }
@@ -1718,10 +1718,10 @@
 		color: #fff;
 		border: none;
 		border-radius: var(--r-md);
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 		font-size: 0.95rem;
-		font-family: inherit;
+		font-family: var(--font-gothic);
 		box-shadow: 0 2px 8px rgba(184, 92, 43, 0.22);
 		transition: background 0.15s, transform 0.1s;
 	}

@@ -222,7 +222,7 @@
 		display: inline-block; padding: 8px 16px;
 		background: white; border: 1px solid var(--line);
 		border-radius: 8px; font-size: 0.85rem;
-		font-weight: 600; color: var(--ink);
+		font-weight: 500; color: var(--ink);
 		text-decoration: none;
 	}
 	.admin-nav-link:hover { background: var(--surface-sunk); border-color: var(--accent); color: var(--accent); }
@@ -240,7 +240,7 @@
 	}
 	.page-title {
 		font-size: 1.3rem;
-		font-weight: 700;
+		font-weight: 500;
 		margin: 0 0 24px;
 		padding-bottom: 12px;
 		border-bottom: 2px solid var(--line);
@@ -269,7 +269,7 @@
 	}
 	.section-title {
 		font-size: 1rem;
-		font-weight: 700;
+		font-weight: 500;
 		margin: 0 0 16px;
 		padding-bottom: 6px;
 		border-bottom: 1px solid var(--line);
@@ -299,7 +299,7 @@
 	}
 	.stat-value {
 		font-size: 1.25rem;
-		font-weight: 700;
+		font-weight: 500;
 	}
 	.empty {
 		color: var(--ink-3);
@@ -334,7 +334,7 @@
 		gap: 4px;
 	}
 	.op-name {
-		font-weight: 700;
+		font-weight: 500;
 		font-size: 1rem;
 	}
 	.op-email {
@@ -359,7 +359,7 @@
 	}
 	.amount-value {
 		font-size: 0.9rem;
-		font-weight: 600;
+		font-weight: 500;
 		min-width: 80px;
 		text-align: right;
 	}
@@ -396,7 +396,7 @@
 		border: none;
 		border-radius: 8px;
 		font-size: 0.85rem;
-		font-weight: 600;
+		font-weight: 500;
 		cursor: pointer;
 	}
 	.btn-settle:disabled {
@@ -426,7 +426,7 @@
 		color: #3a3028;
 	}
 	.detail-amount {
-		font-weight: 600;
+		font-weight: 500;
 		color: var(--ink);
 	}
 	.detail-status {

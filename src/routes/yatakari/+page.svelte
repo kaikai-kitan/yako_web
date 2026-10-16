@@ -140,7 +140,7 @@
 
 	.title {
 		font-size: 2rem;
-		font-weight: 800;
+		font-weight: 500;
 		color: #f5c842;
 		letter-spacing: 0.12em;
 		margin: 0;

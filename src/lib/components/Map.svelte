@@ -141,7 +141,7 @@
 
 	.price {
 		font-size: 1.1rem;
-		font-weight: bold;
+		font-weight: 500;
 		margin-bottom: 10px;
 	}
 
@@ -150,7 +150,7 @@
 		padding: 2px 8px;
 		border-radius: 4px;
 		font-size: 0.7rem;
-		font-weight: bold;
+		font-weight: 500;
 	}
 
 	.badge.parking { background: #dbeafe; color: #1e40af; }
@@ -163,7 +163,7 @@
 		border: none;
 		padding: 8px;
 		border-radius: 8px;
-		font-weight: bold;
+		font-weight: 500;
 		width: 100%;
 		cursor: pointer;
 	}

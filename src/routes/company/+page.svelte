@@ -226,21 +226,21 @@
 	.company-hero-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.5); }
 	.company-hero-inner { position: relative; z-index: 1; text-align: center; }
 	.hero-kicker { display: block; font-size: 0.72rem; letter-spacing: 0.4em; color: #e8c97a; margin-bottom: 8px; }
-	.company-hero-title { color: #fff; font-size: 2rem; letter-spacing: 0.15em; text-shadow: 0 2px 8px rgba(0,0,0,0.5); margin: 0; font-family: "Zen Antique", serif; }
+	.company-hero-title { color: #fff; font-size: 2rem; letter-spacing: 0.15em; text-shadow: 0 2px 8px rgba(0,0,0,0.5); margin: 0; font-family: var(--font-gothic); }
 
 	main { max-width: 15cm; margin: auto; padding: 0 20px; }
 
 	/* ── ビジョン ── */
 	.vision { text-align: center; margin: 3.4rem 0 3rem; }
 	.vision-kicker { display: block; font-size: 0.72rem; letter-spacing: 0.32em; color: var(--accent); margin-bottom: 1rem; }
-	.vision-lead { font-family: "Zen Antique", serif; font-size: clamp(1.5rem, 5.2vw, 2.3rem); line-height: 1.5; letter-spacing: 0.03em; color: var(--ink); margin: 0 0 1.4rem; text-wrap: balance; }
+	.vision-lead { font-family: var(--font-mincho); font-size: clamp(1.5rem, 5.2vw, 2.3rem); line-height: 1.5; letter-spacing: 0.03em; color: var(--ink); margin: 0 0 1.4rem; text-wrap: balance; }
 	.vision-body { font-size: 0.95rem; line-height: 2; color: var(--ink-2); max-width: 32rem; margin: 0 auto; text-wrap: pretty; }
 	.vision-body .em { color: var(--accent-deep); }
 
 	/* ── 共通セクション見出し ── */
 	.sec-head { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 1.6rem; }
 	.section-sep { width: 44px; height: 1px; background: var(--accent); opacity: 0.75; }
-	.section-title { font-family: "Zen Antique", serif; font-size: 1.3rem; letter-spacing: 0.12em; color: var(--ink); margin: 0; text-align: center; }
+	.section-title { font-family: var(--font-gothic); font-size: 1.3rem; letter-spacing: 0.12em; color: var(--ink); margin: 0; text-align: center; }
 	.sec-desc { font-size: 0.78rem; color: var(--ink-3); margin: 0; }
 
 	.mission { margin-bottom: 3.4rem; }
@@ -248,7 +248,7 @@
 	.pillars { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 	.pillar { display: flex; gap: 14px; align-items: flex-start; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg, 16px); padding: 16px 18px; }
 	.pillar-ic { flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; background: var(--accent-tint); color: var(--accent-deep); display: inline-flex; align-items: center; justify-content: center; }
-	.pillar-title { display: block; font-size: 0.95rem; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+	.pillar-title { display: block; font-size: 0.95rem; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
 	.pillar p { font-size: 0.82rem; color: var(--ink-2); line-height: 1.6; margin: 0; text-wrap: pretty; }
 
 	/* ── 事業内容（ステップ＋関係図） ── */
@@ -266,8 +266,8 @@
 		width: 8px; height: 8px; border-right: 2px solid var(--line-strong); border-bottom: 2px solid var(--line-strong);
 	}
 	.step-head { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; margin-bottom: 14px; }
-	.step-no { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.16em; color: var(--accent); }
-	.step-name { font-family: "Zen Antique", serif; font-size: 1.15rem; letter-spacing: 0.06em; color: var(--ink); margin: 0; }
+	.step-no { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.16em; color: var(--accent); }
+	.step-name { font-family: var(--font-gothic); font-size: 1.15rem; letter-spacing: 0.06em; color: var(--ink); margin: 0; }
 	.step-concept { font-size: 0.82rem; color: var(--accent-deep); }
 	.step-body { font-size: 0.88rem; line-height: 1.9; color: var(--ink-2); margin: 0 0 18px; text-wrap: pretty; white-space: pre-line; }
 
@@ -277,14 +277,14 @@
 	.flow-nodes { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 	.flow-node { display: flex; flex-direction: column; align-items: center; gap: 5px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 74px; }
 	.flow-ic { color: var(--accent-deep); display: inline-flex; }
-	.flow-label { font-size: 0.72rem; font-weight: 600; color: var(--ink); text-align: center; line-height: 1.3; }
+	.flow-label { font-size: 0.72rem; font-weight: 500; color: var(--ink); text-align: center; line-height: 1.3; }
 	.flow-node--goal { border-color: var(--accent); background: var(--accent-tint); min-width: 92px; padding: 12px 16px; }
 	.flow-node--goal .flow-label { color: var(--accent-deep); }
 	.flow-caption { font-size: 0.72rem; color: var(--ink-3); }
 	.flow-arrow { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; }
 	.flow-arrow-line { width: 2px; height: 16px; background: var(--accent); position: relative; }
 	.flow-arrow-line::after { content: ''; position: absolute; bottom: -4px; left: 50%; transform: translate(-50%, 0) rotate(45deg); width: 7px; height: 7px; border-right: 2px solid var(--accent); border-bottom: 2px solid var(--accent); }
-	.flow-arrow-text { font-size: 0.72rem; font-weight: 700; color: var(--accent); }
+	.flow-arrow-text { font-size: 0.72rem; font-weight: 500; color: var(--accent); }
 
 	/* 提供要素チップ */
 	.feat-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
@@ -294,7 +294,7 @@
 
 	/* 構想中ステップ */
 	.step-future { border-style: dashed; background: transparent; }
-	.step-tag { display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; color: var(--ink-3); background: var(--surface-sunk); border: 1px solid var(--line); border-radius: 100px; padding: 4px 12px; }
+	.step-tag { display: inline-block; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.08em; color: var(--ink-3); background: var(--surface-sunk); border: 1px solid var(--line); border-radius: 100px; padding: 4px 12px; }
 
 	@media (min-width: 560px) {
 		.flow { flex-direction: row; justify-content: center; gap: 4px; }
@@ -311,7 +311,7 @@
 	.road-step::before { content: ''; position: absolute; top: 27px; left: -50%; width: 100%; height: 2px; background: var(--line-strong); z-index: 0; }
 	.road-step:first-child::before { display: none; }
 	.road-dot { position: relative; z-index: 1; width: 54px; height: 54px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); color: var(--accent-deep); display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(184, 92, 43, 0.14); }
-	.road-year { font-family: "Zen Antique", serif; font-size: 1.05rem; color: var(--ink); }
+	.road-year { font-family: var(--font-gothic); font-size: 1.05rem; color: var(--ink); }
 	.road-phase { font-size: 0.76rem; color: var(--ink-2); }
 
 	/* ── IRニュース ── */
@@ -321,7 +321,7 @@
 	.ir-item:hover { border-color: var(--accent); background: var(--accent-tint); }
 	.ir-ic { flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; background: var(--accent-tint); color: var(--accent-deep); display: inline-flex; align-items: center; justify-content: center; }
 	.ir-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-	.ir-title { font-size: 0.9rem; font-weight: 700; color: var(--ink); }
+	.ir-title { font-size: 0.9rem; font-weight: 500; color: var(--ink); }
 	.ir-desc { font-size: 0.74rem; color: var(--ink-2); line-height: 1.5; text-wrap: pretty; }
-	.ir-open { font-size: 0.78rem; font-weight: 700; color: var(--accent); flex-shrink: 0; white-space: nowrap; }
+	.ir-open { font-size: 0.78rem; font-weight: 500; color: var(--accent); flex-shrink: 0; white-space: nowrap; }
 </style>

@@ -81,7 +81,7 @@
 
 <style>
 	/* ボトムナビ分の余白（固定ナビに隠れないように） */
-	.app-body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0)); min-height: 100svh; box-sizing: border-box; }
+	.app-body { padding-bottom: var(--bottom-nav-height); min-height: 100svh; box-sizing: border-box; }
 	footer {
 		width: 100%;
 		display: flex;

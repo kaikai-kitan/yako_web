@@ -7,5 +7,7 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 [vars]
 VITE_SUPABASE_URL = "https://wyniycxctkqenjkfbogl.supabase.co"
 VITE_SUPABASE_ANON_KEY = "sb_publishable_TwcFpUFHKELhjPnMBRs4cw_zY2GKhRs"
+# 地図タイル(CARTO)用の公開キー。delta-yako.com からの利用に制限済み
+VITE_CARTO_BASEMAP_KEY = "cb1_4mpv_1_442fa86f692ff203dd923739"
 SUPABASE_URL = "https://wyniycxctkqenjkfbogl.supabase.co"
 ADMIN_EMAILS = "delta10yako@gmail.com"

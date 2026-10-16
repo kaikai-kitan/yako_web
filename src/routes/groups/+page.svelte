@@ -212,12 +212,12 @@
 
 	.head { margin-bottom: 22px; }
 	.kicker { display: block; font-size: 0.7rem; letter-spacing: 0.28em; color: var(--accent); margin-bottom: 6px; }
-	.title { font-family: "Zen Antique", serif; font-size: 1.5rem; letter-spacing: 0.06em; color: var(--ink); margin: 0 0 8px; }
+	.title { font-family: var(--font-gothic); font-size: 1.5rem; letter-spacing: 0.06em; color: var(--ink); margin: 0 0 8px; }
 	.lead { font-size: 0.86rem; color: var(--ink-2); line-height: 1.7; margin: 0; }
 
 	.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg, 16px); padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow-1); }
 	.card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-	.card-title { display: inline-flex; align-items: center; gap: 7px; font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0 0 8px; }
+	.card-title { display: inline-flex; align-items: center; gap: 7px; font-size: 1rem; font-weight: 500; color: var(--ink); margin: 0 0 8px; }
 	.card-hint { font-size: 0.8rem; color: var(--ink-2); line-height: 1.6; margin: 0 0 12px; }
 	.upsell-card { background: linear-gradient(180deg, var(--accent-tint), var(--surface)); border-color: rgba(184,92,43,0.28); }
 	.upsell-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
@@ -233,8 +233,8 @@
 
 	.field { display: block; margin-bottom: 12px; }
 	.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-	.field-label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--ink); margin-bottom: 5px; }
-	.input { width: 100%; box-sizing: border-box; padding: 10px 13px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: 0.95rem; font-family: inherit; background: var(--surface); color: var(--ink); }
+	.field-label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--ink); margin-bottom: 5px; }
+	.input { width: 100%; box-sizing: border-box; padding: 10px 13px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: 0.95rem; font-family: var(--font-gothic); background: var(--surface); color: var(--ink); }
 	.input:focus { outline: 2px solid var(--accent); border-color: transparent; }
 	.code-input { text-transform: uppercase; letter-spacing: 0.12em; }
 	.fine { font-size: 0.72rem; color: var(--ink-3); margin: 0 0 12px; }
@@ -243,7 +243,7 @@
 	.join-row .input { flex: 1; }
 	.form-actions { display: flex; gap: 10px; }
 
-	.btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; font-family: inherit; cursor: pointer; border: none; background: var(--accent); color: #fff; text-decoration: none; white-space: nowrap; }
+	.btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; font-family: var(--font-gothic); cursor: pointer; border: none; background: var(--accent); color: #fff; text-decoration: none; white-space: nowrap; }
 	.btn:hover:not(:disabled) { background: var(--accent-deep); }
 	.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 	.btn.ghost { background: none; border: 1px solid var(--line-strong); color: var(--ink); }
@@ -254,8 +254,8 @@
 	.group-item { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s; }
 	.group-item:hover { border-color: var(--accent); background: var(--accent-tint); }
 	.gi-main { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
-	.gi-name { font-size: 0.95rem; font-weight: 700; color: var(--ink); }
-	.gi-badge { display: inline-block; font-size: 0.64rem; font-weight: 700; padding: 1px 7px; border-radius: 20px; margin-left: 6px; }
+	.gi-name { font-size: 0.95rem; font-weight: 500; color: var(--ink); }
+	.gi-badge { display: inline-block; font-size: 0.64rem; font-weight: 500; padding: 1px 7px; border-radius: 20px; margin-left: 6px; }
 	.gi-badge.owner { background: rgba(181,137,46,0.16); color: #8a6a1e; }
 	.gi-badge.admin { background: rgba(95,122,82,0.16); color: #4a6a3a; }
 	.gi-badge.pending { background: rgba(184,92,43,0.12); color: var(--accent-deep); }
@@ -263,7 +263,7 @@
 	.gi-badge.ended { background: var(--surface-sunk); color: var(--ink-3); }
 
 	.policy-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-	.policy-btn { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink-2); font-family: inherit; cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; }
+	.policy-btn { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink-2); font-family: var(--font-gothic); cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; }
 	.policy-btn:hover { border-color: var(--accent); }
 	.policy-btn.on { border-color: var(--accent); background: var(--accent-tint); color: var(--ink); }
 	.policy-btn strong { font-size: 0.85rem; color: var(--ink); }

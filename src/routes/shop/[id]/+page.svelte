@@ -314,7 +314,7 @@
 	.detail-page {
 		min-height: 100svh;
 		background: var(--surface-sunk);
-		font-family: sans-serif;
+		font-family: var(--font-gothic);
 	}
 
 	/* ヘッダー */
@@ -327,7 +327,7 @@
 		padding: 14px 16px;
 	}
 	.back-link { font-size: 0.85rem; color: var(--ink-2); text-decoration: none; white-space: nowrap; }
-	.header-title { font-size: 1rem; font-weight: 700; color: var(--ink); }
+	.header-title { font-size: 1rem; font-weight: 500; color: var(--ink); }
 	.cart-btn {
 		position: relative; background: none; border: none;
 		cursor: pointer; padding: 4px; flex-shrink: 0;
@@ -337,7 +337,7 @@
 	.cart-badge {
 		position: absolute; top: -4px; right: -6px;
 		background: var(--accent-deep); color: white; font-size: 0.65rem;
-		font-weight: 700; border-radius: 50%;
+		font-weight: 500; border-radius: 50%;
 		min-width: 18px; height: 18px;
 		display: flex; align-items: center; justify-content: center;
 	}
@@ -391,7 +391,7 @@
 		background: rgba(0, 0, 0, 0.18);
 		color: white;
 		font-size: 1.1rem;
-		font-weight: 800;
+		font-weight: 500;
 		letter-spacing: 0.15em;
 		pointer-events: none;
 	}
@@ -425,7 +425,7 @@
 		align-items: center; justify-content: center;
 		font-size: 1.2rem;
 	}
-	.operator-name { font-size: 0.85rem; font-weight: 700; color: var(--ink); margin: 0 0 2px; }
+	.operator-name { font-size: 0.85rem; font-weight: 500; color: var(--ink); margin: 0 0 2px; }
 	.operator-bio { font-size: 0.72rem; color: var(--ink-2); margin: 0; }
 
 	/* 在庫警告 */
@@ -455,14 +455,14 @@
 	/* 商品情報 */
 	.product-name {
 		font-size: 1.4rem;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--ink);
 		margin: 0 0 12px;
 		line-height: 1.3;
 	}
 	.product-price {
 		font-size: 1.5rem;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--ink);
 		margin: 0 0 16px;
 	}
@@ -492,7 +492,7 @@
 		gap: 16px;
 		margin-bottom: 16px;
 	}
-	.qty-label { font-size: 0.88rem; color: var(--ink); font-weight: 600; }
+	.qty-label { font-size: 0.88rem; color: var(--ink); font-weight: 500; }
 	.qty-control {
 		display: flex; align-items: center; gap: 12px;
 		border: 1.5px solid #e2ddd8; border-radius: 8px;
@@ -505,7 +505,7 @@
 		border-radius: 4px;
 	}
 	.qty-btn:disabled { color: #ccc; cursor: not-allowed; }
-	.qty-value { font-size: 1rem; font-weight: 600; min-width: 24px; text-align: center; }
+	.qty-value { font-size: 1rem; font-weight: 500; min-width: 24px; text-align: center; }
 
 	/* カートに追加ボタン */
 	.add-to-cart-btn {
@@ -516,8 +516,8 @@
 		border: none;
 		border-radius: 12px;
 		font-size: 1rem;
-		font-weight: 700;
-		font-family: inherit;
+		font-weight: 500;
+		font-family: var(--font-gothic);
 		cursor: pointer;
 		transition: background 0.15s;
 	}
@@ -528,7 +528,7 @@
 		color: #2e7d32;
 		font-size: 0.88rem;
 		margin-top: 10px;
-		font-weight: 600;
+		font-weight: 500;
 	}
 
 	.sold-out-badge {
@@ -538,7 +538,7 @@
 		text-align: center;
 		color: var(--ink-3);
 		font-size: 0.9rem;
-		font-weight: 600;
+		font-weight: 500;
 	}
 
 	/* カート浮きボタン */
@@ -547,8 +547,8 @@
 		transform: translateX(-50%);
 		background: var(--ink); color: white;
 		border: none; border-radius: 100px;
-		padding: 14px 28px; font-size: 0.95rem; font-weight: 700;
-		font-family: inherit; cursor: pointer;
+		padding: 14px 28px; font-size: 0.95rem; font-weight: 500;
+		font-family: var(--font-gothic); cursor: pointer;
 		box-shadow: 0 4px 16px rgba(0,0,0,0.25);
 		white-space: nowrap; z-index: 50;
 	}
@@ -580,7 +580,7 @@
 		justify-content: center; font-size: 1.4rem; flex-shrink: 0;
 	}
 	.cart-item-info { flex: 1; min-width: 0; }
-	.cart-item-name { display: block; font-size: 0.88rem; font-weight: 600; color: var(--ink); }
+	.cart-item-name { display: block; font-size: 0.88rem; font-weight: 500; color: var(--ink); }
 	.cart-item-price { font-size: 0.8rem; color: var(--ink-2); }
 	.qty-control-sm { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 	.qty-control-sm button {
@@ -589,19 +589,19 @@
 		font-size: 1rem; cursor: pointer;
 		display: flex; align-items: center; justify-content: center;
 	}
-	.qty-control-sm span { font-size: 0.9rem; font-weight: 600; min-width: 16px; text-align: center; }
+	.qty-control-sm span { font-size: 0.9rem; font-weight: 500; min-width: 16px; text-align: center; }
 
 	.cart-total-row {
 		display: flex; justify-content: space-between; align-items: center;
 		padding: 12px 0; border-top: 1px solid var(--line); margin-bottom: 12px;
 	}
-	.total-price { font-size: 1.2rem; font-weight: 700; color: var(--ink); }
+	.total-price { font-size: 1.2rem; font-weight: 500; color: var(--ink); }
 	.checkout-error { color: var(--accent-deep); font-size: 0.85rem; text-align: center; margin: 8px 0; }
 	.checkout-btn {
 		width: 100%; padding: 14px;
 		background: var(--ink); color: white;
 		border: none; border-radius: 12px;
-		font-size: 1rem; font-weight: 700; font-family: inherit; cursor: pointer;
+		font-size: 1rem; font-weight: 500; font-family: var(--font-gothic); cursor: pointer;
 	}
 	.checkout-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

@@ -582,7 +582,7 @@
 	.page {
 		min-height: 100svh;
 		background: var(--surface-sunk);
-		font-family: sans-serif;
+		font-family: var(--font-gothic);
 		padding-bottom: 60px;
 	}
 
@@ -600,7 +600,7 @@
 	}
 	.back-link:hover { color: var(--ink); }
 	.page-title {
-		flex: 1; font-size: 0.95rem; font-weight: 700;
+		flex: 1; font-size: 0.95rem; font-weight: 500;
 		color: var(--ink); margin: 0; text-align: center;
 	}
 	.add-btn {
@@ -608,7 +608,7 @@
 		background: var(--ink); color: white;
 		border: none; border-radius: 8px;
 		padding: 7px 12px; font-size: 0.8rem;
-		font-family: inherit; cursor: pointer; white-space: nowrap;
+		font-family: var(--font-gothic); cursor: pointer; white-space: nowrap;
 	}
 
 	.toast {
@@ -626,7 +626,7 @@
 		box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 	}
 	.form-title {
-		font-size: 1rem; font-weight: 700; color: var(--ink);
+		font-size: 1rem; font-weight: 500; color: var(--ink);
 		margin: 0 0 16px;
 	}
 
@@ -635,7 +635,7 @@
 		margin-bottom: 14px;
 	}
 	.label {
-		font-size: 0.82rem; font-weight: 600; color: var(--ink-2);
+		font-size: 0.82rem; font-weight: 500; color: var(--ink-2);
 	}
 	.label.required::after { content: ' *'; color: var(--accent-deep); }
 	small { font-weight: 400; color: var(--ink-3); }
@@ -643,7 +643,7 @@
 	.input {
 		border: 1.5px solid var(--line); border-radius: 10px;
 		padding: 9px 12px; font-size: 0.9rem;
-		font-family: inherit; color: var(--ink); outline: none;
+		font-family: var(--font-gothic); color: var(--ink); outline: none;
 		background: white; transition: border-color 0.15s;
 	}
 	.input:focus { border-color: var(--accent); }
@@ -715,8 +715,8 @@
 		padding: 9px 14px;
 		background: var(--surface-sunk); color: var(--ink-2);
 		border: 1.5px solid var(--line); border-radius: 10px;
-		font-size: 0.82rem; font-family: inherit;
-		cursor: pointer; white-space: nowrap; font-weight: 600;
+		font-size: 0.82rem; font-family: var(--font-gothic);
+		cursor: pointer; white-space: nowrap; font-weight: 500;
 	}
 	.tag-add-btn:hover { background: var(--line); }
 
@@ -727,16 +727,16 @@
 		flex: 1; padding: 12px;
 		background: var(--ink); color: white;
 		border: none; border-radius: 10px;
-		font-size: 0.95rem; font-weight: 700;
-		font-family: inherit; cursor: pointer;
+		font-size: 0.95rem; font-weight: 500;
+		font-family: var(--font-gothic); cursor: pointer;
 	}
 	.submit-btn:disabled, .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 	.preview-btn {
 		padding: 12px 16px;
 		background: white; color: #5a6e99;
 		border: 1.5px solid #c8d4f0; border-radius: 10px;
-		font-size: 0.88rem; font-family: inherit;
-		cursor: pointer; white-space: nowrap; font-weight: 600;
+		font-size: 0.88rem; font-family: var(--font-gothic);
+		cursor: pointer; white-space: nowrap; font-weight: 500;
 		flex-shrink: 0;
 	}
 	.preview-btn:hover { background: #f0f4ff; }
@@ -780,19 +780,19 @@
 	.soldout-badge {
 		position: absolute; bottom: 2px; left: 0; right: 0;
 		background: rgba(0,0,0,0.65); color: white;
-		font-size: 0.5rem; font-weight: 800; letter-spacing: 0.08em;
+		font-size: 0.5rem; font-weight: 500; letter-spacing: 0.08em;
 		text-align: center; padding: 2px 0; border-radius: 0 0 8px 8px;
 	}
 	.photo-count {
 		position: absolute; top: -4px; right: -4px;
 		background: var(--accent); color: white;
-		font-size: 0.6rem; font-weight: 700;
+		font-size: 0.6rem; font-weight: 500;
 		border-radius: 10px; padding: 1px 5px;
 	}
 
 	.product-info { flex: 1; min-width: 0; }
 	.product-name {
-		font-size: 0.9rem; font-weight: 700; color: var(--ink);
+		font-size: 0.9rem; font-weight: 500; color: var(--ink);
 		margin: 0 0 2px;
 		overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 	}
@@ -810,8 +810,8 @@
 	}
 	.action-btn {
 		padding: 5px 10px; border-radius: 7px;
-		font-size: 0.72rem; font-family: inherit;
-		cursor: pointer; font-weight: 600; border: 1.5px solid;
+		font-size: 0.72rem; font-family: var(--font-gothic);
+		cursor: pointer; font-weight: 500; border: 1.5px solid;
 		white-space: nowrap;
 	}
 	.action-btn.edit { background: white; color: var(--ink); border-color: var(--line); }
@@ -827,7 +827,7 @@
 		padding: 12px 16px;
 		background: var(--surface-sunk); color: var(--ink-2);
 		border: none; border-radius: 10px;
-		font-size: 0.9rem; font-family: inherit; cursor: pointer;
+		font-size: 0.9rem; font-family: var(--font-gothic); cursor: pointer;
 		flex-shrink: 0;
 	}
 
@@ -849,7 +849,7 @@
 		position: sticky; top: 0; background: white; z-index: 1;
 	}
 	.modal-label {
-		font-size: 0.8rem; color: var(--ink-3); font-weight: 600;
+		font-size: 0.8rem; color: var(--ink-3); font-weight: 500;
 	}
 	.modal-close {
 		background: var(--surface-sunk); border: none; border-radius: 50%;
@@ -886,22 +886,22 @@
 		padding: 2px 8px; margin-bottom: 8px;
 	}
 	.preview-name {
-		font-size: 1.1rem; font-weight: 700; color: var(--ink);
+		font-size: 1.1rem; font-weight: 500; color: var(--ink);
 		margin: 0 0 6px;
 	}
 	.preview-price {
-		font-size: 1.2rem; font-weight: 700; color: var(--ink);
+		font-size: 1.2rem; font-weight: 500; color: var(--ink);
 		margin: 0 0 8px;
 	}
 	.preview-soldout {
 		display: inline-block;
 		background: var(--ink); color: white;
-		font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em;
+		font-size: 0.72rem; font-weight: 500; letter-spacing: 0.1em;
 		border-radius: 4px; padding: 3px 10px; margin-bottom: 8px;
 	}
 	.preview-stock-warn {
 		display: inline-block;
-		color: var(--accent-deep); font-size: 0.8rem; font-weight: 600;
+		color: var(--accent-deep); font-size: 0.8rem; font-weight: 500;
 		margin-bottom: 8px;
 	}
 	.preview-desc {

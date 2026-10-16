@@ -106,7 +106,7 @@
 	}
 	.logo-img { width: 56px; height: 56px; object-fit: contain; margin: 0 auto 12px; display: block; }
 	.title {
-		font-family: "Zen Antique", serif; font-size: 1.25rem; letter-spacing: 0.04em;
+		font-family: var(--font-gothic); font-size: 1.25rem; letter-spacing: 0.04em;
 		color: var(--ink); margin: 0 0 10px;
 	}
 	.lead { font-size: 0.86rem; color: var(--ink-2); line-height: 1.7; margin: 0 0 22px; }
@@ -123,7 +123,7 @@
 	.field-input {
 		display: block; width: 100%; margin-top: 6px; padding: 11px 13px;
 		border: 1px solid var(--line-strong); border-radius: var(--r-md);
-		font-size: 0.95rem; font-family: inherit; box-sizing: border-box;
+		font-size: 0.95rem; font-family: var(--font-gothic); box-sizing: border-box;
 		background: var(--surface); color: var(--ink);
 		transition: border-color 0.15s, box-shadow 0.15s;
 	}
@@ -145,8 +145,8 @@
 	.pw-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 	.submit-btn {
 		width: 100%; padding: 12px; background: var(--accent); color: #fff;
-		border: none; border-radius: var(--r-md); font-size: 0.95rem; font-weight: 600;
-		font-family: inherit; letter-spacing: 0.02em; cursor: pointer; margin-top: 8px;
+		border: none; border-radius: var(--r-md); font-size: 0.95rem; font-weight: 500;
+		font-family: var(--font-gothic); letter-spacing: 0.02em; cursor: pointer; margin-top: 8px;
 		box-shadow: 0 2px 10px rgba(184, 92, 43, 0.25); transition: all 0.15s ease;
 		text-decoration: none; display: inline-block; box-sizing: border-box;
 	}
