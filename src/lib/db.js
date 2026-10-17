@@ -552,87 +552,32 @@ async function decrementInventoryFromSales(userId, salesItems) {
 
 /**
  * 返却完了（active → completed）＋ 売上・支払い履歴記録
+ * 状態の更新と売上・支払い履歴の記録はサーバー（/api/complete-rental）で行う。
+ * 金額や受取人はサーバーが予約時の料金から計算するため、ここからは送らない。
  * @param {string} reservationId
- * @param {string} userId - 借主のユーザーID（payer）
- * @param {object} salesItems - { beer: number, yakisoba: number, ... }
+ * @param {string} userId - 借主のユーザーID（在庫の自動減算に使用）
+ * @param {object} salesItems - { 品目名: 個数, ... }
  */
 export async function completeRental(reservationId, userId, salesItems) {
 	requireSupabase();
+	const { data: { session } } = await supabase.auth.getSession();
+	if (!session?.access_token) throw new Error('ログインが必要です');
+	const response = await fetch('/api/complete-rental', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+		body: JSON.stringify({ reservationId, salesItems: salesItems ?? {} })
+	});
+	const body = await response.json().catch(() => ({}));
+	if (!response.ok) throw new Error(body.message ?? '返却処理に失敗しました');
 
-	// 予約詳細を取得（料金・支払先の特定）
-	const { data: res, error: resError } = await supabase
-		.from('reservations')
-		.select(`
-			id, start_datetime, end_datetime,
-			locked_space_fee, locked_stall_fee,
-			stall_specs ( rental_fee, user_id, operators ( business_name ) ),
-			rental_spaces ( space_fee, user_id, owners ( owner_name ) )
-		`)
-		.eq('id', reservationId)
-		.single();
-	if (resError) throw resError;
-
-	// 利用日数の計算（最低 1 日）
-	const days = Math.max(
-		1,
-		Math.ceil(
-			(new Date(res.end_datetime) - new Date(res.start_datetime)) / (1000 * 60 * 60 * 24)
-		)
-	);
-	// 予約時にロックされた料金を優先、なければ現在の料金にフォールバック
-	const lockedStallFee = res.locked_stall_fee ?? null;
-	const lockedSpaceFee = res.locked_space_fee ?? null;
-	const stallFee = (lockedStallFee !== null ? lockedStallFee : (res.stall_specs?.rental_fee ?? 0)) * days;
-	const spaceFee = (lockedSpaceFee !== null ? lockedSpaceFee : (res.rental_spaces?.space_fee ?? 0)) * days;
-
-	// 予約ステータスを完了に更新
-	const { error: updateError } = await supabase
-		.from('reservations')
-		.update({ status: 'completed' })
-		.eq('id', reservationId);
-	if (updateError) throw updateError;
-
-	// 売上明細を記録
-	if (salesItems && Object.keys(salesItems).some((k) => salesItems[k] > 0)) {
-		const { error: salesError } = await supabase
-			.from('sales')
-			.insert({ reservation_id: reservationId, item_sales: salesItems });
-		if (salesError) console.error('Sales insert error:', salesError);
-
-		// 売れた数に応じて在庫（材料・消耗品）を自動で減らす。
-		// 失敗しても返却処理自体は止めない。
+	// 売れた数に応じて自分の在庫（材料・消耗品）を自動で減らす。
+	// 二重の返却操作では減らさない。失敗しても返却処理自体は止めない。
+	if (!body.already && salesItems && Object.values(salesItems).some((n) => n > 0)) {
 		try {
 			await decrementInventoryFromSales(userId, salesItems);
 		} catch (e) {
 			console.error('Inventory decrement error:', e);
 		}
-	}
-
-	// 支払い履歴を登録（屋台提供者・場所提供者それぞれ）
-	const payments = [];
-	if (res.stall_specs?.user_id && stallFee > 0) {
-		payments.push({
-			reservation_id: reservationId,
-			payer_id: userId,
-			recipient_id: res.stall_specs.user_id,
-			recipient_name: res.stall_specs.operators?.business_name ?? null,
-			total_amount: stallFee
-		});
-	}
-	if (res.rental_spaces?.user_id && spaceFee > 0) {
-		payments.push({
-			reservation_id: reservationId,
-			payer_id: userId,
-			recipient_id: res.rental_spaces.user_id,
-			recipient_name: res.rental_spaces.owners?.owner_name ?? null,
-			total_amount: spaceFee
-		});
-	}
-	if (payments.length > 0) {
-		const { error: paymentError } = await supabase
-			.from('payment_history')
-			.insert(payments);
-		if (paymentError) throw paymentError;
 	}
 }
 

@@ -41,6 +41,7 @@ import { POST as autoCancel } from '../../routes/api/cron/auto-cancel/+server.js
 import { POST as cancel } from '../../routes/api/cancel-rental/+server.js';
 import { POST as checkout } from '../../routes/api/create-rental-checkout/+server.js';
 import { POST as webhook } from '../../routes/api/stripe-webhook/+server.js';
+import { POST as completeReturn } from '../../routes/api/complete-rental/+server.js';
 import {
 	getMyReservations,
 	getUserReservations,
@@ -382,5 +383,78 @@ describe('unfinished checkout across the application', () => {
 		expect(await result.json()).toEqual({ free: true, reservationId: unpaid.id });
 		expect(db.writes.some((write) => write.value.status === 'active')).toBe(false);
 		expect(mocks.create).not.toHaveBeenCalled();
+	});
+});
+
+describe('rental return (complete-rental)', () => {
+	const active = {
+		id: 'reservation',
+		user_id: 'user',
+		status: 'active',
+		start_datetime: '2026-10-20T10:00:00+09:00',
+		end_datetime: '2026-10-21T12:00:00+09:00', // 2日分
+		locked_space_fee: 500,
+		locked_stall_fee: 1000,
+		stall_specs: { user_id: 'stall-owner', operators: { business_name: '屋台屋' } },
+		rental_spaces: { user_id: 'space-owner', owners: { owner_name: '場所主' } }
+	};
+	it('records sales and server-computed payments once, ignoring amounts sent by the browser', async () => {
+		const db = database([row(active), row([{ id: 'reservation' }]), row(null), row(null)]);
+		const result = await completeReturn({
+			request: request({
+				reservationId: 'reservation',
+				salesItems: { beer: 3 },
+				payments: [{ recipient_id: 'attacker', total_amount: 999999 }]
+			})
+		});
+		expect(await result.json()).toEqual({ completed: true });
+		expect(db.writes.map((w) => `${w.table}.${w.method}`)).toEqual([
+			'reservations.update',
+			'sales.insert',
+			'payment_history.insert'
+		]);
+		expect(db.writes[0].value).toEqual({ status: 'completed' });
+		expect(db.writes[2].value).toEqual([
+			expect.objectContaining({ payer_id: 'user', recipient_id: 'stall-owner', total_amount: 2000 }),
+			expect.objectContaining({ payer_id: 'user', recipient_id: 'space-owner', total_amount: 1000 })
+		]);
+	});
+	it("refuses to complete someone else's reservation", async () => {
+		const db = database([row({ ...active, user_id: 'someone-else' })]);
+		await expect(
+			completeReturn({ request: request({ reservationId: 'reservation' }) })
+		).rejects.toMatchObject({ status: 403 });
+		expect(db.writes).toEqual([]);
+	});
+	it('cannot complete a booking that has not been checked in', async () => {
+		const db = database([row({ ...active, status: 'pending' })]);
+		await expect(
+			completeReturn({ request: request({ reservationId: 'reservation' }) })
+		).rejects.toMatchObject({ status: 409 });
+		expect(db.writes).toEqual([]);
+	});
+	it('does not record payments twice when returned again', async () => {
+		const done = database([row({ ...active, status: 'completed' })]);
+		expect(await (await completeReturn({ request: request({ reservationId: 'reservation' }) })).json()).toEqual({ completed: true, already: true });
+		expect(done.writes).toEqual([]);
+		const raced = database([row(active), row([])]);
+		expect(await (await completeReturn({ request: request({ reservationId: 'reservation' }) })).json()).toEqual({ completed: true, already: true });
+		expect(raced.writes.map((w) => w.table)).toEqual(['reservations']);
+	});
+	it('rejects malformed sales counts before writing', async () => {
+		for (const salesItems of [{ beer: -1 }, { beer: 1.5 }, { beer: 'many' }, ['beer']]) {
+			const db = database([]);
+			await expect(
+				completeReturn({ request: request({ reservationId: 'reservation', salesItems }) })
+			).rejects.toMatchObject({ status: 400 });
+			expect(db.writes).toEqual([]);
+		}
+	});
+	it('requires login', async () => {
+		const db = database([]);
+		const req = request({ reservationId: 'reservation' });
+		req.headers.delete('Authorization');
+		await expect(completeReturn({ request: req })).rejects.toMatchObject({ status: 401 });
+		expect(db.writes).toEqual([]);
 	});
 });
