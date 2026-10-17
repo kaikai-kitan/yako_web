@@ -70,7 +70,7 @@
 			<div class="info-grid">
 				<div class="info-item">
 					<span class="info-label">レンタル料金</span>
-					<span class="info-value">¥{(stall.rental_fee ?? 0).toLocaleString()} / 日</span>
+					<span class="info-value">¥{(stall.rental_fee ?? 0).toLocaleString()} / 3時間</span>
 				</div>
 				{#if stall.specs}
 					<div class="info-item">

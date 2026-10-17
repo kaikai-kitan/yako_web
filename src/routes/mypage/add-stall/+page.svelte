@@ -27,6 +27,7 @@
 	let stallAddress = $state('');
 	let specs = $state('');
 	let rentalFee = $state('');
+	let extensionFee = $state('');
 	let lat = $state(null);
 	let lng = $state(null);
 	let photoFile = $state(null);
@@ -148,6 +149,7 @@
 				address: stallAddress.trim() || null,
 				specs: specs.trim() || null,
 				rental_fee: rentalFee ? parseInt(rentalFee) : 0,
+				extension_fee: extensionFee ? parseInt(extensionFee) : 0,
 				use_cases: useCases,
 				lat,
 				lng,
@@ -244,8 +246,14 @@
 			</div>
 
 			<label class="field-label">
-				レンタル料金（円 / 日）
-				<input type="number" bind:value={rentalFee} class="field-input" placeholder="2500" min="0" />
+				基本料金（円 / 3時間）
+				<input type="number" bind:value={rentalFee} class="field-input" placeholder="1000" min="0" />
+			</label>
+
+			<label class="field-label">
+				延長料金（円 / 30分）
+				<input type="number" bind:value={extensionFee} class="field-input" placeholder="200" min="0" />
+				<span class="field-note">3時間未満の利用でも基本料金がかかります。3時間を超えた分は30分ごとに延長料金がかかります。</span>
 			</label>
 
 			<button type="submit" class="submit-btn" disabled={isSaving || lat === null}>
@@ -389,4 +397,5 @@
 		font-size: 0.9rem; color: var(--ink-3);
 	}
 	.hidden-file { display: none; }
+	.field-note { display: block; margin-top: 4px; font-size: 0.75rem; font-weight: 400; color: var(--ink-3); line-height: 1.5; }
 </style>

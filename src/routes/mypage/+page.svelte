@@ -625,7 +625,7 @@
 								</div>
 								<div class="item-detail detail-with-icon"><Icon name="map-pin" size={14} /> {space.address ?? '住所未設定'}</div>
 								<div class="item-detail detail-with-icon">
-									¥{(space.space_fee ?? 0).toLocaleString()} / 泊　{space.ground_type ?? ''}
+									¥{(space.space_fee ?? 0).toLocaleString()} / 3時間　{space.ground_type ?? ''}
 									{#if space.fire_use_allowed}<Icon name="flame" size={14} /> 火気可{:else}<Icon name="ban" size={14} /> 火気不可{/if}
 								</div>
 								<div class="item-actions">
@@ -662,7 +662,7 @@
 									<span class="status-badge stall">登録済み</span>
 								</div>
 								<div class="item-detail">{stall.specs ?? 'スペック未設定'}</div>
-								<div class="item-detail">¥{(stall.rental_fee ?? 0).toLocaleString()} / 日</div>
+								<div class="item-detail">¥{(stall.rental_fee ?? 0).toLocaleString()} / 3時間</div>
 								<div class="item-actions">
 									<a href="{base}/mypage/edit-stall/{stall.id}" class="edit-btn">編集</a>
 									<button class="qr-btn" onclick={() => showStallQR(stall)}>

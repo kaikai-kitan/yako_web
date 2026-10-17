@@ -1,4 +1,5 @@
 import { isRentalConfirmed, RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
+import { noShowCharge, feesFromReservation } from '$lib/rental-pricing.js';
 import Stripe from 'stripe';
 import { json, error } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
@@ -70,12 +71,24 @@ export async function POST({ request }) {
 				continue;
 			}
 
-			// 2. 与信確保済みの場合は Stripe Capture（ノーショー料 = 返金なし）
+			// 2. 無断キャンセル料 = この予約の基本料金（屋台＋場所の3時間分）。
+			//    与信で確保した金額のうち基本料金分だけを確定し、残りは解放する。
+			const noShowAmount = noShowCharge(feesFromReservation(res));
+			let charged = 0;
 			if (res.stripe_payment_intent_id && stripe) {
 				try {
-					const pi = await stripe.paymentIntents.capture(res.stripe_payment_intent_id);
-					if (pi.status !== 'succeeded') {
-						console.error('[auto-cancel] capture not succeeded:', res.id, pi.status);
+					const amount = noShowAmount;
+					const intent = await stripe.paymentIntents.retrieve(res.stripe_payment_intent_id);
+					if (intent.status === 'requires_capture') {
+						if (amount > 0) {
+							const pi = await stripe.paymentIntents.capture(res.stripe_payment_intent_id, {
+								amount_to_capture: Math.min(amount, intent.amount)
+							});
+							if (pi.status === 'succeeded') charged = pi.amount_received ?? Math.min(amount, intent.amount);
+							else console.error('[auto-cancel] capture not succeeded:', res.id, pi.status);
+						} else {
+							await stripe.paymentIntents.cancel(res.stripe_payment_intent_id);
+						}
 					}
 				} catch (stripeErr) {
 					// capture 失敗（期限切れ等）はログのみ。キャンセルは確定済みなので継続。
@@ -124,14 +137,14 @@ export async function POST({ request }) {
   <div style="padding:24px">
     <p style="margin:0 0 12px">${userName} 様</p>
     <p style="margin:0 0 20px;line-height:1.7">
-      以下の予約について、開始時間から30分以上チェックインが確認されなかったため、<strong>自動キャンセル</strong>となりました。
+      以下の予約について、開始時刻から35分を過ぎてもチェックインが確認されなかったため、<strong>自動キャンセル</strong>となりました。
     </p>
     <div style="background:#faf8f5;border-radius:8px;padding:16px;font-size:0.9rem;margin-bottom:16px">
       <p style="margin:0 0 6px"><strong>場所：</strong>${placeName}</p>
       <p style="margin:0"><strong>予定開始：</strong>${startStr}</p>
     </div>
     <div style="background:#fff7ed;border-radius:8px;padding:14px;font-size:0.82rem;color:#7c2d12;border-left:3px solid #fed7aa">
-      ⚠️ 自動キャンセルのため<strong>返金は行われません</strong>。<br />
+      ⚠️ 無断キャンセルのため、この予約の基本料金（屋台・場所の3時間分）<strong>¥${(charged || noShowAmount).toLocaleString()}</strong> を請求しました。<br />
       信用スコアが <strong>-${NOSHOW_PENALTY}ポイント</strong> 減算されました（残り: ${newScore}）。
     </div>
     ${suspendMsg}

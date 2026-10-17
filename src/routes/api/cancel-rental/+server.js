@@ -1,4 +1,5 @@
 import { isUnfinishedCheckout, RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
+import Stripe from 'stripe';
 import { json, error } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '$env/dynamic/private';
@@ -55,6 +56,17 @@ export async function POST({ request }) {
 		.eq('id', reservationId);
 
 	if (cancelErr) throw error(500, 'キャンセルに失敗しました');
+
+	// キャンセル料（金銭）はかからないため、確保していたカードの枠はすぐ解放する
+	if (reservation.stripe_payment_intent_id && env.STRIPE_SECRET_KEY) {
+		try {
+			const stripe = new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
+			const intent = await stripe.paymentIntents.retrieve(reservation.stripe_payment_intent_id);
+			if (intent.status === 'requires_capture') await stripe.paymentIntents.cancel(intent.id);
+		} catch (stripeErr) {
+			console.error('[cancel-rental] release authorization failed:', reservationId, stripeErr?.message);
+		}
+	}
 
 	if (penalty > 0) {
 		// credit_score を減算してアカウント停止を判定

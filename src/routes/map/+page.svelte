@@ -1139,7 +1139,7 @@
 							<!-- 屋台ピン -->
 							<p class="specs">提供者: {selectedStall.owner}</p>
 							{#if selectedStall.specs}<p class="specs">{selectedStall.specs}</p>{/if}
-							<p class="price">¥{(selectedStall.price ?? 0).toLocaleString()} / 日</p>
+							<p class="price">¥{(selectedStall.price ?? 0).toLocaleString()} / 3時間{#if selectedStall.extPrice > 0}<span class="price-ext">（延長 ¥{selectedStall.extPrice.toLocaleString()} / 30分）</span>{/if}</p>
 
 							<!-- 使用可能な用途（貸し出し人が設定） -->
 							{#if stallDetail?.useCases?.length}
@@ -1247,7 +1247,7 @@
 								<span class="meta-icon"><Icon name="yatai" size={14} /> 最大 {selectedStall.maxStalls ?? 1} 台</span>
 								<span>👥 {selectedStall.capacity ?? 10} 名まで</span>
 							</div>
-							<p class="price">¥{(selectedStall.price ?? 0).toLocaleString()} / 泊</p>
+							<p class="price">¥{(selectedStall.price ?? 0).toLocaleString()} / 3時間{#if selectedStall.extPrice > 0}<span class="price-ext">（延長 ¥{selectedStall.extPrice.toLocaleString()} / 30分）</span>{/if}</p>
 							{#if currentUser}
 								{@const activeRes = myUserReservations.find((r) => r.rental_space_id === selectedStall.id && r.status === 'active')}
 								{@const pendingRes = myUserReservations.find((r) => r.rental_space_id === selectedStall.id && r.status === 'pending')}
@@ -1370,7 +1370,7 @@
 											{@const isBooked = bookedStallIds.has(stall.id) && !myUserReservations.some(r => r.stall_id === stall.id)}
 											<option value={stall.id} disabled={isBooked}>
 												{stall.stall_name}（{stall.operators?.business_name ?? ''}）
-												— ¥{(stall.rental_fee ?? 0).toLocaleString()}/日
+												— ¥{(stall.rental_fee ?? 0).toLocaleString()}/3時間
 												{#if isBooked}（予約済み）{/if}
 											</option>
 										{/each}
@@ -1395,7 +1395,7 @@
 											{@const isBooked = bookedStallIds.has(stall.id) && !myUserReservations.some(r => r.stall_id === stall.id)}
 											<option value={stall.id} disabled={isBooked}>
 												{stall.stall_name}（{stall.operators?.business_name ?? ''}）
-												— ¥{(stall.rental_fee ?? 0).toLocaleString()}/日
+												— ¥{(stall.rental_fee ?? 0).toLocaleString()}/3時間
 												{#if isBooked}（予約済み）{/if}
 											</option>
 										{/each}
@@ -1424,7 +1424,7 @@
 							<label class="form-label">利用開始 <span class="req">*</span></label>
 							<div class="date-row">
 								<input type="date" bind:value={reservationForm.startDate} class="form-input" />
-								<input type="time" bind:value={reservationForm.startTime} class="form-input time-input" />
+								<input type="time" step="1800" bind:value={reservationForm.startTime} class="form-input time-input" />
 							</div>
 						</div>
 
@@ -1433,7 +1433,7 @@
 							<label class="form-label">利用終了 <span class="req">*</span></label>
 							<div class="date-row">
 								<input type="date" bind:value={reservationForm.endDate} class="form-input" />
-								<input type="time" bind:value={reservationForm.endTime} class="form-input time-input" />
+								<input type="time" step="1800" bind:value={reservationForm.endTime} class="form-input time-input" />
 							</div>
 						</div>
 
@@ -1512,7 +1512,7 @@
 						<label class="noshow-agree-label">
 							<input type="checkbox" bind:checked={agreedToNoshow} class="noshow-checkbox" />
 							<span class="noshow-agree-text">
-								利用規約に同意します。※予約開始時間から30分を過ぎてもチェックインが行われない場合、自動キャンセルとなり<strong>返金は行われません</strong>。また、サービスの信用スコアが低下します。
+								利用規約に同意します。料金は3時間の基本料金＋30分ごとの延長料金で、3時間未満の利用でも基本料金がかかります。※予約開始時刻から35分を過ぎてもチェックインが行われない場合（無断キャンセル）、予約は自動でキャンセルされ、<strong>この予約の基本料金（屋台・場所の3時間分）を請求します</strong>。あわせて信用スコアが3点下がります。
 							</span>
 						</label>
 
@@ -2056,6 +2056,7 @@
 		flex-shrink: 0; margin-left: 8px; padding-top: 1px;
 	}
 	.price { font-weight: 500; font-size: 1.1rem; margin: 5px 0; }
+	.price-ext { font-size: 0.78rem; color: var(--ink-2); margin-left: 4px; }
 	.space-meta {
 		display: flex; gap: 10px; font-size: 0.78rem; color: var(--ink-2);
 		background: var(--surface); border-radius: 6px; padding: 5px 8px; margin: 4px 0;
