@@ -38,6 +38,7 @@ Supabase ダッシュボード → **SQL Editor** に各ファイルの内容を
 | 16 | `supabase_migration_v16.sql` | 信用スコアの獲得（返却ボーナス + 営業レビュー） |
 | 17 | `supabase_migration_v17.sql` | 夜行人プロフィールの名前変更を1回に制限 |
 | 26 | `supabase_migration_v26.sql` | 予約の作成をサーバー限定にし、ブラウザからの不正な予約の書き換えを禁止 |
+| 27 | `supabase_migration_v27.sql` | 返却時の売上・支払い履歴の記録をサーバー限定にし、閲覧を当事者に限定 |
 
 > 次に追加する場合は `supabase_migration_v18.sql` としてこのフォルダに置き、上の表に1行追記してください。
 
