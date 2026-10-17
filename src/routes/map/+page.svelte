@@ -22,6 +22,8 @@
 		signOut
 	} from '$lib/db.js';
 	import Icon from '$lib/components/Icon.svelte';
+	import AvailabilityPicker from '$lib/components/AvailabilityPicker.svelte';
+	import { toJstString, formatRange } from '$lib/slot-selection.js';
 
 	// --- ステート管理 ---
 	let mapContainer = $state();
@@ -338,18 +340,15 @@
 			interactive: false
 		}).addTo(map);
 
-		// 出店可能エリア（青 = 利用可能・クリックで予約）
+		// 出店可能エリア（青）。予約は屋台ピンから行う
 		const areaCircle = L.circle(KSU_CENTER, {
 			radius: ACTIVE_RADIUS_M,
 			color: '#3b82f6',
 			weight: 2.5,
 			fillColor: '#3b82f6',
 			fillOpacity: 0.14,
-			interactive: true
+			interactive: false
 		}).addTo(map);
-		areaCircle.on('click', () => goReserveFromArea('京都産業大学（実証実験エリア）'));
-		areaCircle.on('mouseover', () => areaCircle.setStyle({ fillOpacity: 0.22 }));
-		areaCircle.on('mouseout', () => areaCircle.setStyle({ fillOpacity: 0.14 }));
 
 		// 実証実験エリアバッジ
 		L.marker([lat + 0.0056, lng], {
@@ -425,26 +424,12 @@
 		if (mapMode === 'available' && !isYataijin) {
 			// 屋台人未登録は貸出可能屋台を閲覧不可（プロンプトを表示）
 		} else if (mapMode === 'available') {
-			availableSpaces.forEach((stall) => {
-				if (!stall.lat || !stall.lng) return;
-				const icon = L.divIcon({
-					className: '',
-					html: makeMarkerEl('space').outerHTML,
-					iconSize: [44, 54],
-					iconAnchor: [22, 54]
-				});
-				const m = L.marker([stall.lat, stall.lng], { icon });
-				m.on('click', () => { selectedStall = stall; });
-				m.addTo(map);
-				markers.push(m);
-			});
-
+			// 屋台と場所は一体化。予約は屋台ピンから（予約が入っていても灰色にしない）
 			stallPins.forEach((stall) => {
 				if (!stall.lat || !stall.lng) return;
-				const booked = bookedStallIds.has(stall.id);
 				const icon = L.divIcon({
 					className: '',
-					html: makeMarkerEl('stall', { booked }).outerHTML,
+					html: makeMarkerEl('stall', { booked: false }).outerHTML,
 					iconSize: [44, 54],
 					iconAnchor: [22, 54]
 				});
@@ -476,73 +461,17 @@
 		updateMarkers(mapInstance);
 	}
 
-	// 予約フォーム state
-	let reservationMode = $state('space-first'); // 'space-first' | 'stall-first'
-	let needsStall = $state(false); // スペース優先フロー: 屋台も必要か
-	let stallOperatingLocation = $state(''); // 屋台のみ予約時の営業場所
-	let reservationForm = $state({
-		spaceId: null, spaceName: '',
-		stallId: '', stallName: '',
-		startDate: '', startTime: '10:00',
-		endDate: '', endTime: '22:00'
-	});
+	// 予約フォーム state（空き状況で選んだ時間帯・屋台・場所）
+	let reservationSlot = $state(null); // { start, end, stall, space, fees, charge }
 	let reservationError = $state('');
 	let isReserving = $state(false);
 	let reservationSuccess = $state(false);
 	let agreedToNoshow = $state(false);
 	let authSuccessMsg = $state('');
 
-	/** Flow A: スペースから予約 */
-	function goReserve() {
-		reservationMode = 'space-first';
-		needsStall = false;
-		reservationForm = {
-			spaceId: selectedStall?.id ?? null,
-			spaceName: selectedStall?.name ?? '',
-			stallId: '', stallName: '',
-			startDate: '', startTime: '10:00',
-			endDate: '', endTime: '22:00'
-		};
-		reservationItems = [{ name: '', price: '' }];
-		reservationUseCases = [];
-		reservationError = '';
-		reservationSuccess = false;
-		agreedToNoshow = false;
-		currentView = 'reserve';
-	}
-
-	/** Flow C: 出店可能エリア（青い土地）から予約。屋台を選んで営業場所に配置する */
-	function goReserveFromArea(areaName) {
-		closeDetail?.();
-		reservationMode = 'stall-first';
-		needsStall = false;
-		stallOperatingLocation = areaName;
-		reservationForm = {
-			spaceId: null, spaceName: '',
-			stallId: '', stallName: '',
-			startDate: '', startTime: '10:00',
-			endDate: '', endTime: '22:00'
-		};
-		reservationItems = [{ name: '', price: '' }];
-		reservationUseCases = [];
-		reservationError = '';
-		reservationSuccess = false;
-		agreedToNoshow = false;
-		currentView = 'reserve';
-	}
-
-	/** Flow B: 屋台から予約（スペース不要） */
-	function goReserveFromStall() {
-		reservationMode = 'stall-first';
-		needsStall = false;
-		stallOperatingLocation = '';
-		reservationForm = {
-			spaceId: null, spaceName: '',
-			stallId: selectedStall?.id ?? '',
-			stallName: selectedStall?.name ?? '',
-			startDate: '', startTime: '10:00',
-			endDate: '', endTime: '22:00'
-		};
+	/** 空き状況で時間を選んだら予約画面へ */
+	function startReservation(sel) {
+		reservationSlot = sel;
 		reservationItems = [{ name: '', price: '' }];
 		reservationUseCases = [];
 		reservationError = '';
@@ -572,27 +501,8 @@
 
 	async function submitReservation() {
 		reservationError = '';
-
-		if (reservationMode === 'stall-first') {
-			// Flow B: 屋台のみ必須
-			if (!reservationForm.stallId) {
-				reservationError = '使用する屋台を選択してください'; return;
-			}
-			if (!stallOperatingLocation.trim()) {
-				reservationError = '営業場所を入力してください'; return;
-			}
-		} else {
-			// Flow A: スペース必須、屋台は「はい」選択時のみ必須
-			if (!reservationForm.spaceId) {
-				reservationError = '利用するスペースを選択してください'; return;
-			}
-			if (needsStall && !reservationForm.stallId) {
-				reservationError = '使用する屋台を選択してください'; return;
-			}
-		}
-
-		if (!reservationForm.startDate || !reservationForm.endDate) {
-			reservationError = '利用日を入力してください'; return;
+		if (!reservationSlot?.stall?.id) {
+			reservationError = '予約する時間を選び直してください'; return;
 		}
 
 		// 品目リストをJSONに変換（空行は除外）
@@ -608,16 +518,12 @@
 
 		isReserving = true;
 		try {
-			const startDatetime = `${reservationForm.startDate}T${reservationForm.startTime}:00`;
-			const endDatetime   = `${reservationForm.endDate}T${reservationForm.endTime}:00`;
-
-			// 予約の作成と料金の確定はサーバー側で行う（ブラウザから料金は送らない）
+			// 予約の作成・料金の確定・空きの最終確認はサーバー側で行う（ブラウザから料金は送らない）
 			const { url, free } = await startRentalReservation({
-				rentalSpaceId: reservationForm.spaceId || null,
-				stallId: (reservationMode === 'space-first' && !needsStall)
-					? null
-					: (reservationForm.stallId || null),
-				startDatetime, endDatetime,
+				rentalSpaceId: reservationSlot.space?.id ?? null,
+				stallId: reservationSlot.stall.id,
+				startDatetime: toJstString(reservationSlot.start),
+				endDatetime: toJstString(reservationSlot.end),
 				plannedItems: plannedItemsJson,
 				selectedUseCases: reservationUseCases
 			});
@@ -1113,9 +1019,7 @@
 
 			{#if currentView === 'map' && mapMode === 'available'}
 				<div class="legend">
-					<span class="legend-item"><span class="lg-ic lg-space"><Icon name="map-pin" size={14} /></span> スペース</span>
-					<span class="legend-item"><span class="lg-ic lg-stall"><Icon name="yatai" size={14} /></span> 屋台</span>
-					<span class="legend-item"><span class="lg-ic lg-booked"><Icon name="yatai" size={14} /></span> 予約済み</span>
+					<span class="legend-item"><span class="lg-ic lg-stall"><Icon name="yatai" size={14} /></span> 屋台（タップで空き状況）</span>
 				</div>
 			{/if}
 		</div>
@@ -1215,27 +1119,22 @@
 							{#if currentUser}
 								{@const activeRes = myUserReservations.find((r) => r.stall_id === selectedStall.id && r.status === 'active')}
 								{@const pendingRes = myUserReservations.find((r) => r.stall_id === selectedStall.id && r.status === 'pending')}
-								{@const bookedByOther = bookedStallIds.has(selectedStall.id) && !pendingRes && !activeRes}
 								{#if activeRes}
 									<button class="action-btn primary" onclick={() => resumeActive(activeRes)}>
 										利用中・売上管理へ
 									</button>
 								{:else if pendingRes}
-									<button class="action-btn primary" onclick={() => goQR(pendingRes.id)}>
-										QRで受け取りを開始
-									</button>
-								{:else if bookedByOther}
-									<div class="booked-badge">予約済み（利用不可）</div>
-								{:else if isSuspended}
-									<div class="booked-badge">アカウント停止中（予約不可）</div>
-								{:else}
-									<button class="action-btn primary" onclick={goReserveFromStall}>
-										この屋台で予約する
+									<button class="action-btn secondary" onclick={() => goQR(pendingRes.id)}>
+										予約済みの時間に来たら：QRで受け取りを開始
 									</button>
 								{/if}
-							{:else}
-								<a href="{base}/auth?redirectTo=/map" class="action-btn primary link-btn">ログインして予約する</a>
 							{/if}
+							<AvailabilityPicker
+								stallId={selectedStall.id}
+								onProceed={startReservation}
+								blockedMessage={isSuspended ? 'アカウント停止中のため予約できません' : ''}
+								loginHref={currentUser ? '' : `${base}/auth?redirectTo=/map`}
+							/>
 
 						{:else if mapMode === 'available'}
 							<!-- スペースピン -->
@@ -1264,7 +1163,7 @@
 								{:else if isSuspended}
 									<div class="booked-badge">アカウント停止中（予約不可）</div>
 								{:else}
-									<button class="action-btn primary" onclick={goReserve}>予約する</button>
+									<p class="specs">この場所は、設置されている屋台のピンから予約できます。</p>
 								{/if}
 							{:else}
 								<a href="{base}/auth?redirectTo=/map" class="action-btn primary link-btn">ログインして予約する</a>
@@ -1333,109 +1232,18 @@
 				{:else}
 					<div class="reserve-form">
 
-						{#if reservationMode === 'space-first'}
-							<!-- ===== Flow A: スペース優先 ===== -->
-							<div class="form-section">
-								<span class="form-label">予約スペース</span>
-								<div class="form-value">📍 {reservationForm.spaceName}</div>
-							</div>
-
-							<!-- 屋台も必要か？ -->
-							<div class="form-section">
-								<span class="form-label">屋台も必要ですか？</span>
-								<div class="flow-toggle">
-									<button
-										type="button"
-										class="flow-toggle-btn"
-										class:selected={!needsStall}
-										onclick={() => { needsStall = false; reservationForm.stallId = ''; }}
-									>いいえ（スペースのみ）</button>
-									<button
-										type="button"
-										class="flow-toggle-btn"
-										class:selected={needsStall}
-										onclick={() => (needsStall = true)}
-									>はい（屋台も借りる）</button>
-								</div>
-							</div>
-
-							{#if needsStall}
-								<div class="form-section">
-									<label class="form-label" for="stall-select">
-										使用する屋台 <span class="req">*</span>
-									</label>
-									<select id="stall-select" bind:value={reservationForm.stallId} class="form-select">
-										<option value="">屋台を選択してください</option>
-										{#each availableStallsList as stall}
-											{@const isBooked = bookedStallIds.has(stall.id) && !myUserReservations.some(r => r.stall_id === stall.id)}
-											<option value={stall.id} disabled={isBooked}>
-												{stall.stall_name}（{stall.operators?.business_name ?? ''}）
-												— ¥{(stall.rental_fee ?? 0).toLocaleString()}/3時間
-												{#if isBooked}（予約済み）{/if}
-											</option>
-										{/each}
-									</select>
-								</div>
-							{/if}
-
-						{:else}
-							<!-- ===== Flow B: 屋台優先 ===== -->
-							<div class="form-section">
-								{#if reservationForm.stallName}
-									<span class="form-label">予約屋台</span>
-									<div class="form-value">{reservationForm.stallName}</div>
-								{:else}
-									<!-- エリアからの予約: 配置する屋台を選択 -->
-									<label class="form-label" for="area-stall-select">
-										配置する屋台 <span class="req">*</span>
-									</label>
-									<select id="area-stall-select" bind:value={reservationForm.stallId} class="form-select">
-										<option value="">屋台を選択してください</option>
-										{#each availableStallsList as stall}
-											{@const isBooked = bookedStallIds.has(stall.id) && !myUserReservations.some(r => r.stall_id === stall.id)}
-											<option value={stall.id} disabled={isBooked}>
-												{stall.stall_name}（{stall.operators?.business_name ?? ''}）
-												— ¥{(stall.rental_fee ?? 0).toLocaleString()}/3時間
-												{#if isBooked}（予約済み）{/if}
-											</option>
-										{/each}
-									</select>
+						<!-- 予約内容（空き状況で選んだ時間・場所。ここでは変更しない） -->
+						{#if reservationSlot}
+							<div class="reserve-summary">
+								<div class="rs-row"><span class="rs-label">日時</span><span class="rs-value">{formatRange(reservationSlot.start, reservationSlot.end)}</span></div>
+								<div class="rs-row"><span class="rs-label">屋台</span><span class="rs-value">{reservationSlot.stall?.name ?? ''}</span></div>
+								<div class="rs-row"><span class="rs-label">場所</span><span class="rs-value">{reservationSlot.space?.name ?? selectedStall?.address ?? '屋台の設置場所'}</span></div>
+								{#if reservationSlot.charge}
+									<div class="rs-row"><span class="rs-label">料金の目安</span><span class="rs-value">¥{reservationSlot.charge.total.toLocaleString()}<span class="rs-sub">（基本 ¥{reservationSlot.charge.base.toLocaleString()}{reservationSlot.charge.extensionSlots ? ` ＋ 延長 30分×${reservationSlot.charge.extensionSlots}` : ''}）</span></span></div>
 								{/if}
-							</div>
-							<div class="form-section">
-								<label class="form-label" for="operating-location">
-									営業場所 <span class="req">*</span>
-								</label>
-								<input
-									id="operating-location"
-									type="text"
-									bind:value={stallOperatingLocation}
-									class="form-input"
-									placeholder="例: 鴨川河川敷・出町柳付近"
-								/>
-							</div>
-							<div class="flow-info-box">
-								青いエリアは屋台を出店できる土地です。配置する屋台を選んで予約してください。
+								<button type="button" class="rs-change" onclick={() => { currentView = 'map'; }}>時間を選び直す</button>
 							</div>
 						{/if}
-
-						<!-- 利用開始 -->
-						<div class="form-section">
-							<label class="form-label">利用開始 <span class="req">*</span></label>
-							<div class="date-row">
-								<input type="date" bind:value={reservationForm.startDate} class="form-input" />
-								<input type="time" step="1800" bind:value={reservationForm.startTime} class="form-input time-input" />
-							</div>
-						</div>
-
-						<!-- 利用終了 -->
-						<div class="form-section">
-							<label class="form-label">利用終了 <span class="req">*</span></label>
-							<div class="date-row">
-								<input type="date" bind:value={reservationForm.endDate} class="form-input" />
-								<input type="time" step="1800" bind:value={reservationForm.endTime} class="form-input time-input" />
-							</div>
-						</div>
 
 						<!-- 使用用途（貸し出し人が設定した用途から選択） -->
 						<div class="form-section">
@@ -1517,7 +1325,7 @@
 						</label>
 
 						<button class="reserve-submit-btn" onclick={submitReservation} disabled={isReserving || !agreedToNoshow}>
-							{isReserving ? '処理中…' : (reservationMode === 'stall-first' ? '屋台を予約する' : 'スペースを予約する')}
+							{isReserving ? '処理中…' : 'この内容で予約する'}
 						</button>
 					</div>
 				{/if}
@@ -2057,6 +1865,16 @@
 	}
 	.price { font-weight: 500; font-size: 1.1rem; margin: 5px 0; }
 	.price-ext { font-size: 0.78rem; color: var(--ink-2); margin-left: 4px; }
+	.reserve-summary {
+		display: flex; flex-direction: column; gap: 8px;
+		padding: 14px 16px; border-radius: 14px;
+		background: var(--accent-tint); border: 1px solid var(--line-strong);
+	}
+	.rs-row { display: grid; grid-template-columns: 5.5em 1fr; gap: 8px; align-items: baseline; }
+	.rs-label { font-size: 0.75rem; color: var(--ink-2); }
+	.rs-value { font-size: 0.95rem; color: var(--ink); font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
+	.rs-sub { font-size: 0.72rem; color: var(--ink-3); margin-left: 4px; }
+	.rs-change { align-self: flex-start; margin-top: 2px; padding: 0; border: none; background: none; color: var(--accent-deep); font-size: 0.8rem; text-decoration: underline; cursor: pointer; font-family: var(--font-gothic); }
 	.space-meta {
 		display: flex; gap: 10px; font-size: 0.78rem; color: var(--ink-2);
 		background: var(--surface); border-radius: 6px; padding: 5px 8px; margin: 4px 0;
@@ -2123,7 +1941,6 @@
 	}
 	.form-select:focus, .form-input:focus { outline: none; border-color: var(--accent); }
 	.date-row { display: flex; gap: 8px; min-width: 0; }
-	.date-row input[type="date"] { flex: 1; width: 0; }
 	.time-input { width: 110px; flex-shrink: 0; }
 	.form-error {
 		background: rgba(184, 92, 43, 0.08); color: #dc2626; border-radius: 8px;
