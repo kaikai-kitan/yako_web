@@ -2,12 +2,26 @@ import { error } from '@sveltejs/kit';
 import { RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
 import { toJstIso, BOOKING_HORIZON_DAYS } from '$lib/rental-pricing.js';
 import { checkRange, RANGE_ERROR_MESSAGES } from '$lib/rental-availability.js';
+import { matchPriceRule, applyMultiplier } from '$lib/rental-price-rules.js';
 
 const MAX_PLANNED_ITEMS_LENGTH = 20000;
 const MAX_USE_CASES = 10;
 
-/** 屋台・場所の料金設定を取得する（場所は屋台に紐づいた設置場所を優先） */
-export async function loadRentalTarget(supabase, { stallId, rentalSpaceId }) {
+/** 有効な割増ルール（土日・イベントなど） */
+export async function loadPriceRules(supabase) {
+	const { data, error: rulesError } = await supabase
+		.from('rental_price_rules')
+		.select('id, label, multiplier, weekday, start_date, end_date, stall_id, rental_space_id, active')
+		.eq('active', true);
+	if (rulesError) error(500, '料金の設定を確認できませんでした');
+	return data ?? [];
+}
+
+/**
+ * 屋台・場所の料金設定を取得する（場所は屋台に紐づいた設置場所を優先）。
+ * start（予約の開始日時）を渡すと、その日に当てはまる割増率を掛けた料金を返す。
+ */
+export async function loadRentalTarget(supabase, { stallId, rentalSpaceId, start = null }) {
 	let stall = null;
 	if (stallId) {
 		const { data, error: stallError } = await supabase
@@ -31,14 +45,26 @@ export async function loadRentalTarget(supabase, { stallId, rentalSpaceId }) {
 		if (!data) error(404, 'スペースが見つかりません');
 		space = data;
 	}
-	const fees = {
-		locked_stall_fee: Number(stall?.rental_fee ?? 0),
-		locked_stall_ext_fee: Number(stall?.extension_fee ?? 0),
-		locked_space_fee: Number(space?.space_fee ?? 0),
-		locked_space_ext_fee: Number(space?.extension_fee ?? 0)
+	let base = {
+		stallBase: Number(stall?.rental_fee ?? 0),
+		stallExt: Number(stall?.extension_fee ?? 0),
+		spaceBase: Number(space?.space_fee ?? 0),
+		spaceExt: Number(space?.extension_fee ?? 0)
 	};
-	if (Object.values(fees).some((n) => !Number.isInteger(n) || n < 0)) error(500, '料金設定が正しくありません');
-	return { stall, space, fees };
+	if (Object.values(base).some((n) => !Number.isInteger(n) || n < 0)) error(500, '料金設定が正しくありません');
+	let rule = null;
+	if (start) {
+		const startMs = Date.parse(toJstIso(start));
+		rule = matchPriceRule(startMs, await loadPriceRules(supabase), { stallId: stall?.id ?? null, spaceId: space?.id ?? null });
+		if (rule) base = applyMultiplier(base, rule.multiplier);
+	}
+	const fees = {
+		locked_stall_fee: base.stallBase,
+		locked_stall_ext_fee: base.stallExt,
+		locked_space_fee: base.spaceBase,
+		locked_space_ext_fee: base.spaceExt
+	};
+	return { stall, space, fees, rule };
 }
 
 /** 屋台・場所の貸し出し不可の時間帯 */
@@ -98,7 +124,7 @@ export async function createPendingReservation(supabase, userId, input) {
 	const formatProblem = checkRange({ start: startIso, end: endIso });
 	if (formatProblem) error(400, RANGE_ERROR_MESSAGES[formatProblem]);
 
-	const { stall, space, fees } = await loadRentalTarget(supabase, { stallId, rentalSpaceId });
+	const { stall, space, fees } = await loadRentalTarget(supabase, { stallId, rentalSpaceId, start: startIso });
 	const [reservations, blackouts] = await Promise.all([
 		loadStallReservations(supabase, stall?.id),
 		loadBlackouts(supabase, { stallId: stall?.id, spaceId: space?.id })

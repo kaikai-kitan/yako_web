@@ -3,7 +3,9 @@ import { json, error } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
 import { buildSlots, jstToday } from '$lib/rental-availability.js';
 import { BOOKING_HORIZON_DAYS, SLOT_MINUTES, BUFFER_SLOTS, BASE_MINUTES } from '$lib/rental-pricing.js';
-import { loadRentalTarget, loadBlackouts, loadStallReservations } from '$lib/server/rental-reservation.js';
+import { loadRentalTarget, loadBlackouts, loadStallReservations, loadPriceRules } from '$lib/server/rental-reservation.js';
+import { matchPriceRule } from '$lib/rental-price-rules.js';
+import { jstDayStartMs } from '$lib/rental-availability.js';
 
 export const prerender = false;
 
@@ -24,10 +26,16 @@ export async function GET({ params, url }) {
 
 	const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 	const { stall, space, fees } = await loadRentalTarget(supabase, { stallId });
-	const [reservations, blackouts] = await Promise.all([
+	const [reservations, blackouts, rules] = await Promise.all([
 		loadStallReservations(supabase, stall.id),
-		loadBlackouts(supabase, { stallId: stall.id, spaceId: space?.id })
+		loadBlackouts(supabase, { stallId: stall.id, spaceId: space?.id }),
+		loadPriceRules(supabase)
 	]);
+	// 日ごとの割増率（予約の開始日で決まる）
+	const days_ = buildSlots({ from, days, reservations, blackouts }).map((d) => {
+		const rule = matchPriceRule(jstDayStartMs(d.date) + 12 * 3600000, rules, { stallId: stall.id, spaceId: space?.id ?? null });
+		return { ...d, multiplier: rule ? Number(rule.multiplier) : 1, priceLabel: rule?.label ?? null };
+	});
 
 	return json(
 		{
@@ -40,7 +48,7 @@ export async function GET({ params, url }) {
 				spaceBase: fees.locked_space_fee,
 				spaceExt: fees.locked_space_ext_fee
 			},
-			days: buildSlots({ from, days, reservations, blackouts })
+			days: days_
 		},
 		{ headers: { 'cache-control': 'no-store' } }
 	);

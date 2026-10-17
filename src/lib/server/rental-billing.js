@@ -276,7 +276,8 @@ export async function finalizeRentalReturn({ stripe, supabase, reservationId, us
 			payer_id: userId,
 			recipient_id: res.stall_specs.user_id,
 			recipient_name: res.stall_specs.operators?.business_name ?? null,
-			total_amount: charge.stall
+			total_amount: charge.stall,
+			payee_role: 'stall'
 		});
 	}
 	if (res.rental_spaces?.user_id && charge.space > 0) {
@@ -285,7 +286,8 @@ export async function finalizeRentalReturn({ stripe, supabase, reservationId, us
 			payer_id: userId,
 			recipient_id: res.rental_spaces.user_id,
 			recipient_name: res.rental_spaces.owners?.owner_name ?? null,
-			total_amount: charge.space
+			total_amount: charge.space,
+			payee_role: 'space'
 		});
 	}
 	if (payments.length > 0) {

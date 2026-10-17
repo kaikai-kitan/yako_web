@@ -107,6 +107,9 @@
 		<a href="{base}/admin/users" class="admin-nav-link">👥 ユーザー管理</a>
 		<a href="{base}/admin/connect-codes" class="admin-nav-link">🔗 接続コード（NFC）管理</a>
 		<a href="{base}/admin/stalls" class="admin-nav-link">🏮 屋台のできること</a>
+		<a href="{base}/admin/rental" class="admin-nav-link">📍 屋台と場所の設定（料金・貸し出し不可・割増率）</a>
+		<a href="{base}/admin/payouts" class="admin-nav-link">💴 月末の振込額</a>
+		<a href="{base}/admin/space-applications" class="admin-nav-link">🤝 場所提供の申請</a>
 	</div>
 
 	<!-- フィルター -->
