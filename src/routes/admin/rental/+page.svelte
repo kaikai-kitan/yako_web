@@ -1,6 +1,8 @@
 <svelte:head><title>屋台と場所の設定 | 管理者</title></svelte:head>
 
 <script>
+	import { DAY_SETS } from '$lib/rental-price-rules.js';
+	import { jpHolidayName } from '$lib/jp-holidays.js';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
@@ -21,7 +23,7 @@
 	let busy = $state('');
 
 	let newBlackout = $state({ target: '', kind: 'daily', weekday: '1', onDate: '', startTime: '00:00', endTime: '08:00', note: '' });
-	let newRule = $state({ label: '', multiplier: '1.2', kind: 'weekday', weekday: '6', startDate: '', endDate: '', target: '' });
+	let newRule = $state({ label: '土日祝料金', multiplier: '1.2', kind: 'weekend_holiday', weekday: '6', startDate: '', endDate: '', target: '' });
 
 	onMount(load);
 
@@ -65,6 +67,7 @@
 		b.on_date ? b.on_date : b.weekday != null ? `毎週${WEEKDAYS[b.weekday]}曜` : '毎日';
 	const ruleWhen = (r) => {
 		const parts = [];
+		if (r.day_set) parts.push(DAY_SETS[r.day_set] ?? r.day_set);
 		if (r.weekday != null) parts.push(`毎週${WEEKDAYS[r.weekday]}曜`);
 		if (r.start_date) parts.push(r.end_date && r.end_date !== r.start_date ? `${r.start_date}〜${r.end_date}` : r.start_date);
 		return parts.join('・');
@@ -75,8 +78,23 @@
 		const sp = spaces.find((x) => x.id === stall._space);
 		const baseFee = Number(stall.rental_fee || 0) + Number(sp?.space_fee || 0);
 		const extFee = Number(stall.extension_fee || 0) + Number(sp?.extension_fee || 0);
-		return `利用者に表示：3時間 ¥${baseFee.toLocaleString()}／延長30分 ¥${extFee.toLocaleString()}`;
+		return `利用者に表示：3時間 ¥${baseFee.toLocaleString()}／延長30分 ¥${extFee.toLocaleString()}（4時間なら ¥${(baseFee + extFee * 2).toLocaleString()}）`;
 	}
+	const noExtFee = (stall) => {
+		const sp = spaces.find((x) => x.id === stall._space);
+		return Number(stall.extension_fee || 0) + Number(sp?.extension_fee || 0) === 0;
+	};
+	// これから60日間の祝日（割増の確認用）
+	const upcomingHolidays = (() => {
+		const out = [];
+		const start = Date.now();
+		for (let i = 0; i < 60; i++) {
+			const d = new Date(start + i * 86400000 + 9 * 3600000).toISOString().slice(0, 10);
+			const name = jpHolidayName(d);
+			if (name) out.push(`${d.slice(5).replace('-', '/')} ${name}`);
+		}
+		return out;
+	})();
 
 	async function addBlackout() {
 		const [kind, id] = newBlackout.target.split(':');
@@ -96,6 +114,7 @@
 		const ok = await post({
 			action: 'addRule', label: newRule.label, multiplier: newRule.multiplier,
 			weekday: newRule.kind === 'weekday' ? newRule.weekday : null,
+			daySet: newRule.kind in DAY_SETS ? newRule.kind : null,
 			startDate: newRule.kind === 'period' ? newRule.startDate : null,
 			endDate: newRule.kind === 'period' ? newRule.endDate : null,
 			stallId: kind === 'stall' ? id : null,
@@ -140,6 +159,7 @@
 							<label class="field"><span class="label">屋台代の延長（30分）</span><input id="se-{s.id}" type="number" min="0" bind:value={s.extension_fee} /></label>
 						</div>
 						<p class="preview">{preview(s)}</p>
+						{#if noExtFee(s)}<p class="warn">延長料が0円のため、3時間を超えても料金は増えません。</p>{/if}
 						<div class="actions">
 							<button class="btn" disabled={busy === `stall-${s.id}`} onclick={async () => {
 								const ok = await post({ action: 'fees', kind: 'stall', id: s.id, base: s.rental_fee, ext: s.extension_fee }, `stall-${s.id}`);
@@ -198,6 +218,8 @@
 							<span class="label">いつ</span>
 							<select id="bo-kind" bind:value={newBlackout.kind}>
 								<option value="daily">毎日</option>
+								<option value="weekend_holiday">土日・祝日</option>
+								<option value="holiday">祝日だけ</option>
 								<option value="weekday">毎週の曜日</option>
 								<option value="date">特定の日</option>
 							</select>
@@ -256,7 +278,7 @@
 							<label class="field"><span class="label">曜日</span>
 								<select id="rule-wd" bind:value={newRule.weekday}>{#each WEEKDAYS as w, i}<option value={String(i)}>{w}曜</option>{/each}</select>
 							</label>
-						{:else}
+						{:else if newRule.kind === 'period'}
 							<label class="field"><span class="label">開始日</span><input id="rule-from" type="date" bind:value={newRule.startDate} /></label>
 							<label class="field"><span class="label">終了日</span><input id="rule-to" type="date" bind:value={newRule.endDate} /></label>
 						{/if}
@@ -269,7 +291,7 @@
 							<optgroup label="屋台">{#each stalls as s}<option value="stall:{s.id}">{s.stall_name}</option>{/each}</optgroup>
 						</select>
 					</label>
-					<p class="hint">土日の両方に設定する場合は、土曜と日曜をそれぞれ追加してください。</p>
+					<p class="hint">祝日は振替休日・国民の休日も含めて自動で判定します。{#if upcomingHolidays.length}これからの祝日：{upcomingHolidays.join('、')}{/if}</p>
 					<div class="actions"><button class="btn" disabled={!newRule.label || busy === 'rule'} onclick={addRule}>追加</button></div>
 				</div>
 			</section>
@@ -301,6 +323,7 @@
 	.field { display: flex; flex-direction: column; gap: 4px; }
 	.label { font-size: 0.74rem; color: var(--ink-2); }
 	.field input, .field select { padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 8px; font-size: 0.92rem; background: var(--surface); font-family: var(--font-gothic); color: var(--ink); min-width: 0; }
+	.warn { margin: 4px 0 0; font-size: 0.8rem; color: #b45309; }
 	.preview { margin: 0; font-size: 0.8rem; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
 	.hint { margin: 0; font-size: 0.74rem; color: var(--ink-3); }
 	.actions { display: flex; justify-content: flex-end; }

@@ -11,7 +11,7 @@ const MAX_USE_CASES = 10;
 export async function loadPriceRules(supabase) {
 	const { data, error: rulesError } = await supabase
 		.from('rental_price_rules')
-		.select('id, label, multiplier, weekday, start_date, end_date, stall_id, rental_space_id, active')
+		.select('id, label, multiplier, weekday, day_set, start_date, end_date, stall_id, rental_space_id, active')
 		.eq('active', true);
 	if (rulesError) error(500, '料金の設定を確認できませんでした');
 	return data ?? [];
