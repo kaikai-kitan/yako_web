@@ -255,6 +255,7 @@ describe('unfinished checkout across the application', () => {
 			row({ is_suspended: false }),
 			row(unpaid),
 			row({ id: 'stall', stall_name: '屋台', rental_fee: 1000, extension_fee: 0, space_id: null }),
+			row([]),
 			row(null),
 			row({ stripe_customer_id: 'cus_test' })
 		]);
@@ -301,14 +302,16 @@ describe('unfinished checkout across the application', () => {
 		end_datetime: `${day}T${to}:00+09:00`,
 		stripe_payment_intent_id: 'pi_other'
 	});
-	const newBooking = (reservations, blackouts = []) => [
+	const newBooking = (reservations, blackouts = [], rules = []) => [
 		row({ is_suspended: false }),
 		row(stallRow),
+		row(rules),
 		row(reservations),
 		row(blackouts),
 		row({ id: 'new-draft' }),
 		row({ ...unpaid, id: 'new-draft', start_datetime: `${draft.startDatetime}+09:00`, end_datetime: `${draft.endDatetime}+09:00` }),
 		row(stallRow),
+		row(rules),
 		row(null),
 		row({ stripe_customer_id: 'cus_test' })
 	];
@@ -333,6 +336,14 @@ describe('unfinished checkout across the application', () => {
 		expect(mocks.create.mock.calls[0][0]).toMatchObject({ mode: 'setup' });
 		expect(mocks.create.mock.calls[0][0].setup_intent_data.description).toContain('1,400');
 	});
+	it('applies the weekend/event rate of the start date to the locked fees', async () => {
+		const rate = [{ id: 'r', label: 'イベント', multiplier: 1.5, weekday: null, start_date: day, end_date: day, active: true }];
+		const db = database(newBooking([], [], rate));
+		mocks.create.mockResolvedValueOnce({ id: 'checkout', url: 'https://checkout.stripe.com/example' });
+		await checkout({ request: request({ reservation: draft }) });
+		const insert = db.writes.find((w) => w.method === 'insert');
+		expect(insert.value).toMatchObject({ locked_stall_fee: 1500, locked_stall_ext_fee: 300 });
+	});
 	it('lets the user book again after abandoning payment (unpaid drafts do not block)', async () => {
 		const db = database(newBooking([{ ...unpaid, start_datetime: `${day}T10:00:00+09:00`, end_datetime: `${day}T14:00:00+09:00` }]));
 		mocks.create.mockResolvedValueOnce({ id: 'checkout', url: 'https://checkout.stripe.com/example' });
@@ -351,13 +362,13 @@ describe('unfinished checkout across the application', () => {
 		['ending right before (no gap)', '07:00', '10:00'],
 		['starting right after (no gap)', '14:00', '17:00']
 	])('refuses a stall with a confirmed booking %s', async (_label, from, to) => {
-		const db = database(newBooking([confirmedAt(from, to)]).slice(0, 4));
+		const db = database(newBooking([confirmedAt(from, to)]).slice(0, 5));
 		await expect(checkout({ request: request({ reservation: draft }) })).rejects.toMatchObject({ status: 409 });
 		expect(db.writes).toEqual([]);
 		expect(mocks.create).not.toHaveBeenCalled();
 	});
 	it('refuses times the place does not lend out', async () => {
-		const db = database(newBooking([], [{ weekday: null, on_date: day, start_time: '13:00', end_time: '24:00' }]).slice(0, 4));
+		const db = database(newBooking([], [{ weekday: null, on_date: day, start_time: '13:00', end_time: '24:00' }]).slice(0, 5));
 		await expect(checkout({ request: request({ reservation: draft }) })).rejects.toMatchObject({ status: 400 });
 		expect(db.writes).toEqual([]);
 	});
@@ -444,6 +455,7 @@ describe('unfinished checkout across the application', () => {
 			row({ is_suspended: false }),
 			row(unpaid),
 			row({ id: 'stall', stall_name: '屋台', rental_fee: 0, extension_fee: 0, space_id: null }),
+			row([]),
 			row(null)
 		]);
 		const result = await checkout({ request: request({ reservationId: unpaid.id }) });
@@ -499,8 +511,8 @@ describe('rental return (complete-rental)', () => {
 		expect(db.writes[0].value).toMatchObject({ status: 'completed' });
 		expect(db.writes[0].value.returned_at).toEqual(expect.any(String));
 		expect(db.writes[3].value).toEqual([
-			expect.objectContaining({ payer_id: 'user', recipient_id: 'stall-owner', total_amount: 1400 }),
-			expect.objectContaining({ payer_id: 'user', recipient_id: 'space-owner', total_amount: 700 })
+			expect.objectContaining({ payer_id: 'user', recipient_id: 'stall-owner', total_amount: 1400, payee_role: 'stall' }),
+			expect.objectContaining({ payer_id: 'user', recipient_id: 'space-owner', total_amount: 700, payee_role: 'space' })
 		]);
 	});
 	it("refuses to complete someone else's reservation", async () => {

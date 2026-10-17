@@ -54,9 +54,10 @@ export async function POST({ request }) {
 		if (res.stripe_payment_intent_id) throw error(409, 'この予約はすでに確定しています');
 
 		// 料金はサーバー側の現在価格で確定する（0円の予約も当日のチェックインまで pending のまま）
-		const { stall, space, fees } = await loadRentalTarget(supabase, {
+		const { fees } = await loadRentalTarget(supabase, {
 			stallId: res.stall_id,
-			rentalSpaceId: res.rental_space_id
+			rentalSpaceId: res.rental_space_id,
+			start: res.start_datetime
 		});
 		const charge = rentalCharge({
 			start: res.start_datetime,

@@ -21,6 +21,7 @@
             <ul class="pf-list">
                 <li><a href="{base}/store-setup">公式ストア開設の手順</a></li>
                 <li><a href="{base}/yatakari" target="_blank" rel="noopener noreferrer">YATAKARI 出退店管理</a></li>
+                <li><a href="{base}/space-apply">場所を貸したい方へ</a></li>
             </ul>
             <a href="{base}/store-setup" class="cta-btn">
                 公式ストア開設はこちら →

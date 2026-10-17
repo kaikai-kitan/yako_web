@@ -3,7 +3,9 @@
 	○ 予約できる ／ × 他の人が使用中（前後30分のゆとりを含む）／ ー 貸し出し不可
 -->
 <script>
-	import { rentalCharge, SLOT_MS } from '$lib/rental-pricing.js';
+	import { rentalCharge } from '$lib/rental-pricing.js';
+	import { applyMultiplier } from '$lib/rental-price-rules.js';
+	import { jstParts } from '$lib/rental-availability.js';
 	import { nextSelection, isSelected, formatRange, formatDayTab } from '$lib/slot-selection.js';
 
 	let {
@@ -57,9 +59,14 @@
 	);
 	let freeCount = (d) => d.slots.filter((s) => s.status === 'free').length;
 
+	// 予約の開始日に当てはまる割増率（土日・イベントなど）
+	let startDay = $derived(
+		selection && data ? data.days.find((d) => d.date === jstParts(selection.start).date) ?? null : null
+	);
+	let effectiveFees = $derived(data ? applyMultiplier(data.fees, startDay?.multiplier ?? 1) : null);
 	let charge = $derived(
-		selection && !selection.open && data
-			? rentalCharge({ start: selection.start, end: selection.end, fees: data.fees })
+		selection && !selection.open && effectiveFees
+			? rentalCharge({ start: selection.start, end: selection.end, fees: effectiveFees })
 			: null
 	);
 
@@ -77,7 +84,9 @@
 			end: selection.end,
 			stall: data.stall,
 			space: data.space,
-			fees: data.fees,
+			fees: effectiveFees,
+			multiplier: startDay?.multiplier ?? 1,
+			priceLabel: startDay?.priceLabel ?? null,
 			charge
 		});
 	}
@@ -112,6 +121,7 @@
 					<span class="ap-day-date">{formatDayTab(d.date).replace(/\(.\)/, '')}</span>
 					<span class="ap-day-wd">{WEEKDAY[d.weekday]}</span>
 					<span class="ap-day-free">{freeCount(d) > 0 ? '○' : '×'}</span>
+					{#if d.multiplier && d.multiplier !== 1}<span class="ap-day-rate" title={d.priceLabel ?? ''}>×{d.multiplier}</span>{/if}
 				</button>
 			{/each}
 		</div>
@@ -151,6 +161,7 @@
 				{#if charge}
 					<p class="ap-price">
 						料金の目安 <b>¥{charge.total.toLocaleString()}</b>
+						{#if startDay?.multiplier && startDay.multiplier !== 1}<span class="ap-rate-note">{startDay.priceLabel ?? '特別料金'} ×{startDay.multiplier}</span>{/if}
 						<span class="ap-price-sub">（基本 ¥{charge.base.toLocaleString()}{charge.extensionSlots ? ` ＋ 延長 30分×${charge.extensionSlots} ¥${charge.extension.toLocaleString()}` : ''}）</span>
 					</p>
 				{/if}
@@ -189,6 +200,8 @@
 	.ap-day.sun .ap-day-wd { color: #b4413a; }
 	.ap-day.sat .ap-day-wd { color: #3a5fb4; }
 	.ap-day-free { font-size: 0.7rem; color: var(--accent); }
+	.ap-day-rate { font-size: 0.6rem; color: var(--accent-deep); background: var(--surface-sunk); border-radius: 4px; padding: 0 3px; }
+	.ap-rate-note { font-size: 0.7rem; color: var(--accent-deep); margin-left: 6px; }
 
 	.ap-grid { display: flex; flex-direction: column; gap: 3px; }
 	.ap-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
