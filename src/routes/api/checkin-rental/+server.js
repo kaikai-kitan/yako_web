@@ -1,4 +1,5 @@
-import { isRentalConfirmed, RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
+import { isRentalConfirmed } from '$lib/rental-payment.js';
+import { BILLING_FIELDS, secureRentalAtCheckIn, reservedAmount } from '$lib/server/rental-billing.js';
 import Stripe from 'stripe';
 import { env } from '$env/dynamic/private';
 import { json, error } from '@sveltejs/kit';
@@ -23,7 +24,7 @@ export async function POST({ request }) {
 	// 予約を取得（pending のみ対象）
 	const { data: reservation, error: resErr } = await supabase
 		.from('reservations')
-		.select(`id, user_id, status, ${RENTAL_PAYMENT_FIELDS}`)
+		.select(BILLING_FIELDS)
 		.eq('id', reservationId)
 		.single();
 
@@ -35,27 +36,14 @@ export async function POST({ request }) {
 
 	if (!isRentalConfirmed(reservation)) throw error(402, 'カードの確認が未完了です。予約手続きを完了してください。');
 
-	const piId = reservation.stripe_payment_intent_id;
-
-	if (piId) {
-		// --- 有料レンタル: Stripe Capture で売上確定 ---
-		const stripeKey = env.STRIPE_SECRET_KEY;
-		if (!stripeKey) throw error(500, 'STRIPE_SECRET_KEY が未設定です');
-
+	// 予約時間分の仮押さえ（新方式）／予約時の与信の確定（旧方式）
+	const stripeKey = env.STRIPE_SECRET_KEY;
+	if (stripeKey) {
 		const stripe = new Stripe(stripeKey, { apiVersion: '2024-06-20' });
-
-		try {
-			const pi = await stripe.paymentIntents.capture(piId);
-			if (pi.status !== 'succeeded') {
-				throw error(402, `決済の確定に失敗しました（Stripe status: ${pi.status}）`);
-			}
-		} catch (stripeErr) {
-			// Stripe エラーを詳細ログ、ユーザーには汎用メッセージ
-			console.error('[checkin-rental] Stripe capture failed:', stripeErr);
-			throw error(402, '決済の処理に失敗しました。カード情報をご確認の上、再度お試しください。');
-		}
+		await secureRentalAtCheckIn({ stripe, supabase, reservation });
+	} else if (reservedAmount(reservation) > 0) {
+		throw error(500, '決済設定が未設定です');
 	}
-	// piId が null の場合は無料レンタル → Stripe 処理不要
 
 	// 予約を利用中（active）に更新
 	const { error: updateErr } = await supabase
@@ -64,7 +52,7 @@ export async function POST({ request }) {
 		.eq('id', reservationId)
 		.eq('status', 'pending'); // 競合防止
 
-	if (updateErr) throw error(500, 'チェックイン処理に失敗しました: ' + updateErr.message);
+	if (updateErr) throw error(500, 'チェックイン処理に失敗しました');
 
 	return json({ success: true });
 }

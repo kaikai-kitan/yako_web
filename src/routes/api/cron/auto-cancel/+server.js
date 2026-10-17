@@ -1,5 +1,6 @@
 import { isRentalConfirmed, RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
 import { noShowCharge, feesFromReservation } from '$lib/rental-pricing.js';
+import { chargeNoShow } from '$lib/server/rental-billing.js';
 import Stripe from 'stripe';
 import { json, error } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
@@ -35,7 +36,7 @@ export async function POST({ request }) {
 	const { data: reservations, error: dbErr } = await supabase
 		.from('reservations')
 		.select(`
-			id, user_id, status, start_datetime, ${RENTAL_PAYMENT_FIELDS},
+			id, user_id, status, start_datetime, end_datetime, stripe_customer_id, ${RENTAL_PAYMENT_FIELDS},
 			rental_spaces ( name ),
 			stall_specs ( stall_name ),
 			user_profiles ( name )
@@ -72,27 +73,20 @@ export async function POST({ request }) {
 			}
 
 			// 2. 無断キャンセル料 = この予約の基本料金（屋台＋場所の3時間分）。
-			//    与信で確保した金額のうち基本料金分だけを確定し、残りは解放する。
+			//    新方式は登録カードに請求、旧方式は予約時の与信のうち基本料金分だけ確定し残りは解放。
 			const noShowAmount = noShowCharge(feesFromReservation(res));
 			let charged = 0;
-			if (res.stripe_payment_intent_id && stripe) {
+			if (stripe) {
 				try {
-					const amount = noShowAmount;
-					const intent = await stripe.paymentIntents.retrieve(res.stripe_payment_intent_id);
-					if (intent.status === 'requires_capture') {
-						if (amount > 0) {
-							const pi = await stripe.paymentIntents.capture(res.stripe_payment_intent_id, {
-								amount_to_capture: Math.min(amount, intent.amount)
-							});
-							if (pi.status === 'succeeded') charged = pi.amount_received ?? Math.min(amount, intent.amount);
-							else console.error('[auto-cancel] capture not succeeded:', res.id, pi.status);
-						} else {
-							await stripe.paymentIntents.cancel(res.stripe_payment_intent_id);
-						}
-					}
+					const result = await chargeNoShow({ stripe, reservation: res });
+					charged = result.charged;
+					await supabase
+						.from('reservations')
+						.update({ charged_amount: result.charged, charge_status: result.chargeStatus, stripe_charge_intent_id: result.chargeIntentId })
+						.eq('id', res.id);
 				} catch (stripeErr) {
-					// capture 失敗（期限切れ等）はログのみ。キャンセルは確定済みなので継続。
-					console.error('[auto-cancel] Stripe capture error:', res.id, stripeErr?.message);
+					// 請求の失敗はログのみ。キャンセルは確定済みなので継続。
+					console.error('[auto-cancel] no-show charge error:', res.id, stripeErr?.message);
 				}
 			}
 

@@ -14,6 +14,8 @@
 		getUserReservations,
 		getMyReservations,
 		completeRental,
+		extendRental,
+		startRentalCardCheck,
 		getMyProfile,
 		getMySalesThisMonth,
 		getMyProviderMonthlyStats,
@@ -130,6 +132,45 @@
 	// QRスキャナー
 	let qrScanPhase = $state('idle'); // 'idle'|'scanning'|'gps'|'verifying'|'error'
 	let qrErrorMsg = $state('');
+	let qrNeedsCardCheck = $state(false);
+	let isOpeningCardCheck = $state(false);
+	async function openCardCheck() {
+		if (!currentReservationId) return;
+		isOpeningCardCheck = true;
+		try {
+			const { url } = await startRentalCardCheck(currentReservationId);
+			window.location.href = url;
+		} catch (e) {
+			qrErrorMsg = e.message;
+			isOpeningCardCheck = false;
+		}
+	}
+
+	// 利用中の延長・返却後の精算
+	let extendMsg = $state('');
+	let isExtending = $state(false);
+	let returnResult = $state(null); // { charge, charged, chargeStatus }
+	let nowTick = $state(Date.now());
+	let activeReservation = $derived(myUserReservations.find((r) => r.id === currentReservationId) ?? null);
+	async function extend(slots) {
+		if (!currentReservationId) return;
+		isExtending = true; extendMsg = '';
+		try {
+			const r = await extendRental(currentReservationId, slots);
+			myUserReservations = myUserReservations.map((x) => (x.id === currentReservationId ? { ...x, end_datetime: r.endDatetime } : x));
+			extendMsg = `${slots * 30}分延長しました。返却時のお支払い目安は ¥${r.charge.total.toLocaleString()} です。`;
+		} catch (e) {
+			extendMsg = e.message;
+		} finally {
+			isExtending = false;
+		}
+	}
+	function remainingLabel(endIso) {
+		const diff = Date.parse(endIso) - nowTick;
+		const m = Math.round(Math.abs(diff) / 60000);
+		const text = m >= 60 ? `${Math.floor(m / 60)}時間${m % 60 ? `${m % 60}分` : ''}` : `${m}分`;
+		return diff >= 0 ? `終了まであと${text}` : `予約時間を${text}過ぎています（30分ごとに延長料金がかかります）`;
+	}
 	let html5QrCode = null;
 
 	// 画像拡大表示
@@ -147,10 +188,12 @@
 			}
 		};
 		window.addEventListener('pageshow', onPageShow);
+		const tick = setInterval(() => (nowTick = Date.now()), 30000);
 
 		return () => {
 			isDestroyed = true;
 			window.removeEventListener('pageshow', onPageShow);
+			clearInterval(tick);
 			if (realtimeChannel) supabase.removeChannel(realtimeChannel);
 			stopQrCamera();
 			mapInstance?.remove();
@@ -202,7 +245,8 @@
 
 				// Stripe 与信確保完了後の処理（Auth & Capture フロー）
 				const urlParams = new URLSearchParams(window.location.search);
-				const rentalAuthorizedId = urlParams.get('rental_authorized');
+				const rentalAuthorizedId = urlParams.get('rental_authorized') ?? urlParams.get('rental_hold');
+				const isHoldReturn       = urlParams.has('rental_hold');
 				const stripeSessionId    = urlParams.get('session_id');
 				if (urlParams.has('rental_cancelled')) {
 					checkoutNotice = 'お支払い手続きは完了していません。予約は確定していません。';
@@ -228,8 +272,10 @@
 								getMyReservations(currentUser.id),
 								getBookedStallIds()
 							]);
-							authSuccessMsg = 'カードの与信確保が完了しました。当日、現地のQRコードをスキャンしてチェックインしてください。';
-							isReservationOpen = true;
+							authSuccessMsg = isHoldReturn
+								? 'カードの確認ができました。もう一度、現地のQRコードをスキャンしてチェックインしてください。'
+								: 'カードの登録が完了し、予約が確定しました（この時点では請求していません）。当日、現地のQRコードをスキャンしてチェックインしてください。';
+							isReservationOpen = !isHoldReturn;
 						} else {
 							checkoutNotice = 'カードの確認結果を取得できませんでした。この画面を再読み込みして確認してください。';
 						}
@@ -627,8 +673,10 @@
 				const d = await res.json().catch(() => ({}));
 				qrScanPhase = 'error';
 				qrErrorMsg = d.message ?? '処理に失敗しました。もう一度お試しください。';
+				qrNeedsCardCheck = d.code === 'card_check_required';
 				return;
 			}
+			qrNeedsCardCheck = false;
 
 			// 成功 → 売上管理画面へ
 			const currentRes = myUserReservations.find((r) => r.id === currentReservationId);
@@ -672,7 +720,7 @@
 				const salesForDB = Object.fromEntries(
 					Object.entries(salesData).map(([name, v]) => [name, v.count || 0])
 				);
-				await completeRental(currentReservationId, currentUser.id, salesForDB);
+				returnResult = await completeRental(currentReservationId, currentUser.id, salesForDB);
 				// 営業を1回完了 → 信用スコア +5（サーバ側で冪等付与）
 				try {
 					await fetch('/api/operation/award-return', {
@@ -701,10 +749,11 @@
 			currentView = 'map';
 			selectedStall = null;
 			currentReservationId = null;
+			returnResult = null;
 			salesData = {};
 			plannedItemsList = [];
 			updateMarkers(mapInstance);
-		}, 3000);
+		}, 6000);
 	}
 
 	/** アクティブな予約を再開して売上管理画面へ */
@@ -1309,8 +1358,8 @@
 						</div>
 
 						<div class="auth-notice">
-							💳 予約時にクレジットカードの<strong>与信枠（仮押さえ）</strong>のみ確保します。<br />
-							実際の引き落としは<strong>現地QRコードスキャン（チェックイン）時</strong>に行われます。
+							💳 予約時はクレジットカードを<strong>登録するだけ</strong>で、この時点では請求しません。<br />
+							当日のチェックイン時に予約時間分を<strong>仮押さえ</strong>し、<strong>返却時</strong>に延長分を含めた合計を一括で請求します。
 						</div>
 
 						{#if reservationError}
@@ -1352,7 +1401,12 @@
 						<div class="qr-error">
 							<div class="qr-error-icon">✕</div>
 							<p>{qrErrorMsg}</p>
-							<button class="action-btn primary" onclick={startQrCamera}>もう一度スキャン</button>
+							{#if qrNeedsCardCheck}
+								<button class="action-btn primary" onclick={openCardCheck} disabled={isOpeningCardCheck}>
+									{isOpeningCardCheck ? '開いています…' : 'カードを確認し直す'}
+								</button>
+							{/if}
+							<button class="action-btn {qrNeedsCardCheck ? 'secondary' : 'primary'}" onclick={startQrCamera}>もう一度スキャン</button>
 							<button class="text-btn" onclick={cancelQr}>キャンセル</button>
 						</div>
 					{/if}
@@ -1366,6 +1420,18 @@
 				<div class="status-bar">
 					<span class="blinking">●</span> 貸出中: {selectedStall?.name ?? '屋台'}
 				</div>
+				{#if activeReservation?.end_datetime}
+					<div class="extend-box">
+						<p class="extend-time">ご利用時間 {formatRange(Date.parse(activeReservation.start_datetime), Date.parse(activeReservation.end_datetime))}</p>
+						<p class="extend-remaining">{remainingLabel(activeReservation.end_datetime)}</p>
+						<div class="extend-actions">
+							<button class="action-btn secondary" onclick={() => extend(1)} disabled={isExtending}>30分延長</button>
+							<button class="action-btn secondary" onclick={() => extend(2)} disabled={isExtending}>1時間延長</button>
+						</div>
+						{#if extendMsg}<p class="extend-msg" aria-live="polite">{extendMsg}</p>{/if}
+						<p class="extend-note">延長は次の予約（前後30分の準備時間を含む）に重ならないときだけできます。延長分は返却時にまとめて請求します。</p>
+					</div>
+				{/if}
 				<div class="sales-form">
 					<h3>本日の売上入力</h3>
 					{#if plannedItemsList.length > 0}
@@ -1433,7 +1499,17 @@
 			<div class="full-screen-modal finish-screen" transition:fade>
 				<div class="success-icon">✓</div>
 				<h2>ご利用ありがとうございました</h2>
-				<p>決済が完了しました。</p>
+				{#if returnResult?.charge}
+					<p class="finish-amount">お支払い金額 <b>¥{returnResult.charge.total.toLocaleString()}</b></p>
+					<p class="finish-detail">基本 ¥{returnResult.charge.base.toLocaleString()}{returnResult.charge.extensionSlots ? `　延長 30分×${returnResult.charge.extensionSlots} ¥${returnResult.charge.extension.toLocaleString()}` : ''}</p>
+					{#if returnResult.chargeStatus === 'paid'}
+						<p>登録カードで決済しました。</p>
+					{:else}
+						<p class="finish-warn">カードでの決済が完了しませんでした。運営からご連絡します。</p>
+					{/if}
+				{:else}
+					<p>返却を受け付けました。</p>
+				{/if}
 			</div>
 		{/if}
 
@@ -1865,6 +1941,17 @@
 	}
 	.price { font-weight: 500; font-size: 1.1rem; margin: 5px 0; }
 	.price-ext { font-size: 0.78rem; color: var(--ink-2); margin-left: 4px; }
+	.extend-box { margin: 12px 16px 0; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+	.extend-time { margin: 0; font-size: 0.9rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+	.extend-remaining { margin: 0; font-size: 0.8rem; color: var(--accent-deep); }
+	.extend-actions { display: flex; gap: 8px; }
+	.extend-actions .action-btn { flex: 1; }
+	.extend-msg { margin: 0; font-size: 0.8rem; color: var(--ink); }
+	.extend-note { margin: 0; font-size: 0.72rem; color: var(--ink-3); line-height: 1.5; }
+	.finish-amount { font-size: 1rem; margin: 6px 0 0; }
+	.finish-amount b { font-size: 1.3rem; font-weight: 500; }
+	.finish-detail { font-size: 0.8rem; color: var(--ink-2); margin: 2px 0 8px; }
+	.finish-warn { color: #b91c1c; font-size: 0.85rem; }
 	.reserve-summary {
 		display: flex; flex-direction: column; gap: 8px;
 		padding: 14px 16px; border-radius: 14px;
