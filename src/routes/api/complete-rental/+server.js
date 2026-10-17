@@ -3,6 +3,7 @@ import { json, error } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
 import { requireRentalUser } from '$lib/server/rental-authorization.js';
 import { sanitizeSalesItems } from '$lib/server/rental-sales.js';
+import { rentalCharge, feesFromReservation } from '$lib/rental-pricing.js';
 
 export const prerender = false;
 
@@ -23,7 +24,7 @@ export async function POST({ request }) {
 		.from('reservations')
 		.select(`
 			id, user_id, status, start_datetime, end_datetime,
-			locked_space_fee, locked_stall_fee,
+			locked_space_fee, locked_stall_fee, locked_space_ext_fee, locked_stall_ext_fee,
 			stall_specs ( user_id, operators ( business_name ) ),
 			rental_spaces ( user_id, owners ( owner_name ) )
 		`)
@@ -38,7 +39,7 @@ export async function POST({ request }) {
 	// active → completed を原子的に切り替える（同時実行時は片方だけ成功）
 	const { data: switched, error: updateError } = await supabase
 		.from('reservations')
-		.update({ status: 'completed' })
+		.update({ status: 'completed', returned_at: new Date().toISOString() })
 		.eq('id', reservationId)
 		.eq('user_id', user.id)
 		.eq('status', 'active')
@@ -53,12 +54,15 @@ export async function POST({ request }) {
 		if (salesError) console.error('[complete-rental] sales insert failed:', salesError.code);
 	}
 
-	const days = Math.max(
-		1,
-		Math.ceil((new Date(res.end_datetime) - new Date(res.start_datetime)) / 86400000)
-	);
-	const stallFee = Math.max(0, Number(res.locked_stall_fee ?? 0)) * days;
-	const spaceFee = Math.max(0, Number(res.locked_space_fee ?? 0)) * days;
+	// 予約時間分の料金（与信で確保している金額と一致）。
+	// 予約時間を過ぎた分の加算は、返却時の一括請求（第3段階）で対応する。
+	const charge = rentalCharge({
+		start: res.start_datetime,
+		end: res.end_datetime,
+		fees: feesFromReservation(res)
+	});
+	const stallFee = charge.stall;
+	const spaceFee = charge.space;
 	const payments = [];
 	if (res.stall_specs?.user_id && stallFee > 0) {
 		payments.push({

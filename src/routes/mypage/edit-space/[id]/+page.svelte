@@ -21,6 +21,7 @@
 	let name = $state('');
 	let address = $state('');
 	let spaceFee = $state('');
+	let extensionFee = $state('');
 	let groundType = $state('');
 	let areaCategory = $state('');
 	let fireUseAllowed = $state(false);
@@ -59,6 +60,7 @@
 		name = space.name ?? '';
 		address = space.address ?? '';
 		spaceFee = space.space_fee?.toString() ?? '';
+		extensionFee = space.extension_fee?.toString() ?? '';
 		groundType = space.ground_type ?? '';
 		areaCategory = space.area_category ?? '';
 		fireUseAllowed = space.fire_use_allowed ?? false;
@@ -131,6 +133,7 @@
 				name: name.trim(),
 				address: address.trim() || null,
 				spaceFee: spaceFee ? parseInt(spaceFee) : 0,
+				extensionFee: extensionFee ? parseInt(extensionFee) : 0,
 				groundType: groundType.trim() || null,
 				areaCategory: areaCategory.trim() || null,
 				fireUseAllowed,
@@ -207,8 +210,14 @@
 			</label>
 
 			<label class="field-label">
-				場所代（円 / 泊）
-				<input type="number" bind:value={spaceFee} class="field-input" placeholder="3000" min="0" />
+				場所代の基本料金（円 / 3時間）
+				<input type="number" bind:value={spaceFee} class="field-input" placeholder="500" min="0" />
+			</label>
+
+			<label class="field-label">
+				場所代の延長料金（円 / 30分）
+				<input type="number" bind:value={extensionFee} class="field-input" placeholder="100" min="0" />
+				<span class="field-note">3時間未満の利用でも基本料金がかかります。3時間を超えた分は30分ごとに延長料金がかかります。</span>
 			</label>
 
 			<label class="field-label">
@@ -297,4 +306,5 @@
 		font-size: 1rem; font-weight: 500; cursor: pointer; margin-top: 8px;
 	}
 	.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+	.field-note { display: block; margin-top: 4px; font-size: 0.75rem; font-weight: 400; color: var(--ink-3); line-height: 1.5; }
 </style>

@@ -83,7 +83,7 @@ export async function getAvailableSpaces() {
 		.from('rental_spaces')
 		.select(`
 			id, name, lat, lng, address,
-			space_fee, fire_use_allowed, ground_type, photos_path,
+			space_fee, extension_fee, fire_use_allowed, ground_type, photos_path,
 			max_stalls, capacity,
 			owners ( owner_name, icon_path )
 		`)
@@ -98,6 +98,7 @@ export async function getAvailableSpaces() {
 		lng: s.lng,
 		status: 'available',
 		price: s.space_fee,
+		extPrice: s.extension_fee ?? 0,
 		specs: [s.ground_type, s.fire_use_allowed ? '火気使用可' : '火気使用不可']
 			.filter(Boolean)
 			.join(' / '),
@@ -113,7 +114,7 @@ export async function getAvailableStallPins() {
 	requireSupabase();
 	const { data, error } = await supabase
 		.from('stall_specs')
-		.select(`id, stall_name, specs, rental_fee, lat, lng, photo_path, operators ( business_name, icon_path )`)
+		.select(`id, stall_name, specs, rental_fee, extension_fee, lat, lng, photo_path, operators ( business_name, icon_path )`)
 		.not('lat', 'is', null)
 		.not('lng', 'is', null);
 
@@ -128,6 +129,7 @@ export async function getAvailableStallPins() {
 		owner: s.operators?.business_name ?? '未設定',
 		specs: s.specs ?? '',
 		price: s.rental_fee,
+		extPrice: s.extension_fee ?? 0,
 		image: s.photo_path ?? s.operators?.icon_path ?? null
 	}));
 }
@@ -647,11 +649,12 @@ export async function createStallSpec(userId, stallData) {
 }
 
 /** レンタルスペースを更新（場所提供者） */
-export async function updateRentalSpace(spaceId, { name, address, spaceFee, groundType, areaCategory, fireUseAllowed, maxStalls, capacity, photosPath }) {
+export async function updateRentalSpace(spaceId, { name, address, spaceFee, extensionFee, groundType, areaCategory, fireUseAllowed, maxStalls, capacity, photosPath }) {
 	const updates = {};
 	if (name !== undefined) updates.name = name;
 	if (address !== undefined) updates.address = address;
 	if (spaceFee !== undefined) updates.space_fee = spaceFee;
+	if (extensionFee !== undefined) updates.extension_fee = extensionFee;
 	if (groundType !== undefined) updates.ground_type = groundType;
 	if (areaCategory !== undefined) updates.area_category = areaCategory;
 	if (fireUseAllowed !== undefined) updates.fire_use_allowed = fireUseAllowed;

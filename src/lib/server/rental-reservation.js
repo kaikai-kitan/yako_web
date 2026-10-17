@@ -1,14 +1,77 @@
 import { error } from '@sveltejs/kit';
-import { isRentalConfirmed, RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
+import { RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
+import { toJstIso, BOOKING_HORIZON_DAYS } from '$lib/rental-pricing.js';
+import { checkRange, RANGE_ERROR_MESSAGES } from '$lib/rental-availability.js';
 
-const MAX_RENTAL_DAYS = 31;
 const MAX_PLANNED_ITEMS_LENGTH = 20000;
 const MAX_USE_CASES = 10;
+
+/** 屋台・場所の料金設定を取得する（場所は屋台に紐づいた設置場所を優先） */
+export async function loadRentalTarget(supabase, { stallId, rentalSpaceId }) {
+	let stall = null;
+	if (stallId) {
+		const { data, error: stallError } = await supabase
+			.from('stall_specs')
+			.select('id, stall_name, rental_fee, extension_fee, space_id')
+			.eq('id', stallId)
+			.maybeSingle();
+		if (stallError) error(500, '屋台の情報を取得できませんでした');
+		if (!data) error(404, '屋台が見つかりません');
+		stall = data;
+	}
+	const spaceId = stall?.space_id ?? rentalSpaceId ?? null;
+	let space = null;
+	if (spaceId) {
+		const { data, error: spaceError } = await supabase
+			.from('rental_spaces')
+			.select('id, name, space_fee, extension_fee')
+			.eq('id', spaceId)
+			.maybeSingle();
+		if (spaceError) error(500, 'スペースの情報を取得できませんでした');
+		if (!data) error(404, 'スペースが見つかりません');
+		space = data;
+	}
+	const fees = {
+		locked_stall_fee: Number(stall?.rental_fee ?? 0),
+		locked_stall_ext_fee: Number(stall?.extension_fee ?? 0),
+		locked_space_fee: Number(space?.space_fee ?? 0),
+		locked_space_ext_fee: Number(space?.extension_fee ?? 0)
+	};
+	if (Object.values(fees).some((n) => !Number.isInteger(n) || n < 0)) error(500, '料金設定が正しくありません');
+	return { stall, space, fees };
+}
+
+/** 屋台・場所の貸し出し不可の時間帯 */
+export async function loadBlackouts(supabase, { stallId, spaceId }) {
+	const filters = [];
+	if (stallId) filters.push(`stall_id.eq.${stallId}`);
+	if (spaceId) filters.push(`rental_space_id.eq.${spaceId}`);
+	if (filters.length === 0) return [];
+	const { data, error: blackoutError } = await supabase
+		.from('rental_blackouts')
+		.select('weekday, on_date, start_time, end_time')
+		.or(filters.join(','));
+	if (blackoutError) error(500, '貸し出し不可の時間帯を確認できませんでした');
+	return data ?? [];
+}
+
+/** 屋台の予約（使用中の時間の計算用。個人情報は取らない） */
+export async function loadStallReservations(supabase, stallId) {
+	if (!stallId) return [];
+	const { data, error: resError } = await supabase
+		.from('reservations')
+		.select(`id, status, start_datetime, end_datetime, ${RENTAL_PAYMENT_FIELDS}`)
+		.eq('stall_id', stallId)
+		.in('status', ['pending', 'active']);
+	if (resError) error(500, '屋台の空き状況を確認できませんでした');
+	return data ?? [];
+}
 
 /**
  * 予約（決済前の下書き）をサーバー側で作成する。
  * - 料金はブラウザから受け取らず、DB の現在価格から確定する
- * - 屋台の空き確認もサーバーで行う
+ * - 30分単位・前後30分のゆとり・貸し出し不可の時間帯をサーバーで確認する
+ * - 日時はタイムゾーンが無ければ日本時間として扱う
  * クライアントからの reservations への直接 INSERT は v26 で禁止している。
  */
 export async function createPendingReservation(supabase, userId, input) {
@@ -16,19 +79,9 @@ export async function createPendingReservation(supabase, userId, input) {
 	const stallId = typeof input?.stallId === 'string' && input.stallId ? input.stallId : null;
 	if (!rentalSpaceId && !stallId) error(400, 'スペースまたは屋台を選択してください');
 
-	// 日時文字列は従来どおりそのまま DB に渡す（タイムゾーンの解釈を変えないため）。
-	if (typeof input?.startDatetime !== 'string' || typeof input?.endDatetime !== 'string') {
-		error(400, '利用日時が正しくありません');
-	}
-	const start = new Date(input.startDatetime);
-	const end = new Date(input.endDatetime);
-	if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) {
-		error(400, '利用日時が正しくありません');
-	}
-	if (end.getTime() - start.getTime() > MAX_RENTAL_DAYS * 86400000) {
-		error(400, `一度に予約できるのは${MAX_RENTAL_DAYS}日までです`);
-	}
-	if (end.getTime() < Date.now()) error(400, '過去の日時は予約できません');
+	const startIso = toJstIso(input?.startDatetime);
+	const endIso = toJstIso(input?.endDatetime);
+	if (!startIso || !endIso) error(400, '利用日時が正しくありません');
 
 	let plannedItems = null;
 	if (input?.plannedItems != null) {
@@ -41,53 +94,27 @@ export async function createPendingReservation(supabase, userId, input) {
 		? input.selectedUseCases.filter((v) => typeof v === 'string' && v.length <= 50).slice(0, MAX_USE_CASES)
 		: [];
 
-	let stallFee = 0;
-	if (stallId) {
-		const { data: stall, error: stallError } = await supabase
-			.from('stall_specs')
-			.select('id, rental_fee')
-			.eq('id', stallId)
-			.maybeSingle();
-		if (stallError) error(500, '屋台の情報を取得できませんでした');
-		if (!stall) error(404, '屋台が見つかりません');
-		stallFee = Number(stall.rental_fee ?? 0);
+	// DB を見る前に、日時の形式だけ先に確認する
+	const formatProblem = checkRange({ start: startIso, end: endIso });
+	if (formatProblem) error(400, RANGE_ERROR_MESSAGES[formatProblem]);
 
-		const { data: others, error: othersError } = await supabase
-			.from('reservations')
-			.select(`id, status, ${RENTAL_PAYMENT_FIELDS}`)
-			.eq('stall_id', stallId)
-			.or('status.eq.pending,status.eq.active,status.is.null');
-		if (othersError) error(500, '屋台の空き状況を確認できませんでした');
-		if (others?.some(isRentalConfirmed)) {
-			error(409, 'この屋台はすでに予約が入っています。別の屋台をお選びください。');
-		}
-	}
-
-	let spaceFee = 0;
-	if (rentalSpaceId) {
-		const { data: space, error: spaceError } = await supabase
-			.from('rental_spaces')
-			.select('id, space_fee')
-			.eq('id', rentalSpaceId)
-			.maybeSingle();
-		if (spaceError) error(500, 'スペースの情報を取得できませんでした');
-		if (!space) error(404, 'スペースが見つかりません');
-		spaceFee = Number(space.space_fee ?? 0);
-	}
-	if (!Number.isFinite(stallFee) || !Number.isFinite(spaceFee) || stallFee < 0 || spaceFee < 0) {
-		error(500, '料金設定が正しくありません');
-	}
+	const { stall, space, fees } = await loadRentalTarget(supabase, { stallId, rentalSpaceId });
+	const [reservations, blackouts] = await Promise.all([
+		loadStallReservations(supabase, stall?.id),
+		loadBlackouts(supabase, { stallId: stall?.id, spaceId: space?.id })
+	]);
+	const problem = checkRange({ start: startIso, end: endIso, reservations, blackouts });
+	if (problem) error(problem === 'busy' ? 409 : 400, RANGE_ERROR_MESSAGES[problem]);
 
 	const base = {
 		user_id: userId,
-		rental_space_id: rentalSpaceId,
-		stall_id: stallId,
-		start_datetime: input.startDatetime,
-		end_datetime: input.endDatetime,
+		rental_space_id: space?.id ?? null,
+		stall_id: stall?.id ?? null,
+		start_datetime: startIso,
+		end_datetime: endIso,
 		planned_items: plannedItems,
 		status: 'pending',
-		locked_space_fee: spaceFee,
-		locked_stall_fee: stallFee
+		...fees
 	};
 	const withUseCases = selectedUseCases.length > 0 ? { ...base, selected_use_cases: selectedUseCases } : base;
 
@@ -99,3 +126,5 @@ export async function createPendingReservation(supabase, userId, input) {
 	if (insertError || !data?.id) error(500, '予約を作成できませんでした');
 	return data.id;
 }
+
+export { BOOKING_HORIZON_DAYS };

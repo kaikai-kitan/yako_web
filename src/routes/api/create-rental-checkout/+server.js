@@ -1,6 +1,7 @@
 import { requireRentalUser } from '$lib/server/rental-authorization.js';
-import { createPendingReservation } from '$lib/server/rental-reservation.js';
+import { createPendingReservation, loadRentalTarget } from '$lib/server/rental-reservation.js';
 import { rentalTotal } from '$lib/rental-payment.js';
+import { rentalCharge, feesFromReservation } from '$lib/rental-pricing.js';
 import Stripe from 'stripe';
 import { env } from '$env/dynamic/private';
 import { json, error } from '@sveltejs/kit';
@@ -40,11 +41,7 @@ export async function POST({ request }) {
 		// 予約詳細を取得（料金計算のため）
 		const { data: res, error: dbErr } = await supabase
 			.from('reservations')
-			.select(`
-				id, start_datetime, end_datetime, user_id, stripe_payment_intent_id,
-				stall_specs ( stall_name, rental_fee ),
-				rental_spaces ( name, space_fee )
-			`)
+			.select('id, start_datetime, end_datetime, user_id, stall_id, rental_space_id, stripe_payment_intent_id')
 			.eq('id', reservationId)
 			.eq('status', 'pending')
 			.single();
@@ -55,15 +52,17 @@ export async function POST({ request }) {
 		if (res.user_id !== userId) throw error(403, '権限がありません');
 		if (res.stripe_payment_intent_id) throw error(409, 'この予約はすでに確定しています');
 
-		// Use server-side prices; a zero-fee booking still waits for on-site check-in.
-		const fees = {
-			locked_stall_fee: res.stall_specs?.rental_fee ?? 0,
-			locked_space_fee: res.rental_spaces?.space_fee ?? 0
-		};
+		// 料金はサーバー側の現在価格で確定する（0円の予約も当日のチェックインまで pending のまま）
+		const { stall, space, fees } = await loadRentalTarget(supabase, {
+			stallId: res.stall_id,
+			rentalSpaceId: res.rental_space_id
+		});
+		const charge = rentalCharge({
+			start: res.start_datetime,
+			end: res.end_datetime,
+			fees: feesFromReservation(fees)
+		});
 		const total = rentalTotal({ ...res, ...fees });
-		const days = Math.max(1, Math.ceil((new Date(res.end_datetime) - new Date(res.start_datetime)) / 86400000));
-		const stallFee = fees.locked_stall_fee * days;
-		const spaceFee = fees.locked_space_fee * days;
 		const { error: feeError } = await supabase.from('reservations').update(fees)
 			.eq('id', reservationId).eq('user_id', userId).eq('status', 'pending')
 			.is('stripe_payment_intent_id', null);
@@ -72,28 +71,24 @@ export async function POST({ request }) {
 		if (!stripeKey) throw error(500, '決済設定が未設定です');
 
 		const stripe = new Stripe(stripeKey, { apiVersion: '2024-06-20' });
+		const place = [stall?.stall_name, space?.name].filter(Boolean).join('／');
 		const lineItems = [];
-
-		if (stallFee > 0) {
+		if (charge.base > 0) {
 			lineItems.push({
 				price_data: {
 					currency: 'jpy',
-					product_data: {
-						name: `屋台利用料: ${res.stall_specs?.stall_name ?? ''}（${days}日分）`
-					},
-					unit_amount: stallFee
+					product_data: { name: `基本料金（3時間）${place ? `: ${place}` : ''}` },
+					unit_amount: charge.base
 				},
 				quantity: 1
 			});
 		}
-		if (spaceFee > 0) {
+		if (charge.extension > 0) {
 			lineItems.push({
 				price_data: {
 					currency: 'jpy',
-					product_data: {
-						name: `スペース利用料: ${res.rental_spaces?.name ?? ''}（${days}日分）`
-					},
-					unit_amount: spaceFee
+					product_data: { name: `延長料金（30分 × ${charge.extensionSlots}）` },
+					unit_amount: charge.extension
 				},
 				quantity: 1
 			});

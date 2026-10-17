@@ -48,7 +48,12 @@ describe('rental checkout state', () => {
 			start_datetime: '2026-10-20T10:00:00+09:00',
 			end_datetime: '2026-10-21T12:00:00+09:00'
 		};
-		expect(rentalTotal(reservation)).toBe(2000);
+		// 26時間 = 基本3時間 + 延長46枠。屋台1,000円(延長0円) → 1,000円
+		expect(rentalTotal(reservation)).toBe(1000);
+		// 延長料を設定した場合: 1,000 + 46 × (200 + 100)
+		expect(
+			rentalTotal({ ...reservation, locked_stall_ext_fee: 200, locked_space_fee: 500, locked_space_ext_fee: 100 })
+		).toBe(1500 + 46 * 300);
 		expect(() => rentalTotal({ ...reservation, end_datetime: 'invalid' })).toThrow();
 		expect(() => rentalTotal({ ...reservation, locked_stall_fee: null })).toThrow();
 	});

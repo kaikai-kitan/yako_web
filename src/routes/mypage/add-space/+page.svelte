@@ -18,6 +18,7 @@
 	let name = $state('');
 	let address = $state('');
 	let spaceFee = $state('');
+	let extensionFee = $state('');
 	let groundType = $state('');
 	let areaCategory = $state('');
 	let fireUseAllowed = $state(false);
@@ -92,6 +93,7 @@
 				lat,
 				lng,
 				space_fee: spaceFee ? parseInt(spaceFee) : 0,
+				extension_fee: extensionFee ? parseInt(extensionFee) : 0,
 				ground_type: groundType.trim() || null,
 				area_category: areaCategory.trim() || null,
 				fire_use_allowed: fireUseAllowed,
@@ -163,8 +165,14 @@
 			</label>
 
 			<label class="field-label">
-				場所代（円 / 泊）
-				<input type="number" bind:value={spaceFee} class="field-input" placeholder="3000" min="0" />
+				場所代の基本料金（円 / 3時間）
+				<input type="number" bind:value={spaceFee} class="field-input" placeholder="500" min="0" />
+			</label>
+
+			<label class="field-label">
+				場所代の延長料金（円 / 30分）
+				<input type="number" bind:value={extensionFee} class="field-input" placeholder="100" min="0" />
+				<span class="field-note">3時間未満の利用でも基本料金がかかります。3時間を超えた分は30分ごとに延長料金がかかります。</span>
 			</label>
 
 			<label class="field-label">
@@ -309,4 +317,5 @@
 		font-size: 0.9rem; color: var(--ink-3);
 	}
 	.hidden-file { display: none; }
+	.field-note { display: block; margin-top: 4px; font-size: 0.75rem; font-weight: 400; color: var(--ink-3); line-height: 1.5; }
 </style>
