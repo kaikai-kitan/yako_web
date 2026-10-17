@@ -581,6 +581,31 @@ export async function completeRental(reservationId, userId, salesItems) {
 			console.error('Inventory decrement error:', e);
 		}
 	}
+	return body; // { completed, charge, charged, chargeStatus }
+}
+
+async function rentalApi(path, payload, fallbackMessage) {
+	requireSupabase();
+	const { data: { session } } = await supabase.auth.getSession();
+	if (!session?.access_token) throw new Error('ログインが必要です');
+	const response = await fetch(path, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+		body: JSON.stringify(payload)
+	});
+	const body = await response.json().catch(() => ({}));
+	if (!response.ok) throw new Error(body.message ?? fallbackMessage);
+	return body;
+}
+
+/** 利用中の延長（30分 × slots）。返却時の一括請求に含まれる */
+export function extendRental(reservationId, slots) {
+	return rentalApi('/api/extend-rental', { reservationId, slots }, '延長できませんでした');
+}
+
+/** チェックイン時にカードが通らなかった場合の確認し直し（Stripe の画面のURLを返す） */
+export function startRentalCardCheck(reservationId) {
+	return rentalApi('/api/rental-card-check', { reservationId }, 'カードの確認画面を開けませんでした');
 }
 
 /** 今月の受取収益合計を取得（recipient_id でフィルタ） */

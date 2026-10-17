@@ -1,4 +1,5 @@
-import { isRentalConfirmed, RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
+import { isRentalConfirmed } from '$lib/rental-payment.js';
+import { BILLING_FIELDS, secureRentalAtCheckIn, reservedAmount, finalizeRentalReturn } from '$lib/server/rental-billing.js';
 import Stripe from 'stripe';
 import { env } from '$env/dynamic/private';
 import { json, error } from '@sveltejs/kit';
@@ -76,7 +77,7 @@ export async function POST({ request }) {
 	const filterCol = type === 'space' ? 'rental_space_id' : 'stall_id';
 	const { data: reservations, error: resErr } = await supabase
 		.from('reservations')
-		.select(`id, status, ${RENTAL_PAYMENT_FIELDS}`)
+		.select(BILLING_FIELDS)
 		.eq('user_id', user.id)
 		.eq(filterCol, id)
 		.in('status', ['pending', 'active'])
@@ -89,22 +90,13 @@ export async function POST({ request }) {
 	}
 
 	// 4. ステータスに応じてチェックインまたは返却
+	const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' }) : null;
 	if (reservation.status === 'pending') {
-		// チェックイン: Stripe Capture → status = 'active'
-		if (reservation.stripe_payment_intent_id) {
-			const stripeKey = env.STRIPE_SECRET_KEY;
-			if (!stripeKey) throw error(500, 'STRIPE_SECRET_KEY が未設定です');
-			const stripe = new Stripe(stripeKey, { apiVersion: '2024-06-20' });
-			try {
-				const pi = await stripe.paymentIntents.capture(reservation.stripe_payment_intent_id);
-				if (pi.status !== 'succeeded') {
-					throw error(402, `決済の確定に失敗しました（Stripe status: ${pi.status}）`);
-				}
-			} catch (stripeErr) {
-				if (stripeErr?.status) throw stripeErr;
-				console.error('[scan-action] Stripe capture failed:', stripeErr);
-				throw error(402, '決済の処理に失敗しました。カード情報をご確認ください。');
-			}
+		// チェックイン: 予約時間分の仮押さえ（新方式）／予約時の与信の確定（旧方式）→ status = 'active'
+		if (stripe) {
+			await secureRentalAtCheckIn({ stripe, supabase, reservation });
+		} else if (reservedAmount(reservation) > 0) {
+			throw error(500, '決済設定が未設定です');
 		}
 
 		const { error: updateErr } = await supabase
@@ -113,18 +105,12 @@ export async function POST({ request }) {
 			.eq('id', reservation.id)
 			.eq('status', 'pending');
 
-		if (updateErr) throw error(500, 'チェックイン処理に失敗しました: ' + updateErr.message);
+		if (updateErr) throw error(500, 'チェックイン処理に失敗しました');
 
 		return json({ action: 'checkin', name: placeName });
 	} else {
-		// 返却: status = 'completed'
-		const { error: updateErr } = await supabase
-			.from('reservations')
-			.update({ status: 'completed' })
-			.eq('id', reservation.id)
-			.eq('status', 'active');
-
-		if (updateErr) throw error(500, '返却処理に失敗しました: ' + updateErr.message);
+		// 返却: アプリ内の返却と同じ精算処理（延長・超過を含めて一括請求）
+		const result = await finalizeRentalReturn({ stripe, supabase, reservationId: reservation.id, userId: user.id });
 
 		// 営業を1回完了 → 信用スコア +5（二重付与防止）
 		let creditBonus = 0;
@@ -145,6 +131,6 @@ export async function POST({ request }) {
 			creditBonus = 5;
 		}
 
-		return json({ action: 'return', name: placeName, creditBonus });
+		return json({ action: 'return', name: placeName, creditBonus, charge: result.charge, charged: result.charged, chargeStatus: result.chargeStatus });
 	}
 }

@@ -1,4 +1,4 @@
-import { confirmRentalAuthorization } from '$lib/server/rental-authorization.js';
+import { confirmRentalAuthorization, confirmRentalHold } from '$lib/server/rental-authorization.js';
 import Stripe from 'stripe';
 import { env } from '$env/dynamic/private';
 import { createClient } from '@supabase/supabase-js';
@@ -236,10 +236,19 @@ export async function POST({ request }) {
 			if (resend) {
 				try {
 					await sendAdminNotification({ resend, adminEmails, type: 'rental',
-						totalAmount: session.amount_total, items: [], customerEmail, orderId: session.id });
+						totalAmount: session.amount_total ?? 0, items: [], customerEmail, orderId: session.id });
 				} catch (e) {
 					console.error('Admin notification email error:', e);
 				}
+			}
+		} else if (metadata.type === 'rental_hold' && metadata.reservationId) {
+			// チェックイン時にカードを確認し直した仮押さえ
+			try {
+				await confirmRentalHold({ stripe, supabase, session,
+					reservationId: metadata.reservationId, userId: metadata.userId });
+			} catch (err) {
+				console.error('Rental hold confirmation failed:', err?.status ?? 500);
+				return new Response('Rental hold confirmation failed', { status: err?.status ?? 500 });
 			}
 		} else {
 			// ショップ注文: 出店者を特定して受注データを記録

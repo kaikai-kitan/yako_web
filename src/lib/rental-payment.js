@@ -3,7 +3,7 @@ import { rentalCharge, feesFromReservation } from '$lib/rental-pricing.js';
 // A pending row is a checkout draft until card authorization succeeds.
 // Zero-fee reservations do not need Stripe; unknown fees must not count as free.
 export const RENTAL_PAYMENT_FIELDS =
-	'stripe_payment_intent_id, locked_space_fee, locked_stall_fee, locked_space_ext_fee, locked_stall_ext_fee';
+	'stripe_payment_intent_id, stripe_payment_method_id, locked_space_fee, locked_stall_fee, locked_space_ext_fee, locked_stall_ext_fee';
 
 // v13 may not yet be installed. Keep the map readable, but never infer paid
 // authorization from a legacy pending row without the payment-intent column.
@@ -33,7 +33,9 @@ export function isRentalConfirmed(reservation) {
 	if (reservation.status === 'active' || reservation.status === 'completed') return true;
 	return (
 		reservation.status === 'pending' &&
-		(Boolean(reservation.stripe_payment_intent_id) || isFreeRental(reservation))
+		(Boolean(reservation.stripe_payment_intent_id) ||
+			Boolean(reservation.stripe_payment_method_id) ||
+			isFreeRental(reservation))
 	);
 }
 

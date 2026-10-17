@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
 	cancelIntent: vi.fn(),
 	retrieve: vi.fn(),
 	create: vi.fn(),
+	createIntent: vi.fn(),
+	setupRetrieve: vi.fn(),
 	event: null
 }));
 vi.mock('@supabase/supabase-js', () => ({ createClient: () => mocks.db }));
@@ -27,8 +29,11 @@ vi.mock('stripe', () => ({
 		this.paymentIntents = {
 			capture: mocks.capture,
 			retrieve: mocks.retrieve,
-			cancel: mocks.cancelIntent
+			cancel: mocks.cancelIntent,
+			create: mocks.createIntent
 		};
+		this.setupIntents = { retrieve: mocks.setupRetrieve };
+		this.customers = { create: vi.fn(async () => ({ id: 'cus_new' })) };
 		this.checkout = { sessions: { create: mocks.create } };
 		this.webhooks = { constructEventAsync: async () => mocks.event };
 	}
@@ -42,6 +47,8 @@ import { POST as cancel } from '../../routes/api/cancel-rental/+server.js';
 import { POST as checkout } from '../../routes/api/create-rental-checkout/+server.js';
 import { POST as webhook } from '../../routes/api/stripe-webhook/+server.js';
 import { POST as completeReturn } from '../../routes/api/complete-rental/+server.js';
+import { POST as extendRentalApi } from '../../routes/api/extend-rental/+server.js';
+import { finalizeRentalReturn, secureRentalAtCheckIn, chargeNoShow } from './rental-billing.js';
 import {
 	getMyReservations,
 	getUserReservations,
@@ -115,7 +122,7 @@ function request(body, headers = {}) {
 const confirm = (db, overrides = {}) =>
 	confirmRentalAuthorization({
 		supabase: db,
-		stripe: { paymentIntents: { retrieve: mocks.retrieve, cancel: mocks.cancelIntent } },
+		stripe: { paymentIntents: { retrieve: mocks.retrieve, cancel: mocks.cancelIntent }, setupIntents: { retrieve: mocks.setupRetrieve } },
 		session,
 		reservationId: 'reservation',
 		userId: 'user',
@@ -248,7 +255,8 @@ describe('unfinished checkout across the application', () => {
 			row({ is_suspended: false }),
 			row(unpaid),
 			row({ id: 'stall', stall_name: '屋台', rental_fee: 1000, extension_fee: 0, space_id: null }),
-			row(null)
+			row(null),
+			row({ stripe_customer_id: 'cus_test' })
 		]);
 		mocks.create.mockResolvedValueOnce({
 			id: 'checkout',
@@ -258,12 +266,15 @@ describe('unfinished checkout across the application', () => {
 			request: request({ reservationId: unpaid.id, userId: 'untrusted' })
 		});
 		expect(await result.json()).toHaveProperty('sessionId', 'checkout');
+		// 予約時はカード登録だけ（setup モード）。請求も与信もしない
 		expect(mocks.create).toHaveBeenCalledWith(
 			expect.objectContaining({
-				payment_intent_data: { capture_method: 'manual' },
+				mode: 'setup',
+				customer: 'cus_test',
 				metadata: { type: 'rental', reservationId: unpaid.id, userId: 'user' }
 			})
 		);
+		expect(mocks.create.mock.calls[0][0]).not.toHaveProperty('payment_intent_data');
 		expect(db.writes.every(({ value }) => !value.status && !value.stripe_payment_intent_id)).toBe(
 			true
 		);
@@ -298,7 +309,8 @@ describe('unfinished checkout across the application', () => {
 		row({ id: 'new-draft' }),
 		row({ ...unpaid, id: 'new-draft', start_datetime: `${draft.startDatetime}+09:00`, end_datetime: `${draft.endDatetime}+09:00` }),
 		row(stallRow),
-		row(null)
+		row(null),
+		row({ stripe_customer_id: 'cus_test' })
 	];
 	it('creates the booking on the server with server-side prices, ignoring client fees', async () => {
 		const db = database(newBooking([]));
@@ -317,9 +329,9 @@ describe('unfinished checkout across the application', () => {
 			start_datetime: `${draft.startDatetime}+09:00`
 		});
 		expect(insert.value).not.toHaveProperty('stripe_payment_intent_id');
-		// 4時間 = 基本1,000円 + 延長2枠 × 200円
-		const items = mocks.create.mock.calls[0][0].line_items;
-		expect(items.reduce((sum, i) => sum + i.price_data.unit_amount * i.quantity, 0)).toBe(1400);
+		// 4時間 = 基本1,000円 + 延長2枠 × 200円（目安として表示。予約時は請求しない）
+		expect(mocks.create.mock.calls[0][0]).toMatchObject({ mode: 'setup' });
+		expect(mocks.create.mock.calls[0][0].setup_intent_data.description).toContain('1,400');
 	});
 	it('lets the user book again after abandoning payment (unpaid drafts do not block)', async () => {
 		const db = database(newBooking([{ ...unpaid, start_datetime: `${day}T10:00:00+09:00`, end_datetime: `${day}T14:00:00+09:00` }]));
@@ -452,11 +464,17 @@ describe('rental return (complete-rental)', () => {
 		locked_stall_fee: 1000,
 		locked_space_ext_fee: 100,
 		locked_stall_ext_fee: 200,
+		stall_id: 'stall',
+		rental_space_id: 'space',
+		stripe_customer_id: 'cus_test',
+		stripe_payment_method_id: 'pm_card',
+		stripe_hold_intent_id: 'pi_hold',
 		stall_specs: { user_id: 'stall-owner', operators: { business_name: '屋台屋' } },
 		rental_spaces: { user_id: 'space-owner', owners: { owner_name: '場所主' } }
 	};
 	it('records sales and server-computed payments once, ignoring amounts sent by the browser', async () => {
-		const db = database([row(active), row([{ id: 'reservation' }]), row(null), row(null)]);
+		const db = database([row(active), row([{ id: 'reservation' }]), row(null), row(null), row(null)]);
+		mocks.createIntent.mockResolvedValueOnce({ id: 'pi_final', status: 'succeeded' });
 		const result = await completeReturn({
 			request: request({
 				reservationId: 'reservation',
@@ -464,15 +482,23 @@ describe('rental return (complete-rental)', () => {
 				payments: [{ recipient_id: 'attacker', total_amount: 999999 }]
 			})
 		});
-		expect(await result.json()).toEqual({ completed: true });
+		expect(await result.json()).toMatchObject({ completed: true, charged: 2100, chargeStatus: 'paid', charge: { total: 2100 } });
 		expect(db.writes.map((w) => `${w.table}.${w.method}`)).toEqual([
 			'reservations.update',
 			'sales.insert',
+			'reservations.update',
 			'payment_history.insert'
 		]);
+		// 返却時に登録カードへ一括請求し、仮押さえは解放
+		expect(mocks.createIntent).toHaveBeenCalledWith(
+			expect.objectContaining({ amount: 2100, customer: 'cus_test', payment_method: 'pm_card', off_session: true, confirm: true }),
+			expect.anything()
+		);
+		expect(mocks.cancelIntent).toHaveBeenCalledWith('pi_hold');
+		expect(db.writes[2].value).toEqual({ charged_amount: 2100, charge_status: 'paid', stripe_charge_intent_id: 'pi_final' });
 		expect(db.writes[0].value).toMatchObject({ status: 'completed' });
 		expect(db.writes[0].value.returned_at).toEqual(expect.any(String));
-		expect(db.writes[2].value).toEqual([
+		expect(db.writes[3].value).toEqual([
 			expect.objectContaining({ payer_id: 'user', recipient_id: 'stall-owner', total_amount: 1400 }),
 			expect.objectContaining({ payer_id: 'user', recipient_id: 'space-owner', total_amount: 700 })
 		]);
@@ -513,6 +539,105 @@ describe('rental return (complete-rental)', () => {
 		const req = request({ reservationId: 'reservation' });
 		req.headers.delete('Authorization');
 		await expect(completeReturn({ request: req })).rejects.toMatchObject({ status: 401 });
+		expect(db.writes).toEqual([]);
+	});
+});
+
+describe('new payment flow (card on booking, hold at check-in, one charge on return)', () => {
+	const booked = {
+		id: 'reservation',
+		user_id: 'user',
+		status: 'pending',
+		stall_id: 'stall',
+		rental_space_id: null,
+		start_datetime: '2026-10-20T10:00:00+09:00',
+		end_datetime: '2026-10-20T14:00:00+09:00',
+		locked_stall_fee: 1000,
+		locked_stall_ext_fee: 200,
+		locked_space_fee: 500,
+		locked_space_ext_fee: 100,
+		stripe_payment_intent_id: null,
+		stripe_customer_id: 'cus_test',
+		stripe_payment_method_id: 'pm_card',
+		stripe_hold_intent_id: null
+	};
+	it('confirms a booking when the card is registered (no charge)', async () => {
+		const db = database([row({ ...booked, stripe_payment_method_id: null, stripe_customer_id: null }), row([]), row([{ id: 'reservation' }])]);
+		mocks.setupRetrieve.mockResolvedValueOnce({ status: 'succeeded', payment_method: 'pm_card' });
+		const setupSession = { mode: 'setup', status: 'complete', setup_intent: 'seti_1', customer: 'cus_test', metadata: { type: 'rental', reservationId: 'reservation', userId: 'user' } };
+		await expect(confirm(db, { session: setupSession })).resolves.toBe('pm_card');
+		expect(db.writes[0].value).toEqual({ stripe_payment_method_id: 'pm_card', stripe_customer_id: 'cus_test' });
+		expect(mocks.createIntent).not.toHaveBeenCalled();
+		expect(mocks.capture).not.toHaveBeenCalled();
+	});
+	it('places a hold for the reserved time at check-in', async () => {
+		const db = database([row(null)]);
+		mocks.createIntent.mockResolvedValueOnce({ id: 'pi_hold', status: 'requires_capture' });
+		await secureRentalAtCheckIn({ stripe: new (await import('stripe')).default(), supabase: db, reservation: booked });
+		expect(mocks.createIntent).toHaveBeenCalledWith(
+			expect.objectContaining({ amount: 2100, capture_method: 'manual', off_session: true, payment_method: 'pm_card' }),
+			expect.anything()
+		);
+		expect(db.writes[0].value).toEqual({ stripe_hold_intent_id: 'pi_hold' });
+	});
+	it('does not check in when the card cannot be held, and asks to re-check the card', async () => {
+		const db = database([row(booked)]);
+		mocks.createIntent.mockRejectedValueOnce(Object.assign(new Error('declined'), { code: 'card_declined' }));
+		await expect(checkin({ request: request({ reservationId: 'reservation' }) })).rejects.toMatchObject({
+			status: 402,
+			body: { code: 'card_check_required' }
+		});
+		expect(db.writes).toEqual([]);
+	});
+	it('charges overtime in 30-minute units on a late return', async () => {
+		const db = database([row({ ...booked, status: 'active', stripe_hold_intent_id: 'pi_hold' }), row([{ id: 'reservation' }]), row(null)]);
+		mocks.createIntent.mockResolvedValueOnce({ id: 'pi_final', status: 'succeeded' });
+		const r = await finalizeRentalReturn({
+			stripe: new (await import('stripe')).default(),
+			supabase: db,
+			reservationId: 'reservation',
+			userId: 'user',
+			now: Date.parse('2026-10-20T14:10:00+09:00')
+		});
+		// 14:10 返却 → 14:30 まで = 延長3枠 → 1,500 + 3 × 300
+		expect(r).toMatchObject({ charged: 2400, chargeStatus: 'paid' });
+	});
+	it('captures only the hold when the final charge fails', async () => {
+		const db = database([row({ ...booked, status: 'active', stripe_hold_intent_id: 'pi_hold' }), row([{ id: 'reservation' }]), row(null)]);
+		mocks.createIntent.mockRejectedValueOnce(new Error('declined'));
+		mocks.retrieve.mockResolvedValueOnce({ id: 'pi_hold', status: 'requires_capture', amount: 2100 });
+		mocks.capture.mockResolvedValueOnce({ status: 'succeeded', amount_received: 2100 });
+		const r = await finalizeRentalReturn({
+			stripe: new (await import('stripe')).default(),
+			supabase: db,
+			reservationId: 'reservation',
+			userId: 'user',
+			now: Date.parse('2026-10-20T15:00:00+09:00')
+		});
+		expect(mocks.capture).toHaveBeenCalledWith('pi_hold', { amount_to_capture: 2100 });
+		expect(r).toMatchObject({ charged: 2100, chargeStatus: 'partial', charge: { total: 2700 } });
+	});
+	it('charges the base fee to the registered card for a no-show', async () => {
+		mocks.createIntent.mockResolvedValueOnce({ id: 'pi_noshow', status: 'succeeded' });
+		const r = await chargeNoShow({ stripe: new (await import('stripe')).default(), reservation: booked });
+		expect(mocks.createIntent).toHaveBeenCalledWith(expect.objectContaining({ amount: 1500, off_session: true }), expect.anything());
+		expect(r).toEqual({ charged: 1500, chargeStatus: 'paid', chargeIntentId: 'pi_noshow' });
+	});
+	it('extends an active rental when the next slots are free', async () => {
+		const active = { ...booked, status: 'active' };
+		const db = database([row(active), row([active]), row([]), row([{ id: 'reservation' }])]);
+		const res = await extendRentalApi({ request: request({ reservationId: 'reservation', slots: 2 }) });
+		const body = await res.json();
+		expect(Date.parse(body.endDatetime)).toBe(Date.parse('2026-10-20T15:00:00+09:00'));
+		expect(body.charge.total).toBe(1500 + 4 * 300);
+		expect(db.writes[0].value).toEqual({ end_datetime: body.endDatetime });
+	});
+	it('refuses an extension that would run into the next booking (with the 30-minute gap)', async () => {
+		const active = { ...booked, status: 'active' };
+		const next = { ...booked, id: 'next', start_datetime: '2026-10-20T15:00:00+09:00', end_datetime: '2026-10-20T18:00:00+09:00' };
+		// 14:30 までなら次の予約（15:00〜）との間に30分空くので延長できる。15:00 までは不可
+		const db = database([row(active), row([active, next]), row([])]);
+		await expect(extendRentalApi({ request: request({ reservationId: 'reservation', slots: 2 }) })).rejects.toMatchObject({ status: 409 });
 		expect(db.writes).toEqual([]);
 	});
 });

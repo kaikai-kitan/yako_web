@@ -1,5 +1,6 @@
 import { requireRentalUser } from '$lib/server/rental-authorization.js';
 import { createPendingReservation, loadRentalTarget } from '$lib/server/rental-reservation.js';
+import { getOrCreateCustomer } from '$lib/server/rental-billing.js';
 import { rentalTotal } from '$lib/rental-payment.js';
 import { rentalCharge, feesFromReservation } from '$lib/rental-pricing.js';
 import Stripe from 'stripe';
@@ -71,44 +72,27 @@ export async function POST({ request }) {
 		if (!stripeKey) throw error(500, '決済設定が未設定です');
 
 		const stripe = new Stripe(stripeKey, { apiVersion: '2024-06-20' });
-		const place = [stall?.stall_name, space?.name].filter(Boolean).join('／');
-		const lineItems = [];
-		if (charge.base > 0) {
-			lineItems.push({
-				price_data: {
-					currency: 'jpy',
-					product_data: { name: `基本料金（3時間）${place ? `: ${place}` : ''}` },
-					unit_amount: charge.base
-				},
-				quantity: 1
-			});
-		}
-		if (charge.extension > 0) {
-			lineItems.push({
-				price_data: {
-					currency: 'jpy',
-					product_data: { name: `延長料金（30分 × ${charge.extensionSlots}）` },
-					unit_amount: charge.extension
-				},
-				quantity: 1
-			});
-		}
+		const customerId = await getOrCreateCustomer({ stripe, supabase, user });
+		const origin = new URL(request.url).origin;
 
+		// 予約時はカードを登録するだけ（請求しない）。
+		// チェックイン時に予約時間分を仮押さえし、返却時に延長分を含めて一括請求する。
 		const session = await stripe.checkout.sessions.create({
+			mode: 'setup',
+			customer: customerId,
 			payment_method_types: ['card'],
-			line_items: lineItems,
-			mode: 'payment',
-			// 与信枠の確保のみ（QRスキャン時に Capture して売上確定）
-			payment_intent_data: { capture_method: 'manual' },
-			success_url: `${new URL(request.url).origin}/map?rental_authorized=${reservationId}&session_id={CHECKOUT_SESSION_ID}`,
-			cancel_url: `${new URL(request.url).origin}/map?rental_cancelled=1`,
+			setup_intent_data: {
+				description: `屋台レンタル予約（目安 ¥${charge.total.toLocaleString('ja-JP')}）`,
+				metadata: { type: 'rental', reservationId, userId }
+			},
+			success_url: `${origin}/map?rental_authorized=${reservationId}&session_id={CHECKOUT_SESSION_ID}`,
+			cancel_url: `${origin}/map?rental_cancelled=1`,
 			expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
 			metadata: { type: 'rental', reservationId, userId },
 			locale: 'ja',
-			// UI表示: 予約確定画面で与信確保である旨をメモとして表示
 			custom_text: {
 				submit: {
-					message: 'カード情報を確認します。引き落としは現地QRスキャン時（チェックイン時）に行われます。'
+					message: `カードを登録します（この時点では請求しません）。当日のチェックイン時に予約時間分（目安 ¥${charge.total.toLocaleString('ja-JP')}）を仮押さえし、返却時に延長分を含めた合計を請求します。`
 				}
 			}
 		});
