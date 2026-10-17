@@ -1,4 +1,5 @@
 import { json, error } from '@sveltejs/kit';
+import { DAY_SETS } from '$lib/rental-price-rules.js';
 import { assertAdmin, serviceClient, UUID_RE, DATE_RE, TIME_RE, yen } from '$lib/server/admin.js';
 
 export const prerender = false;
@@ -11,7 +12,7 @@ export async function GET({ cookies }) {
 		supabase.from('stall_specs').select('id, stall_name, rental_fee, extension_fee, space_id, operators ( business_name )').order('created_at', { ascending: true }),
 		supabase.from('rental_spaces').select('id, name, address, space_fee, extension_fee, owners ( owner_name )').order('created_at', { ascending: true }),
 		supabase.from('rental_blackouts').select('id, stall_id, rental_space_id, weekday, on_date, start_time, end_time, note').order('created_at', { ascending: true }),
-		supabase.from('rental_price_rules').select('id, label, multiplier, weekday, start_date, end_date, stall_id, rental_space_id, active').order('created_at', { ascending: true })
+		supabase.from('rental_price_rules').select('id, label, multiplier, weekday, day_set, start_date, end_date, stall_id, rental_space_id, active').order('created_at', { ascending: true })
 	]);
 	for (const r of [stalls, spaces, blackouts, rules]) if (r.error) error(500, r.error.message);
 	return json({ stalls: stalls.data, spaces: spaces.data, blackouts: blackouts.data, rules: rules.data });
@@ -86,12 +87,14 @@ export async function POST({ request, cookies }) {
 			const multiplier = Number(body.multiplier);
 			if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 10) error(400, '倍率は0より大きく10以下で入力してください');
 			const weekday = weekdayOrNull(body.weekday);
+			const daySet = body.daySet == null || body.daySet === '' ? null : String(body.daySet);
+			if (daySet && !(daySet in DAY_SETS)) error(400, '曜日の指定が正しくありません');
 			const startDate = dateOrNull(body.startDate);
 			const endDate = dateOrNull(body.endDate) ?? startDate;
-			if (weekday == null && !startDate) error(400, '曜日か期間を指定してください');
+			if (weekday == null && !startDate && !daySet) error(400, '曜日・土日祝・期間のどれかを指定してください');
 			if (startDate && endDate && endDate < startDate) error(400, '期間の終わりが始まりより前です');
 			return run(supabase.from('rental_price_rules').insert({
-				label, multiplier: Math.round(multiplier * 100) / 100, weekday, start_date: startDate, end_date: endDate,
+				label, multiplier: Math.round(multiplier * 100) / 100, weekday, day_set: daySet, start_date: startDate, end_date: endDate,
 				stall_id: optionalId(body.stallId, '屋台'), rental_space_id: optionalId(body.spaceId, '場所'), active: true
 			}));
 		}

@@ -43,6 +43,7 @@ Supabase ダッシュボード → **SQL Editor** に各ファイルの内容を
 | 29 | `supabase_migration_v29.sql` | 時間枠予約（3時間の基本料金＋30分延長）、屋台と場所の紐づけ、貸し出し不可の時間帯 |
 | 30 | `supabase_migration_v30.sql` | 決済の流れの変更（予約時はカード登録のみ、チェックイン時に与信、返却時に一括請求） |
 | 31 | `supabase_migration_v31.sql` | 土日・イベントの割増率、場所提供者の申請、支払い履歴の区分（屋台代／場所代） |
+| 32 | `supabase_migration_v32.sql` | 割増率に「土日・祝日」「祝日だけ」を追加 |
 
 > 次に追加する場合は `supabase_migration_v18.sql` としてこのフォルダに置き、上の表に1行追記してください。
 

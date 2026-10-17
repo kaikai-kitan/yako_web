@@ -35,3 +35,19 @@ describe('price rules (multipliers)', () => {
 		expect(applyMultiplier({ stallBase: 999, stallExt: 0, spaceBase: 0, spaceExt: 0 }, 1.15).stallBase).toBe(1149);
 	});
 });
+
+describe('weekend and holiday rules', () => {
+	const rule = { id: 'wh', label: '土日祝', multiplier: 1.2, day_set: 'weekend_holiday' };
+	const holidayOnly = { id: 'h', label: '祝日', multiplier: 1.3, day_set: 'holiday' };
+	const at = (d) => Date.parse(`${d}T12:00:00+09:00`);
+	it('covers Saturdays, Sundays and national holidays with one rule', () => {
+		expect(matchPriceRule(at('2026-10-24'), [rule])?.id).toBe('wh'); // 土
+		expect(matchPriceRule(at('2026-10-25'), [rule])?.id).toBe('wh'); // 日
+		expect(matchPriceRule(at('2026-11-03'), [rule])?.id).toBe('wh'); // 文化の日（火）
+		expect(matchPriceRule(at('2026-10-21'), [rule])).toBeNull(); // 平日
+	});
+	it('matches holidays only', () => {
+		expect(matchPriceRule(at('2026-11-23'), [holidayOnly])?.id).toBe('h'); // 勤労感謝の日（月）
+		expect(matchPriceRule(at('2026-10-24'), [holidayOnly])).toBeNull(); // ただの土曜
+	});
+});
