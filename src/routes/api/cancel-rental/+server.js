@@ -1,3 +1,4 @@
+import { isUnfinishedCheckout, RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
 import { json, error } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '$env/dynamic/private';
@@ -18,7 +19,7 @@ function calcPenalty(startDatetime) {
 	return 0;                      // 3日以上前
 }
 
-export async function POST({ request, cookies }) {
+export async function POST({ request }) {
 	const authHeader = request.headers.get('Authorization') ?? '';
 	const token = authHeader.replace('Bearer ', '').trim();
 	if (!token) throw error(401, 'Unauthorized');
@@ -35,7 +36,7 @@ export async function POST({ request, cookies }) {
 	// 予約を取得して所有者確認
 	const { data: reservation, error: resErr } = await supabase
 		.from('reservations')
-		.select('id, user_id, status, start_datetime')
+		.select(`id, user_id, status, start_datetime, ${RENTAL_PAYMENT_FIELDS}`)
 		.eq('id', reservationId)
 		.single();
 
@@ -45,7 +46,7 @@ export async function POST({ request, cookies }) {
 		throw error(400, 'この予約はキャンセルできません');
 	}
 
-	const penalty = calcPenalty(reservation.start_datetime);
+	const penalty = isUnfinishedCheckout(reservation) ? 0 : calcPenalty(reservation.start_datetime);
 
 	// キャンセル処理（トランザクション的にサービスロールで実行）
 	const { error: cancelErr } = await supabase

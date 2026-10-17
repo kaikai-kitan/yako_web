@@ -1,3 +1,4 @@
+import { confirmRentalAuthorization } from '$lib/server/rental-authorization.js';
 import Stripe from 'stripe';
 import { env } from '$env/dynamic/private';
 import { createClient } from '@supabase/supabase-js';
@@ -10,7 +11,8 @@ const FROM_EMAIL = 'no-reply@delta-yako.com';
 /** 管理者向け決済通知メール（全決済共通） */
 async function sendAdminNotification({ resend, adminEmails, type, totalAmount, items, customerEmail, orderId }) {
 	if (!adminEmails?.length) return;
-	const typeLabel = type === 'rental' ? '🏮 屋台レンタル決済' : '🛒 ショップ注文';
+	const typeLabel = type === 'rental' ? '🏮 屋台レンタル予約' : '🛒 ショップ注文';
+	const statusLabel = type === 'rental' ? '予約確定（カード確認完了）' : '決済完了';
 	const itemsHtml = (items ?? []).length > 0
 		? `<ul style="margin:8px 0;padding-left:20px;font-size:0.9rem">${items.map(i => `<li>${i.name} × ${i.quantity}</li>`).join('')}</ul>`
 		: '';
@@ -18,11 +20,11 @@ async function sendAdminNotification({ resend, adminEmails, type, totalAmount, i
 	await resend.emails.send({
 		from: FROM_EMAIL,
 		to: adminEmails,
-		subject: `【微小夜行電灯】${typeLabel} ¥${totalAmount.toLocaleString()} 決済完了`,
+		subject: `【微小夜行電灯】${typeLabel} ¥${totalAmount.toLocaleString()} ${statusLabel}`,
 		html: `
 			<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#26201a">
 				<h2 style="background:#fbf3ea;padding:16px 20px;margin:0;font-size:1rem;border-left:4px solid #d56d04">
-					${typeLabel}が完了しました
+					${typeLabel}：${statusLabel}
 				</h2>
 				<div style="padding:20px">
 					<table style="width:100%;font-size:0.9rem;border-collapse:collapse">
@@ -178,13 +180,13 @@ export async function POST({ request }) {
 	let event;
 	if (env.STRIPE_WEBHOOK_SECRET) {
 		try {
-			event = stripe.webhooks.constructEvent(body, sig, env.STRIPE_WEBHOOK_SECRET);
+			event = await stripe.webhooks.constructEventAsync(body, sig, env.STRIPE_WEBHOOK_SECRET);
 		} catch (err) {
 			console.error('Webhook signature verification failed:', err.message);
 			return new Response(`Webhook Error: ${err.message}`, { status: 400 });
 		}
 	} else {
-		event = JSON.parse(body);
+		return new Response('Webhook signing secret is not configured', { status: 503 });
 	}
 
 	if (event.type === 'checkout.session.completed') {
@@ -223,26 +225,18 @@ export async function POST({ request }) {
 			// アイコン形状の買い切り: owned_shapes に追加
 			await grantShape(supabase, metadata.userId, metadata.shape);
 		} else if (metadata.type === 'rental' && metadata.reservationId) {
-			// レンタル決済: 予約をアクティブ化
-			const { error } = await supabase
-				.from('reservations')
-				.update({ status: 'active' })
-				.eq('id', metadata.reservationId)
-				.in('status', ['pending', 'active']);
-			if (error) console.error('Reservation activate error:', error);
-
-			// 管理者へ決済通知
+			// Card authorization confirms a booking; only a QR check-in starts a rental.
+			try {
+				await confirmRentalAuthorization({ stripe, supabase, session,
+					reservationId: metadata.reservationId, userId: metadata.userId });
+			} catch (err) {
+				console.error('Rental authorization failed:', err?.status ?? 500);
+				return new Response('Rental authorization failed', { status: err?.status ?? 500 });
+			}
 			if (resend) {
 				try {
-					await sendAdminNotification({
-						resend,
-						adminEmails,
-						type: 'rental',
-						totalAmount: session.amount_total,
-						items: [],
-						customerEmail,
-						orderId: session.id
-					});
+					await sendAdminNotification({ resend, adminEmails, type: 'rental',
+						totalAmount: session.amount_total, items: [], customerEmail, orderId: session.id });
 				} catch (e) {
 					console.error('Admin notification email error:', e);
 				}

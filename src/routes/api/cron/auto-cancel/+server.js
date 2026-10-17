@@ -1,3 +1,4 @@
+import { isRentalConfirmed, RENTAL_PAYMENT_FIELDS } from '$lib/rental-payment.js';
 import Stripe from 'stripe';
 import { json, error } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
@@ -33,7 +34,7 @@ export async function POST({ request }) {
 	const { data: reservations, error: dbErr } = await supabase
 		.from('reservations')
 		.select(`
-			id, user_id, start_datetime, stripe_payment_intent_id,
+			id, user_id, status, start_datetime, ${RENTAL_PAYMENT_FIELDS},
 			rental_spaces ( name ),
 			stall_specs ( stall_name ),
 			user_profiles ( name )
@@ -53,7 +54,7 @@ export async function POST({ request }) {
 	let cancelled = 0;
 	const errors = [];
 
-	for (const res of reservations) {
+	for (const res of reservations.filter(isRentalConfirmed)) {
 		try {
 			// 1. 予約を auto_cancelled に更新（pending との競合防止: チェックインと同時実行時にどちらか一方だけ成功）
 			const { data: updated, error: cancelErr } = await supabase
